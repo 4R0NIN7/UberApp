@@ -72,7 +72,9 @@ fun ConnectedDevice(processor: WelcomeProcessor) {
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().background(color = Colors.LightPurple)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Colors.LightPurple)
             ) {
                 DeviceItem(scanResult = selectedDevice!!, processor = processor)
             }
@@ -136,7 +138,7 @@ fun Devices(processor: WelcomeProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = scanResults.sortedBy { it.device.name }) {
+        items(items = scanResults.sortedByDescending { it.device.name }) {
             DeviceItem(
                 scanResult = it,
                 processor = processor
@@ -148,6 +150,7 @@ fun Devices(processor: WelcomeProcessor) {
 @SuppressLint("MissingPermission")
 @Composable
 fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
+    val name = scanResult.scanRecord?.deviceName
     val scannedDevice = scanResult.device
     val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
     Column(
@@ -173,7 +176,7 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Device Name: ${scannedDevice.name}",
+                    text = "Device Name: ${name ?: "Unknown"}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,

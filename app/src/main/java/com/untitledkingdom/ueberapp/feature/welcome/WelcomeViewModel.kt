@@ -38,6 +38,7 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
                     if (state.value.isScanning) {
                         effects.send(WelcomeEffect.StopScanDevices)
                     }
+                    Timber.d("Device from scanResult ${event.scanResult.device}")
                     effects.send(
                         WelcomeEffect.ConnectToDevice(
                             scanResult = event.scanResult
@@ -69,11 +70,13 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
     )
 
     private fun addScanResult(result: ScanResult): Flow<WelcomePartialState> = flow {
+        Timber.d("Result device ${result.device}")
         val scanResults = processor.state.value.scanResults
         val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
         if (indexQuery != -1) {
             val oldScanResult = scanResults[indexQuery]
             Timber.d("Result already exists in a list $oldScanResult")
+            Timber.d("Old ScanResult device ${oldScanResult.device}")
             emit(WelcomePartialState.RemoveScanResult(oldScanResult))
             emit(WelcomePartialState.AddScanResult(result))
         } else {
