@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Über App</string>
+    <string name="welcome_creator">by Piotr Szczepanek</string>
+    <string name="welcome_information_about_what_is_next_to_do">Pick device and hit connect button</string>
+    <string name="ble_permission_need">Bluetooth Permission Needed</string>
+    <string name="ble_permission_long">This app needs the Bluetooth &amp; Location permissions, please accept to use location functionality</string>
+    <string name="dialog_ok">OK</string>
+</resources>

@@ -1,0 +1,60 @@
+buildscript {
+    ext {
+        compose_version = '1.2.0-alpha01'
+        ellipse_version = '0.9.8'
+        compose_constraint_layout = '1.0.0-beta02'
+        retrofit_version = '2.9.0'
+        hilt_dagger_version = '2.40.5'
+        mockk_version = '1.12.1'
+        navigation_version = '2.3.5'
+        core_ktx_version = '1.7.0'
+        data_store_version = '1.0.0'
+        room_version = '2.4.1'
+        junit_version = '4.13.2'
+        lifecycle_version = '2.4.0'
+        hilt_lifecycle_viewModel_version = '1.0.0-alpha03'
+        navigation_compose_version = '2.4.0-rc01'
+        app_compat_version = '1.4.1'
+        material_version = '1.5.0'
+        auth_services_version = '20.1.0'
+        runtime_ktx_version = '2.4.0'
+        activity_compose_version = '1.4.0'
+        ext_junit_version = '1.1.3'
+        esspresso_core_version = '3.4.0'
+        build_gradle_version = '7.1.0'
+        kotlin_version = '1.6.10'
+        view_binding_delegate_version = '1.5.3'
+        constraint_layout_compose_version = '1.0.0'
+        timber_version = '5.0.1'
+        gson_converter_version = '2.9.0'
+        coroutines_test_version = '1.5.2'
+        jupiter_version = '5.8.2'
+        pager_version = '0.21.2-beta'
+        swipe_version = '0.22.0-rc'
+        zxing_version = '3.4.1'
+        camera_version2 = '1.0.2'
+        camera_view_version = '1.0.0-alpha32'
+        systemuicontroller_version = '0.17.0'
+        moshi_version = '1.13.0'
+        moshi_converter_version = '2.9.0'
+        datetime_dialog_version = '0.6.3'
+        logging_version = '4.2.1'
+        okhttp3_version = '4.2.1'
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$build_gradle_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_dagger_version"
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

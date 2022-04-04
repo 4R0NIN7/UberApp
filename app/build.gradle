@@ -1,0 +1,175 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'dagger.hilt.android.plugin'
+    id 'kotlin-kapt'
+    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+}
+
+def apikeyPropertiesFile = rootProject.file("api_secrets.properties")
+def apikeyProperties = new Properties()
+apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
+
+android {
+    compileSdk 31
+
+    defaultConfig {
+        applicationId "com.untitledkingdom.ueberapp"
+        minSdk 31
+        targetSdk 31
+        versionCode 1
+        versionName "1.0"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "URL", apikeyProperties['URL_DEBUG'])
+        buildConfigField("String", "CIPHER_KEY", apikeyProperties['CIPHER_KEY'])
+        buildConfigField("String", "SALT", apikeyProperties['SALT'])
+        buildConfigField("String", "IV", apikeyProperties['IV'])
+    }
+    buildTypes {
+        release {
+            versionNameSuffix ".release"
+            applicationIdSuffix ".release"
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            versionNameSuffix ".debug"
+            applicationIdSuffix ".debug"
+            minifyEnabled false
+            debuggable true
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+        useIR = true
+    }
+    buildFeatures {
+        compose true
+        viewBinding true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion compose_version
+    }
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += 'META-INF/*'
+        }
+    }
+}
+
+dependencies {
+    // Timber
+    implementation "com.jakewharton.timber:timber:$timber_version"
+
+    // Ellipse
+    implementation "com.github.mtomczynski.ellipse:ellipse-core:$ellipse_version"
+    testImplementation "com.github.mtomczynski.ellipse:ellipse-test:$ellipse_version"
+
+    // Retrofit2
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$logging_version"
+    implementation "com.squareup.retrofit2:converter-gson:$gson_converter_version"
+    implementation "com.squareup.retrofit2:converter-moshi:$moshi_converter_version"
+    implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
+
+
+    // Hilt & Dagger2
+    implementation "com.google.dagger:hilt-android:$hilt_dagger_version"
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_lifecycle_viewModel_version"
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_dagger_version"
+
+    // Compose Navigation
+    implementation "androidx.navigation:navigation-fragment-ktx:$navigation_version"
+    implementation "androidx.navigation:navigation-ui-ktx:$navigation_version"
+    implementation "androidx.navigation:navigation-dynamic-features-fragment:$navigation_version"
+    implementation "androidx.navigation:navigation-compose:$navigation_compose_version"
+
+    // Pager
+    implementation "com.google.accompanist:accompanist-pager:$pager_version"
+    implementation "com.google.accompanist:accompanist-pager-indicators:$pager_version"
+
+    //SwipeRefresh
+    implementation "com.google.accompanist:accompanist-swiperefresh:$swipe_version"
+
+    // AndroidX
+    implementation "androidx.core:core-ktx:$core_ktx_version"
+    implementation "androidx.appcompat:appcompat:$app_compat_version"
+    implementation "com.google.android.material:material:$material_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$runtime_ktx_version"
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+
+    // ViewModel utilities for Compose
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
+
+    // Google One Tap
+    implementation "com.google.android.gms:play-services-auth:$auth_services_version"
+
+    // Preferences
+    implementation "androidx.datastore:datastore:$data_store_version"
+    implementation "androidx.datastore:datastore-rxjava2:$data_store_version"
+    implementation "androidx.datastore:datastore-rxjava3:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences-rxjava2:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences-rxjava3:$data_store_version"
+
+    // Room
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+
+    // Compose
+    implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.material:material:$compose_version"
+    implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
+    implementation "androidx.activity:activity-compose:$activity_compose_version"
+    implementation "androidx.constraintlayout:constraintlayout-compose:$constraint_layout_compose_version"
+    implementation "com.google.accompanist:accompanist-systemuicontroller:$systemuicontroller_version"
+
+    // Testing
+    testImplementation "org.junit.jupiter:junit-jupiter:$jupiter_version"
+    testImplementation "junit:junit:$junit_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiter_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$jupiter_version"
+    androidTestImplementation "org.junit.jupiter:junit-jupiter-api:$jupiter_version"
+    androidTestImplementation "org.junit.jupiter:junit-jupiter-engine:$jupiter_version"
+    androidTestImplementation "androidx.test.ext:junit:$ext_junit_version"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$esspresso_core_version"
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+    androidTestImplementation "androidx.navigation:navigation-testing:$navigation_version"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
+    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
+
+    // Mockk
+    testImplementation "io.mockk:mockk:$mockk_version"
+
+    // View binding delegate
+    implementation "com.github.kirich1409:viewbindingpropertydelegate:$view_binding_delegate_version"
+
+    // CameraX
+    implementation "androidx.camera:camera-camera2:$camera_version2"
+    implementation "androidx.camera:camera-lifecycle:$camera_version2"
+    implementation "androidx.camera:camera-view:$camera_view_version"
+
+    // Zxing
+    implementation "com.google.zxing:core:$zxing_version"
+
+    // Compose DatePicker
+    implementation "io.github.vanpra.compose-material-dialogs:datetime:$datetime_dialog_version"
+
+    // Moshi
+    implementation "com.squareup.moshi:moshi:$moshi_version"
+    implementation "com.squareup.moshi:moshi-kotlin:$moshi_version"
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshi_version"
+}
