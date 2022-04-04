@@ -6,7 +6,8 @@ import com.tomcz.ellipse.PartialState
 
 sealed interface WelcomePartialState : PartialState<WelcomeState> {
     object RemoveScannedDevices : WelcomePartialState {
-        override fun reduce(oldState: WelcomeState): WelcomeState = oldState.copy(scanResults = listOf())
+        override fun reduce(oldState: WelcomeState): WelcomeState =
+            oldState.copy(scanResults = listOf())
     }
 
     data class SetScanningId(val scanningTo: Boolean) : WelcomePartialState {
@@ -24,7 +25,14 @@ sealed interface WelcomePartialState : PartialState<WelcomeState> {
             oldState.copy(scanResults = oldState.scanResults - scanResult)
     }
 
-    data class SetConnectedTo(val device: BluetoothGatt?) : WelcomePartialState {
-        override fun reduce(oldState: WelcomeState): WelcomeState = oldState.copy(selectedDeviceToConnect = device)
+    data class SetConnectedToBluetoothGatt(val bluetoothGatt: BluetoothGatt?) :
+        WelcomePartialState {
+        override fun reduce(oldState: WelcomeState): WelcomeState =
+            oldState.copy(deviceToConnectBluetoothGatt = bluetoothGatt)
+    }
+
+    data class SetConnectedToScanResult(val scanResult: ScanResult?) : WelcomePartialState {
+        override fun reduce(oldState: WelcomeState): WelcomeState =
+            oldState.copy(selectedDevice = scanResult)
     }
 }

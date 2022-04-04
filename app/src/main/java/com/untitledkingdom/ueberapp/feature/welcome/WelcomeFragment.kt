@@ -26,7 +26,6 @@ import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.utils.RequestCodes
-import com.untitledkingdom.ueberapp.utils.printGattTable
 import com.untitledkingdom.ueberapp.utils.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
@@ -36,7 +35,7 @@ import timber.log.Timber
 @AndroidEntryPoint
 class WelcomeFragment : Fragment() {
     companion object {
-        const val SCAN_PERIOD: Long = 10000
+        const val SCAN_PERIOD: Long = 5000
     }
 
     private val viewModel: WelcomeViewModel by viewModels()
@@ -91,21 +90,38 @@ class WelcomeFragment : Fragment() {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Timber.d("Connected to device $deviceAddress")
-                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = gatt))
+                    viewModel.processor.sendEvent(
+                        WelcomeEvent.SetConnectedToDeviceGatt(
+                            bluetoothGatt = gatt
+                        )
+                    )
+                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = gatt.device.address))
+                    gatt.requestMtu(256)
                     gatt.discoverServices()
-                    gatt.printGattTable()
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Timber.d("Disconnected from device $deviceAddress")
-                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = null))
-                    gatt.close()
-                    stopScan()
                 }
             } else {
                 Timber.d("Error $status encountered for $deviceAddress! Disconnecting...")
-                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = null))
+                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedToDeviceGatt(bluetoothGatt = null))
+                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = ""))
                 gatt.close()
-                stopScan()
             }
+        }
+
+        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            if (ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermission(
+                    permissionType = Manifest.permission.BLUETOOTH_SCAN,
+                    requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
+                    activity = requireActivity(),
+                    context = requireContext()
+                )
+            }
+            Timber.d("For gatt device ${gatt?.device}")
+            Timber.d("Services are ${gatt?.services}")
         }
     }
 
@@ -133,7 +149,33 @@ class WelcomeFragment : Fragment() {
             WelcomeEffect.ScanDevices -> scanDevices()
             WelcomeEffect.StopScanDevices -> stopScan()
             is WelcomeEffect.ConnectToDevice -> connectToDevice(effect.scanResult)
+            is WelcomeEffect.DisconnectFromDevice -> disconnectFromDevice(effect.gatt)
         }
+    }
+
+    private fun disconnectFromDevice(gatt: BluetoothGatt) {
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermission(
+                permissionType = Manifest.permission.BLUETOOTH_SCAN,
+                requestCode = RequestCodes.ACCESS_BLUETOOTH_SCAN,
+                activity = requireActivity(),
+                context = requireContext()
+            )
+        }
+        Timber.d("Disconnecting from disconnectFromDevice(gatt)")
+        Timber.d("Disconnected from device ${gatt.device.address}")
+        viewModel.processor.sendEvent(
+            WelcomeEvent.SetConnectedToDeviceGatt(
+                bluetoothGatt = null
+            )
+        )
+        viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = ""))
+        gatt.close()
+        scanDevices()
     }
 
     private fun connectToDevice(scanResult: ScanResult) {

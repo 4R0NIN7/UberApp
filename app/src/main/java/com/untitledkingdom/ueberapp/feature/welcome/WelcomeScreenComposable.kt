@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -49,7 +50,33 @@ fun WelcomeScreen(processor: WelcomeProcessor) {
             .padding(horizontal = padding12)
     ) {
         AppInfo(processor = processor)
+        ConnectedDevice(processor = processor)
         Devices(processor = processor)
+    }
+}
+
+@Composable
+fun ConnectedDevice(processor: WelcomeProcessor) {
+    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
+    val selectedDevice by processor.collectAsState { it.selectedDevice }
+    if (selectedGatt != null && selectedDevice != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Text(
+                text = "Selected device",
+                style = Typography.body1,
+                fontWeight = FontWeight.Normal,
+                color = Colors.FilterBlue,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().background(color = Colors.LightPurple)
+            ) {
+                DeviceItem(scanResult = selectedDevice!!, processor = processor)
+            }
+        }
     }
 }
 
@@ -122,17 +149,21 @@ fun Devices(processor: WelcomeProcessor) {
 @Composable
 fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
     val scannedDevice = scanResult.device
+    val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize()
     ) {
         Card(
             modifier = Modifier
-                .fillMaxSize()
                 .clickable {
-                    processor.sendEvent(WelcomeEvent.StartConnectingToDevice(scanResult = scanResult))
-                },
+                    if (selectedDevice != null) {
+                        processor.sendEvent(WelcomeEvent.EndConnectingToDevice(selectedDevice!!))
+                    } else {
+                        processor.sendEvent(WelcomeEvent.StartConnectingToDevice(scanResult = scanResult))
+                    }
+                }
+                .fillMaxWidth(),
             shape = shape8,
             border = null,
             backgroundColor = Colors.AppBackground
@@ -140,10 +171,9 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
             Column(
                 verticalArrangement = Arrangement.SpaceAround,
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize()
             ) {
                 Text(
-                    text = "Device Name: ${scannedDevice.name ?: "Unknown name"}",
+                    text = "Device Name: ${scannedDevice.name}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,
@@ -154,7 +184,14 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize14,
-                    color = Colors.Blue
+                    color = Colors.RoomName7Color
+                )
+                Text(
+                    text = "Transmit power: ${scanResult.rssi}",
+                    style = Typography.body1,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = fontSize14,
+                    color = Colors.RoomName5Color
                 )
             }
         }

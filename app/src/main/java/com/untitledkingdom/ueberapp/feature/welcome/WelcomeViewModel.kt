@@ -26,7 +26,6 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
             when (event) {
                 WelcomeEvent.StartScanning ->
                     effects.send(WelcomeEffect.ScanDevices).toNoAction()
-
                 WelcomeEvent.StopScanning ->
                     effects.send(WelcomeEffect.StopScanDevices).toNoAction()
                 is WelcomeEvent.SetScanningTo -> flowOf(
@@ -46,7 +45,25 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
                     ).toNoAction()
                 }
                 WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveScannedDevices)
-                is WelcomeEvent.SetConnectedTo -> flowOf(WelcomePartialState.SetConnectedTo(event.device))
+                is WelcomeEvent.SetConnectedToDeviceGatt -> flowOf(
+                    WelcomePartialState.SetConnectedToBluetoothGatt(
+                        event.bluetoothGatt
+                    )
+                )
+                is WelcomeEvent.SetConnectedTo -> {
+                    if (event.address != "") {
+                        val scanResult =
+                            state.value.scanResults.first { it.device.address == event.address }
+                        flowOf(WelcomePartialState.SetConnectedToScanResult(scanResult))
+                    } else {
+                        flowOf(WelcomePartialState.SetConnectedToScanResult(scanResult = null))
+                    }
+                }
+                is WelcomeEvent.EndConnectingToDevice -> effects.send(
+                    WelcomeEffect.DisconnectFromDevice(
+                        event.gatt
+                    )
+                ).toNoAction()
             }
         }
     )
