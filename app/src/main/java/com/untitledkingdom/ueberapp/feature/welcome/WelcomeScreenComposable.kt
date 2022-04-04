@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,7 +17,6 @@ import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -83,7 +81,12 @@ fun AppInfo(processor: WelcomeProcessor) {
         )
         val isScanning by processor.collectAsState { it.isScanning }
         if (!isScanning) {
-            Button(onClick = { processor.sendEvent(WelcomeEvent.StartScanning) }) {
+            Button(
+                onClick = {
+                    processor.sendEvent(WelcomeEvent.RemoveScannedDevices)
+                    processor.sendEvent(WelcomeEvent.StartScanning)
+                }
+            ) {
                 Text(text = "Start Scan")
             }
         } else {
@@ -106,7 +109,7 @@ fun Devices(processor: WelcomeProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = scanResults) {
+        items(items = scanResults.sortedBy { it.device.name }) {
             DeviceItem(
                 scanResult = it,
                 processor = processor
@@ -127,10 +130,7 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
         Card(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
+                .clickable {
                     processor.sendEvent(WelcomeEvent.StartConnectingToDevice(scanResult = scanResult))
                 },
             shape = shape8,
@@ -143,7 +143,7 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 Text(
-                    text = "Device Name: ${scannedDevice.name}",
+                    text = "Device Name: ${scannedDevice.name ?: "Unknown name"}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,

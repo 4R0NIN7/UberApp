@@ -26,6 +26,7 @@ import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.utils.RequestCodes
+import com.untitledkingdom.ueberapp.utils.printGattTable
 import com.untitledkingdom.ueberapp.utils.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
@@ -90,14 +91,18 @@ class WelcomeFragment : Fragment() {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Timber.d("Connected to device $deviceAddress")
-                    // TODO: Store a reference to BluetoothGatt
+                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = gatt))
+                    gatt.discoverServices()
+                    gatt.printGattTable()
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Timber.d("Disconnected from device $deviceAddress")
+                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = null))
                     gatt.close()
                     stopScan()
                 }
             } else {
                 Timber.d("Error $status encountered for $deviceAddress! Disconnecting...")
+                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(device = null))
                 gatt.close()
                 stopScan()
             }
@@ -127,11 +132,11 @@ class WelcomeFragment : Fragment() {
         when (effect) {
             WelcomeEffect.ScanDevices -> scanDevices()
             WelcomeEffect.StopScanDevices -> stopScan()
-            is WelcomeEffect.ConnectToDevice -> connectToDevice()
+            is WelcomeEffect.ConnectToDevice -> connectToDevice(effect.scanResult)
         }
     }
 
-    private fun connectToDevice() {
+    private fun connectToDevice(scanResult: ScanResult) {
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.BLUETOOTH_SCAN
@@ -144,7 +149,7 @@ class WelcomeFragment : Fragment() {
                 context = requireContext()
             )
         }
-        bleScanner.startScan(null, scanSettings, scanCallback)
+        scanResult.device.connectGatt(requireContext(), false, gattCallback)
     }
 
     private fun stopScan() {

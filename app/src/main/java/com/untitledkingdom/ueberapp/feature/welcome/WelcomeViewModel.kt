@@ -35,11 +35,18 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
                 is WelcomeEvent.AddScannedDevice -> {
                     addScanResult(event.scanResult)
                 }
-                is WelcomeEvent.StartConnectingToDevice -> effects.send(
-                    WelcomeEffect.ConnectToDevice(
-                        scanResult = event.scanResult
-                    )
-                ).toNoAction()
+                is WelcomeEvent.StartConnectingToDevice -> {
+                    if (state.value.isScanning) {
+                        effects.send(WelcomeEffect.StopScanDevices)
+                    }
+                    effects.send(
+                        WelcomeEffect.ConnectToDevice(
+                            scanResult = event.scanResult
+                        )
+                    ).toNoAction()
+                }
+                WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveScannedDevices)
+                is WelcomeEvent.SetConnectedTo -> flowOf(WelcomePartialState.SetConnectedTo(event.device))
             }
         }
     )

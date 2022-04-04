@@ -1,9 +1,14 @@
 package com.untitledkingdom.ueberapp.feature.welcome.state
 
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.le.ScanResult
 import com.tomcz.ellipse.PartialState
 
 sealed interface WelcomePartialState : PartialState<WelcomeState> {
+    object RemoveScannedDevices : WelcomePartialState {
+        override fun reduce(oldState: WelcomeState): WelcomeState = oldState.copy(scanResults = listOf())
+    }
+
     data class SetScanningId(val scanningTo: Boolean) : WelcomePartialState {
         override fun reduce(oldState: WelcomeState): WelcomeState =
             oldState.copy(isScanning = scanningTo)
@@ -17,5 +22,9 @@ sealed interface WelcomePartialState : PartialState<WelcomeState> {
     data class RemoveScanResult(val scanResult: ScanResult) : WelcomePartialState {
         override fun reduce(oldState: WelcomeState): WelcomeState =
             oldState.copy(scanResults = oldState.scanResults - scanResult)
+    }
+
+    data class SetConnectedTo(val device: BluetoothGatt?) : WelcomePartialState {
+        override fun reduce(oldState: WelcomeState): WelcomeState = oldState.copy(selectedDeviceToConnect = device)
     }
 }
