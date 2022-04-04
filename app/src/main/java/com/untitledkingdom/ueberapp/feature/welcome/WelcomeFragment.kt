@@ -23,7 +23,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import com.tomcz.ellipse.common.onProcessor
-import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.utils.RequestCodes
@@ -53,48 +52,23 @@ class WelcomeFragment : Fragment() {
         .build()
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            with(result.device) {
-                if (ActivityCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    requestPermission(
-                        permissionType = Manifest.permission.BLUETOOTH_CONNECT,
-                        requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
-                        activity = requireActivity(),
-                        context = requireContext()
-                    )
-                }
-                viewModel.processor.sendEvent(
-                    WelcomeEvent.AddScannedDevice(
-                        scanResult = result
-                    )
+            if (ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermission(
+                    permissionType = Manifest.permission.BLUETOOTH_CONNECT,
+                    requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
+                    activity = requireActivity(),
+                    context = requireContext()
                 )
             }
-        }
-    }
-    private val scanCallbackDevice = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            with(result.device) {
-                if (ActivityCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    requestPermission(
-                        permissionType = Manifest.permission.BLUETOOTH_CONNECT,
-                        requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
-                        activity = requireActivity(),
-                        context = requireContext()
-                    )
-                }
-                viewModel.processor.sendEvent(
-                    WelcomeEvent.AddScannedDevice(
-                        scanResult = result
-                    )
+            viewModel.processor.sendEvent(
+                WelcomeEvent.AddScannedDevice(
+                    scanResult = result
                 )
-            }
+            )
         }
     }
 
@@ -120,10 +94,12 @@ class WelcomeFragment : Fragment() {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Timber.d("Disconnected from device $deviceAddress")
                     gatt.close()
+                    stopScan()
                 }
             } else {
                 Timber.d("Error $status encountered for $deviceAddress! Disconnecting...")
                 gatt.close()
+                stopScan()
             }
         }
     }
@@ -151,11 +127,11 @@ class WelcomeFragment : Fragment() {
         when (effect) {
             WelcomeEffect.ScanDevices -> scanDevices()
             WelcomeEffect.StopScanDevices -> stopScan()
-            is WelcomeEffect.ConnectToDevice -> connectToDevice(effect.selectedDevice)
+            is WelcomeEffect.ConnectToDevice -> connectToDevice()
         }
     }
 
-    private fun connectToDevice(selectedDevice: ScannedDevice) {
+    private fun connectToDevice() {
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.BLUETOOTH_SCAN

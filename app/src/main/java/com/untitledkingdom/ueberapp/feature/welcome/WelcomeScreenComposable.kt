@@ -1,11 +1,13 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
 import android.annotation.SuppressLint
+import android.bluetooth.le.ScanResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.ui.Colors
@@ -96,27 +97,28 @@ fun AppInfo(processor: WelcomeProcessor) {
 @SuppressLint("MissingPermission")
 @Composable
 fun Devices(processor: WelcomeProcessor) {
-    val scannedDevices by processor.collectAsState { it.scannedDevices }
+    val scanResults by processor.collectAsState { it.scanResults }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = padding16)
             .padding(top = padding16),
         verticalArrangement = Arrangement.spacedBy(padding8),
+        contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(scannedDevices.toList()) { scanResult ->
+        items(items = scanResults) {
             DeviceItem(
-                scannedDevice = ScannedDevice(
-                    address = scanResult.device.address,
-                    name = scanResult.device.name
-                )
+                scanResult = it,
+                processor = processor
             )
         }
     }
 }
 
+@SuppressLint("MissingPermission")
 @Composable
-fun DeviceItem(scannedDevice: ScannedDevice) {
+fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
+    val scannedDevice = scanResult.device
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,6 +131,7 @@ fun DeviceItem(scannedDevice: ScannedDevice) {
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) {
+                    processor.sendEvent(WelcomeEvent.StartConnectingToDevice(scanResult = scanResult))
                 },
             shape = shape8,
             border = null,
@@ -140,7 +143,7 @@ fun DeviceItem(scannedDevice: ScannedDevice) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 Text(
-                    text = "Device Name: ${scannedDevice.name ?: "Unknown name"}",
+                    text = "Device Name: ${scannedDevice.name}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,

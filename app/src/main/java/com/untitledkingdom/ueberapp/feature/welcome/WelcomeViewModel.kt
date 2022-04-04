@@ -1,5 +1,6 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
+import android.bluetooth.le.ScanResult
 import androidx.lifecycle.ViewModel
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
@@ -9,7 +10,10 @@ import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomePartialState
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import timber.log.Timber
 import javax.inject.Inject
 
 typealias WelcomeProcessor = Processor<WelcomeEvent, WelcomeState, WelcomeEffect>
@@ -28,17 +32,28 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
                 is WelcomeEvent.SetScanningTo -> flowOf(
                     WelcomePartialState.SetScanningId(scanningTo = event.scanningTo)
                 )
-                is WelcomeEvent.AddScannedDevice -> flowOf(
-                    WelcomePartialState.AddScanResult(
-                        event.scanResult
-                    )
-                )
+                is WelcomeEvent.AddScannedDevice -> {
+                    addScanResult(event.scanResult)
+                }
                 is WelcomeEvent.StartConnectingToDevice -> effects.send(
                     WelcomeEffect.ConnectToDevice(
-                        selectedDevice = event.selectedDevice
+                        scanResult = event.scanResult
                     )
                 ).toNoAction()
             }
         }
     )
+
+    private fun addScanResult(result: ScanResult): Flow<WelcomePartialState> = flow {
+        val scanResults = processor.state.value.scanResults
+        val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
+        if (indexQuery != -1) {
+            val oldScanResult = scanResults[indexQuery]
+            Timber.d("Result already exists in a list $oldScanResult")
+            emit(WelcomePartialState.RemoveScanResult(oldScanResult))
+            emit(WelcomePartialState.AddScanResult(result))
+        } else {
+            emit(WelcomePartialState.AddScanResult(scanResult = result))
+        }
+    }
 }
