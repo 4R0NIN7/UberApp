@@ -1,10 +1,11 @@
 package com.untitledkingdom.ueberapp.utils
 
-import android.app.Application
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiService
+import com.untitledkingdom.ueberapp.ble.BleService
+import com.untitledkingdom.ueberapp.ble.BleServiceImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,22 +19,21 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object Modules {
-
     @Provides
     @Singleton
-    fun provideMockRestApiClient(context: Application): ApiService {
+    fun provideMockRestApiClient(): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
         val retrofit = Retrofit.Builder()
-            .client(getMockRetrofitClient(context = context))
+            .client(getMockRetrofitClient())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .baseUrl(BuildConfig.URL)
             .build()
         return retrofit.create(ApiService::class.java)
     }
 
-    private fun getMockRetrofitClient(context: Application): OkHttpClient {
+    private fun getMockRetrofitClient(): OkHttpClient {
         val httpLoggingInterceptor = HttpLoggingInterceptor()
         httpLoggingInterceptor.apply {
             httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
@@ -42,4 +42,7 @@ object Modules {
             .addInterceptor(httpLoggingInterceptor)
             .build()
     }
+
+    @Provides
+    fun provideBleService(bleServiceImpl: BleServiceImpl): BleService = bleServiceImpl
 }

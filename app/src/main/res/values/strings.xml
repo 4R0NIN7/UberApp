@@ -5,4 +5,7 @@
     <string name="ble_permission_need">Bluetooth Permission Needed</string>
     <string name="ble_permission_long">This app needs the Bluetooth &amp; Location permissions, please accept to use location functionality</string>
     <string name="dialog_ok">OK</string>
+    <string name="main_main_screen">Main screen</string>
+    <string name="main_history">History</string>
+    <string name="main_settings">Settings</string>
 </resources>
