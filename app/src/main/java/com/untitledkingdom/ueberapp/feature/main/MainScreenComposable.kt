@@ -1,15 +1,23 @@
-package com.untitledkingdom.ueberapp.feature.menu
+package com.untitledkingdom.ueberapp.feature.main
 
+import android.bluetooth.BluetoothGattService
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
@@ -34,18 +42,22 @@ import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyProcessor
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.feature.welcome.DeviceItem
 import com.untitledkingdom.ueberapp.ui.Colors
+import com.untitledkingdom.ueberapp.ui.Paddings
 import com.untitledkingdom.ueberapp.ui.Paddings.padding12
 import com.untitledkingdom.ueberapp.ui.Paddings.padding16
 import com.untitledkingdom.ueberapp.ui.Paddings.padding2
 import com.untitledkingdom.ueberapp.ui.Paddings.padding24
 import com.untitledkingdom.ueberapp.ui.Shapes.shape8
+import com.untitledkingdom.ueberapp.ui.Typography
+import com.untitledkingdom.ueberapp.ui.fontSize18
+import com.untitledkingdom.ueberapp.utils.toScannedDevice
 
 @ExperimentalPagerApi
 @Composable
 fun MainScreenCompose(processor: MyProcessor) {
     Scaffold(
-        modifier = Modifier.padding(horizontal = padding12),
         backgroundColor = Colors.AppBackground,
         topBar = {
             Tabs(processor = processor)
@@ -70,7 +82,9 @@ fun Tabs(processor: MyProcessor) {
         )
     ) {
         Card(
-            modifier = Modifier.padding(horizontal = padding12),
+            modifier = Modifier
+                .padding(horizontal = padding12)
+                .padding(top = padding12),
             shape = shape8,
             backgroundColor = Colors.AppBackground
         ) {
@@ -149,6 +163,7 @@ fun Tabs(processor: MyProcessor) {
 
 @Composable
 fun MainScreen(processor: MyProcessor) {
+    DeviceInfo(processor = processor)
 }
 
 @Composable
@@ -174,10 +189,105 @@ private fun TabTitle(title: String) {
 }
 
 @Composable
+fun DeviceInfo(processor: MyProcessor) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(padding24),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = padding24)
+            .padding(horizontal = padding12)
+    ) {
+        ConnectedDevice(processor = processor)
+        Services(processor = processor)
+    }
+}
+
+@Composable
+fun Services(processor: MyProcessor) {
+    val services by processor.collectAsState { it.deviceToConnectBluetoothGatt!!.services }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = padding16)
+            .padding(top = padding16),
+        verticalArrangement = Arrangement.spacedBy(Paddings.padding8),
+        contentPadding = PaddingValues(bottom = padding16)
+    ) {
+        items(items = services) {
+            Service(it, processor)
+        }
+    }
+}
+
+@Composable
+fun Service(service: BluetoothGattService, processor: MyProcessor) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    processor.sendEvent(MyEvent.ShowCharacteristics(service.uuid))
+                },
+            shape = shape8,
+            border = null,
+            backgroundColor = Colors.AppBackground
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceAround,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = service.uuid.toString(),
+                    style = Typography.body1,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = fontSize18,
+                    color = Colors.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun DividerGray(modifier: Modifier = Modifier) {
     Divider(
         modifier = modifier.fillMaxWidth(),
         thickness = 1.dp,
         color = Colors.SectionDividerLight,
     )
+}
+
+@Composable
+fun ConnectedDevice(processor: MyProcessor) {
+    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
+    val selectedDevice by processor.collectAsState { it.selectedDevice }
+    if (selectedGatt != null && selectedDevice != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Text(
+                text = "Selected device",
+                style = Typography.body1,
+                fontWeight = FontWeight.Normal,
+                color = Colors.FilterBlue,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Colors.LightPurple)
+            ) {
+                DeviceItem(
+                    scanResult = selectedDevice!!,
+                    processor = processor,
+                    scannedDevice = selectedDevice!!.toScannedDevice()
+                )
+            }
+        }
+    }
 }

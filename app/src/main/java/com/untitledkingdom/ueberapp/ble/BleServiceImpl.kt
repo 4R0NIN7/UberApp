@@ -10,8 +10,6 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.Looper
 import androidx.core.app.ActivityCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
@@ -38,9 +36,6 @@ class BleServiceImpl @Inject constructor(
             return
         }
         bleScanner.startScan(null, scanSettings, scanCallback)
-        Handler(Looper.getMainLooper()).postDelayed({
-            stopScan(scanCallback)
-        }, BleConst.PERIOD)
     }
 
     override fun stopScan(scanCallback: ScanCallback) {

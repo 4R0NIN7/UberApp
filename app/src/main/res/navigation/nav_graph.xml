@@ -7,5 +7,18 @@
     <fragment
         android:id="@+id/welcomeFragment"
         android:name="com.untitledkingdom.ueberapp.feature.welcome.WelcomeFragment"
-        android:label="Welcome Fragment" />
+        android:label="Welcome Fragment" >
+        <action
+            android:id="@+id/action_welcomeFragment_to_mainFragment"
+            app:destination="@id/mainFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/mainFragment"
+        android:name="com.untitledkingdom.ueberapp.feature.main.MainFragment"
+        android:label="Main Fragment" >
+        <action
+            android:id="@+id/action_mainFragment_to_welcomeFragment"
+            app:destination="@id/welcomeFragment" />
+    </fragment>
 </navigation>

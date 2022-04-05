@@ -8,5 +8,5 @@ data class MyState(
     val isScanning: Boolean = false,
     val scanResults: List<ScanResult> = listOf(),
     val deviceToConnectBluetoothGatt: BluetoothGatt? = null,
-    val selectedDevice: ScanResult? = null
+    val selectedDevice: ScanResult? = null,
 )
