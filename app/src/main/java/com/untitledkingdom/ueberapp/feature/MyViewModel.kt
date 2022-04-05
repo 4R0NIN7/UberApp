@@ -1,14 +1,14 @@
-package com.untitledkingdom.ueberapp.feature.welcome
+package com.untitledkingdom.ueberapp.feature
 
 import android.bluetooth.le.ScanResult
 import androidx.lifecycle.ViewModel
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomePartialState
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
+import com.untitledkingdom.ueberapp.feature.state.MyEffect
+import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.feature.state.MyState
+import com.untitledkingdom.ueberapp.feature.state.WelcomePartialState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -16,42 +16,42 @@ import kotlinx.coroutines.flow.flowOf
 import timber.log.Timber
 import javax.inject.Inject
 
-typealias WelcomeProcessor = Processor<WelcomeEvent, WelcomeState, WelcomeEffect>
+typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 
 @HiltViewModel
-class WelcomeViewModel @Inject constructor() : ViewModel() {
-    val processor: WelcomeProcessor = processor(
-        initialState = WelcomeState(),
+class MyViewModel @Inject constructor() : ViewModel() {
+    val processor: MyProcessor = processor(
+        initialState = MyState(),
         onEvent = { event ->
             when (event) {
-                WelcomeEvent.StartScanning ->
-                    effects.send(WelcomeEffect.ScanDevices).toNoAction()
-                WelcomeEvent.StopScanning ->
-                    effects.send(WelcomeEffect.StopScanDevices).toNoAction()
-                is WelcomeEvent.SetScanningTo -> flowOf(
+                MyEvent.StartScanning ->
+                    effects.send(MyEffect.ScanDevices).toNoAction()
+                MyEvent.StopScanning ->
+                    effects.send(MyEffect.StopScanDevices).toNoAction()
+                is MyEvent.SetScanningTo -> flowOf(
                     WelcomePartialState.SetScanningId(scanningTo = event.scanningTo)
                 )
-                is WelcomeEvent.AddScannedDevice -> {
+                is MyEvent.AddScannedDevice -> {
                     addScanResult(event.scanResult)
                 }
-                is WelcomeEvent.StartConnectingToDevice -> {
+                is MyEvent.StartConnectingToDevice -> {
                     if (state.value.isScanning) {
-                        effects.send(WelcomeEffect.StopScanDevices)
+                        effects.send(MyEffect.StopScanDevices)
                     }
                     Timber.d("Device from scanResult ${event.scanResult.device}")
                     effects.send(
-                        WelcomeEffect.ConnectToDevice(
+                        MyEffect.ConnectToDevice(
                             scanResult = event.scanResult
                         )
                     ).toNoAction()
                 }
-                WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveScannedDevices)
-                is WelcomeEvent.SetConnectedToDeviceGatt -> flowOf(
+                MyEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveScannedDevices)
+                is MyEvent.SetConnectedToDeviceGatt -> flowOf(
                     WelcomePartialState.SetConnectedToBluetoothGatt(
                         event.bluetoothGatt
                     )
                 )
-                is WelcomeEvent.SetConnectedTo -> {
+                is MyEvent.SetConnectedTo -> {
                     if (event.address != "") {
                         val scanResult =
                             state.value.scanResults.first { it.device.address == event.address }
@@ -60,8 +60,8 @@ class WelcomeViewModel @Inject constructor() : ViewModel() {
                         flowOf(WelcomePartialState.SetConnectedToScanResult(scanResult = null))
                     }
                 }
-                is WelcomeEvent.EndConnectingToDevice -> effects.send(
-                    WelcomeEffect.DisconnectFromDevice(
+                is MyEvent.EndConnectingToDevice -> effects.send(
+                    MyEffect.DisconnectFromDevice(
                         event.gatt
                     )
                 ).toNoAction()

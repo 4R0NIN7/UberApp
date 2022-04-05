@@ -28,8 +28,10 @@ import androidx.compose.ui.unit.sp
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
+import com.untitledkingdom.ueberapp.feature.MyProcessor
+import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.feature.state.MyState
+import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.ui.Colors
 import com.untitledkingdom.ueberapp.ui.Paddings.padding12
 import com.untitledkingdom.ueberapp.ui.Paddings.padding16
@@ -38,9 +40,10 @@ import com.untitledkingdom.ueberapp.ui.Shapes.shape8
 import com.untitledkingdom.ueberapp.ui.Typography
 import com.untitledkingdom.ueberapp.ui.fontSize14
 import com.untitledkingdom.ueberapp.ui.fontSize18
+import com.untitledkingdom.ueberapp.utils.toScannedDevice
 
 @Composable
-fun WelcomeScreen(processor: WelcomeProcessor) {
+fun WelcomeScreen(processor: MyProcessor) {
     Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -56,7 +59,7 @@ fun WelcomeScreen(processor: WelcomeProcessor) {
 }
 
 @Composable
-fun ConnectedDevice(processor: WelcomeProcessor) {
+fun ConnectedDevice(processor: MyProcessor) {
     val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
     val selectedDevice by processor.collectAsState { it.selectedDevice }
     if (selectedGatt != null && selectedDevice != null) {
@@ -76,14 +79,18 @@ fun ConnectedDevice(processor: WelcomeProcessor) {
                     .fillMaxWidth()
                     .background(color = Colors.LightPurple)
             ) {
-                DeviceItem(scanResult = selectedDevice!!, processor = processor)
+                DeviceItem(
+                    scanResult = selectedDevice!!,
+                    processor = processor,
+                    scannedDevice = selectedDevice!!.toScannedDevice()
+                )
             }
         }
     }
 }
 
 @Composable
-fun AppInfo(processor: WelcomeProcessor) {
+fun AppInfo(processor: MyProcessor) {
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,14 +119,14 @@ fun AppInfo(processor: WelcomeProcessor) {
         if (!isScanning) {
             Button(
                 onClick = {
-                    processor.sendEvent(WelcomeEvent.RemoveScannedDevices)
-                    processor.sendEvent(WelcomeEvent.StartScanning)
+                    processor.sendEvent(MyEvent.RemoveScannedDevices)
+                    processor.sendEvent(MyEvent.StartScanning)
                 }
             ) {
                 Text(text = "Start Scan")
             }
         } else {
-            Button(onClick = { processor.sendEvent(WelcomeEvent.StopScanning) }) {
+            Button(onClick = { processor.sendEvent(MyEvent.StopScanning) }) {
                 Text(text = "Stop Scan")
             }
         }
@@ -128,7 +135,7 @@ fun AppInfo(processor: WelcomeProcessor) {
 
 @SuppressLint("MissingPermission")
 @Composable
-fun Devices(processor: WelcomeProcessor) {
+fun Devices(processor: MyProcessor) {
     val scanResults by processor.collectAsState { it.scanResults }
     LazyColumn(
         modifier = Modifier
@@ -140,18 +147,20 @@ fun Devices(processor: WelcomeProcessor) {
     ) {
         items(items = scanResults.sortedByDescending { it.device.name }) {
             DeviceItem(
-                scanResult = it,
-                processor = processor
+                scannedDevice = it.toScannedDevice(),
+                processor = processor,
+                scanResult = it
             )
         }
     }
 }
 
-@SuppressLint("MissingPermission")
 @Composable
-fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
-    val name = scanResult.scanRecord?.deviceName
-    val scannedDevice = scanResult.device
+fun DeviceItem(
+    scannedDevice: ScannedDevice,
+    processor: MyProcessor,
+    scanResult: ScanResult
+) {
     val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
     Column(
         verticalArrangement = Arrangement.Center,
@@ -161,9 +170,9 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
             modifier = Modifier
                 .clickable {
                     if (selectedDevice != null) {
-                        processor.sendEvent(WelcomeEvent.EndConnectingToDevice(selectedDevice!!))
+                        processor.sendEvent(MyEvent.EndConnectingToDevice(selectedDevice!!))
                     } else {
-                        processor.sendEvent(WelcomeEvent.StartConnectingToDevice(scanResult = scanResult))
+                        processor.sendEvent(MyEvent.StartConnectingToDevice(scanResult = scanResult))
                     }
                 }
                 .fillMaxWidth(),
@@ -176,7 +185,7 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Device Name: ${name ?: "Unknown"}",
+                    text = "Device Name: ${scannedDevice.name}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,
@@ -190,7 +199,7 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
                     color = Colors.RoomName7Color
                 )
                 Text(
-                    text = "Transmit power: ${scanResult.rssi}",
+                    text = "Transmit power: ${scannedDevice.rssi}",
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize14,
@@ -204,5 +213,5 @@ fun DeviceItem(scanResult: ScanResult, processor: WelcomeProcessor) {
 @Composable
 @Preview(showBackground = true)
 fun Preview() {
-    WelcomeScreen(processor = previewProcessor(WelcomeState()))
+    WelcomeScreen(processor = previewProcessor(MyState()))
 }

@@ -106,10 +106,10 @@ dependencies {
     implementation "com.google.android.material:material:$material_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$runtime_ktx_version"
 
-    // ViewModel
+    // MyViewModel
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
 
-    // ViewModel utilities for Compose
+    // MyViewModel utilities for Compose
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
 
     // Google One Tap

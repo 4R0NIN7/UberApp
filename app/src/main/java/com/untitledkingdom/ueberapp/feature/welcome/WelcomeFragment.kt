@@ -1,9 +1,11 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -23,10 +25,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import com.tomcz.ellipse.common.onProcessor
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
+import com.untitledkingdom.ueberapp.feature.MyViewModel
+import com.untitledkingdom.ueberapp.feature.state.MyEffect
+import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.feature.welcome.data.BleService
 import com.untitledkingdom.ueberapp.utils.RequestCodes
+import com.untitledkingdom.ueberapp.utils.printGattTable
 import com.untitledkingdom.ueberapp.utils.requestPermission
+import com.untitledkingdom.ueberapp.utils.toHexString
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
@@ -38,7 +44,7 @@ class WelcomeFragment : Fragment() {
         const val SCAN_PERIOD: Long = 5000
     }
 
-    private val viewModel: WelcomeViewModel by viewModels()
+    private val myViewModel: MyViewModel by viewModels()
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         val bluetoothManager =
             requireContext().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -64,8 +70,8 @@ class WelcomeFragment : Fragment() {
                     context = requireContext()
                 )
             }
-            viewModel.processor.sendEvent(
-                WelcomeEvent.AddScannedDevice(
+            myViewModel.processor.sendEvent(
+                MyEvent.AddScannedDevice(
                     scanResult = result
                 )
             )
@@ -90,19 +96,19 @@ class WelcomeFragment : Fragment() {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Timber.d("Connected to device $deviceAddress")
-                    viewModel.processor.sendEvent(
-                        WelcomeEvent.SetConnectedToDeviceGatt(
+                    myViewModel.processor.sendEvent(
+                        MyEvent.SetConnectedToDeviceGatt(
                             bluetoothGatt = gatt
                         )
                     )
-                    viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = gatt.device.address))
-                    gatt.requestMtu(256)
+                    myViewModel.processor.sendEvent(MyEvent.SetConnectedTo(address = gatt.device.address))
+                    gatt.requestMtu(517)
                     gatt.discoverServices()
                 }
             } else {
                 Timber.d("Error $status encountered for $deviceAddress! Disconnecting...")
-                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedToDeviceGatt(bluetoothGatt = null))
-                viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = ""))
+                myViewModel.processor.sendEvent(MyEvent.SetConnectedToDeviceGatt(bluetoothGatt = null))
+                myViewModel.processor.sendEvent(MyEvent.SetConnectedTo(address = ""))
                 gatt.close()
             }
         }
@@ -120,8 +126,60 @@ class WelcomeFragment : Fragment() {
                     context = requireContext()
                 )
             }
-            Timber.d("For gatt device ${gatt?.device}")
-            Timber.d("Services are ${gatt?.services}")
+            gatt?.printGattTable()
+            gatt?.services?.forEach { bluetoothGattService ->
+                val bleService = BleService(
+                    serviceUUID = bluetoothGattService.uuid,
+                    listAvailableCharacteristics = bluetoothGattService.characteristics
+                )
+                Timber.d("bluetoothGattService.characteristics ${bluetoothGattService.characteristics.forEach { it.uuid }}")
+                readFromCharacteristic(bleService = bleService, gatt)
+            }
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?,
+            status: Int
+        ) {
+            when (status) {
+                BluetoothGatt.GATT_SUCCESS -> {
+                    if (characteristic != null) {
+                        Timber.d(
+                            "Read characteristic ${characteristic.uuid}:\n" +
+                                "${characteristic.value?.toHexString()}"
+                        )
+                        Timber.d("Characteristic string ${characteristic.getStringValue(0)}")
+                    }
+                }
+                BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
+                    Timber.d("Read not permitted for ${characteristic?.uuid}!")
+                }
+                else -> {
+                    Timber.d("Characteristic read failed for ${characteristic?.uuid}, error: $status")
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun readFromCharacteristic(bleService: BleService, gatt: BluetoothGatt) {
+        bleService.listAvailableCharacteristics.forEach { characteristic ->
+            val read =
+                gatt.getService(bleService.serviceUUID).getCharacteristic(characteristic.uuid)
+            if (ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermission(
+                    permissionType = Manifest.permission.BLUETOOTH_SCAN,
+                    requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
+                    activity = requireActivity(),
+                    context = requireContext()
+                )
+            }
+            gatt.readCharacteristic(read)
         }
     }
 
@@ -132,24 +190,24 @@ class WelcomeFragment : Fragment() {
     ): View {
         onProcessor(
             lifecycleState = Lifecycle.State.RESUMED,
-            processor = viewModel::processor,
+            processor = myViewModel::processor,
             onEffect = ::trigger,
         )
         return ComposeView(
             requireContext()
         ).apply {
             setContent {
-                WelcomeScreen(viewModel.processor)
+                WelcomeScreen(myViewModel.processor)
             }
         }
     }
 
-    private fun trigger(effect: WelcomeEffect) {
+    private fun trigger(effect: MyEffect) {
         when (effect) {
-            WelcomeEffect.ScanDevices -> scanDevices()
-            WelcomeEffect.StopScanDevices -> stopScan()
-            is WelcomeEffect.ConnectToDevice -> connectToDevice(effect.scanResult)
-            is WelcomeEffect.DisconnectFromDevice -> disconnectFromDevice(effect.gatt)
+            MyEffect.ScanDevices -> scanDevices()
+            MyEffect.StopScanDevices -> stopScan()
+            is MyEffect.ConnectToDevice -> connectToDevice(effect.scanResult)
+            is MyEffect.DisconnectFromDevice -> disconnectFromDevice(effect.gatt)
         }
     }
 
@@ -168,12 +226,12 @@ class WelcomeFragment : Fragment() {
         }
         Timber.d("Disconnecting from disconnectFromDevice(gatt)")
         Timber.d("Disconnected from device ${gatt.device.address}")
-        viewModel.processor.sendEvent(
-            WelcomeEvent.SetConnectedToDeviceGatt(
+        myViewModel.processor.sendEvent(
+            MyEvent.SetConnectedToDeviceGatt(
                 bluetoothGatt = null
             )
         )
-        viewModel.processor.sendEvent(WelcomeEvent.SetConnectedTo(address = ""))
+        myViewModel.processor.sendEvent(MyEvent.SetConnectedTo(address = ""))
         gatt.close()
         scanDevices()
     }
@@ -207,7 +265,7 @@ class WelcomeFragment : Fragment() {
                 context = requireContext()
             )
         }
-        viewModel.processor.sendEvent(WelcomeEvent.SetScanningTo(scanningTo = false))
+        myViewModel.processor.sendEvent(MyEvent.SetScanningTo(scanningTo = false))
         bleScanner.stopScan(scanCallback)
     }
 
@@ -224,7 +282,7 @@ class WelcomeFragment : Fragment() {
                 context = requireContext()
             )
         }
-        viewModel.processor.sendEvent(WelcomeEvent.SetScanningTo(scanningTo = true))
+        myViewModel.processor.sendEvent(MyEvent.SetScanningTo(scanningTo = true))
         bleScanner.startScan(null, scanSettings, scanCallback)
         Handler(Looper.getMainLooper()).postDelayed({
             stopScan()
