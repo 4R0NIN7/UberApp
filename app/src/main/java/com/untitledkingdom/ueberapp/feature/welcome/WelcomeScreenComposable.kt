@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -53,39 +52,7 @@ fun WelcomeScreen(processor: MyProcessor) {
             .padding(horizontal = padding12)
     ) {
         AppInfo(processor = processor)
-        ConnectedDevice(processor = processor)
         Devices(processor = processor)
-    }
-}
-
-@Composable
-fun ConnectedDevice(processor: MyProcessor) {
-    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
-    val selectedDevice by processor.collectAsState { it.selectedDevice }
-    if (selectedGatt != null && selectedDevice != null) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Text(
-                text = "Selected device",
-                style = Typography.body1,
-                fontWeight = FontWeight.Normal,
-                color = Colors.FilterBlue,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(color = Colors.LightPurple)
-            ) {
-                DeviceItem(
-                    scanResult = selectedDevice!!,
-                    processor = processor,
-                    scannedDevice = selectedDevice!!.toScannedDevice()
-                )
-            }
-        }
     }
 }
 

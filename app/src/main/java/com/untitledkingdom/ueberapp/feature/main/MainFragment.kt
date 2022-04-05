@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.feature.welcome
+package com.untitledkingdom.ueberapp.feature.main
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,19 +8,19 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.navigation.fragment.findNavController
+import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
-import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
-@ExperimentalCoroutinesApi
+@ExperimentalPagerApi
 @FlowPreview
+@ExperimentalCoroutinesApi
 @AndroidEntryPoint
-class WelcomeFragment : Fragment() {
+class MainFragment : Fragment() {
     private val myViewModel: MyViewModel by viewModels(ownerProducer = { requireActivity() })
 
     override fun onCreateView(
@@ -37,18 +37,14 @@ class WelcomeFragment : Fragment() {
             requireContext()
         ).apply {
             setContent {
-                WelcomeScreen(myViewModel.processor)
+                MainScreenCompose(myViewModel.processor)
             }
         }
     }
 
     private fun trigger(effect: MyEffect) {
         when (effect) {
-            MyEffect.GoToMainView -> openMain()
+            else -> {}
         }
-    }
-
-    private fun openMain() {
-        findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }
 }

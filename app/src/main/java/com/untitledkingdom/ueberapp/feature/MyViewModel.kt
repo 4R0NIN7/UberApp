@@ -20,18 +20,20 @@ import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.state.MyPartialState
 import com.untitledkingdom.ueberapp.feature.state.MyState
-import com.untitledkingdom.ueberapp.feature.welcome.data.BleData
 import com.untitledkingdom.ueberapp.utils.printGattTable
 import com.untitledkingdom.ueberapp.utils.toHexString
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import timber.log.Timber
+import java.util.*
 import javax.inject.Inject
 
 typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 
+@ExperimentalCoroutinesApi
 @HiltViewModel
 class MyViewModel @Inject constructor(
     private val bleService: BleService,
@@ -41,31 +43,17 @@ class MyViewModel @Inject constructor(
         initialState = MyState(),
         onEvent = { event ->
             when (event) {
-                MyEvent.StartScanning -> {
-                    flowOf(MyPartialState.SetIsScanning(true))
-                    bleService.scan(scanSettings, scanCallback).toNoAction()
-                }
-                MyEvent.StopScanning -> {
-                    flowOf(MyPartialState.SetIsScanning(false))
-                    bleService.stopScan(scanCallback).toNoAction()
-                }
+                MyEvent.StartScanning -> startScanning()
+                MyEvent.StopScanning -> stopScanning()
                 is MyEvent.SetScanningTo -> flowOf(
                     MyPartialState.SetIsScanning(isScanning = event.scanningTo)
                 )
                 is MyEvent.AddScannedDevice -> {
                     addScanResult(event.scanResult)
                 }
-                is MyEvent.StartConnectingToDevice -> {
-                    if (state.value.isScanning) {
-                        effects.send(MyEffect.StopScanDevices)
-                    }
-                    Timber.d("Device from scanResult ${event.scanResult.device}")
-                    bleService.connectToDevice(
-                        scanResult = event.scanResult,
-                        gattCallback = gattCallback,
-                        autoConnect = false
-                    ).toNoAction()
-                }
+                is MyEvent.StartConnectingToDevice -> connectToDevice(
+                    isScanning = state.value.isScanning, scanResult = event.scanResult
+                )
                 MyEvent.RemoveScannedDevices -> flowOf(MyPartialState.RemoveScannedDevices)
                 is MyEvent.SetConnectedToDeviceGatt -> flowOf(
                     MyPartialState.SetConnectedToBluetoothGatt(
@@ -81,12 +69,67 @@ class MyViewModel @Inject constructor(
                         flowOf(MyPartialState.SetConnectedToScanResult(scanResult = null))
                     }
                 }
-                is MyEvent.EndConnectingToDevice -> bleService.disconnectFromDevice(gatt = event.gatt)
-                    .toNoAction()
+                is MyEvent.EndConnectingToDevice -> disconnectFromDevice(event.gatt)
                 is MyEvent.TabChanged -> flowOf(MyPartialState.TabChanged(event.newTabIndex))
+                MyEvent.GoToMainView -> effects.send(MyEffect.GoToMainView).toNoAction()
+                is MyEvent.ShowCharacteristics -> {
+                    if (state.value.deviceToConnectBluetoothGatt != null)
+                        readFromService(
+                            serviceUUID = event.uuid,
+                            gatt = state.value.deviceToConnectBluetoothGatt!!
+                        ).toNoAction()
+                    else
+                        toNoAction()
+                }
             }
         }
     )
+
+    private fun readFromService(serviceUUID: UUID, gatt: BluetoothGatt) {
+        if (ActivityCompat.checkSelfPermission(
+                application.applicationContext,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val characteristics = gatt.getService(serviceUUID).characteristics
+        characteristics.forEach {
+            Timber.d("For Each for ${it.uuid}")
+            val characteristicRemote = gatt.getService(serviceUUID).getCharacteristic(it.uuid)
+            gatt.readCharacteristic(characteristicRemote)
+        }
+    }
+
+    private fun startScanning(): Flow<MyPartialState> = flow {
+        emit(MyPartialState.RemoveScannedDevices)
+        emit(MyPartialState.SetIsScanning(isScanning = true))
+        bleService.scan(scanSettings, scanCallback)
+    }
+
+    private fun stopScanning(): Flow<MyPartialState> = flow {
+        emit(MyPartialState.SetIsScanning(isScanning = false))
+        bleService.stopScan(scanCallback)
+    }
+
+    private fun connectToDevice(isScanning: Boolean, scanResult: ScanResult): Flow<MyPartialState> =
+        flow {
+            if (isScanning) {
+                emit(MyPartialState.SetIsScanning(isScanning = false))
+                bleService.stopScan(scanCallback)
+            }
+            bleService.connectToDevice(
+                scanResult = scanResult,
+                gattCallback = gattCallback,
+                autoConnect = false
+            )
+        }
+
+    private fun disconnectFromDevice(gatt: BluetoothGatt): Flow<MyPartialState> = flow {
+        bleService.disconnectFromDevice(gatt = gatt)
+        emit(MyPartialState.SetConnectedToBluetoothGatt(bluetoothGatt = null))
+        emit(MyPartialState.SetConnectedToScanResult(scanResult = null))
+    }
 
     private fun addScanResult(result: ScanResult): Flow<MyPartialState> = flow {
         Timber.d("Result device ${result.device}")
@@ -94,8 +137,6 @@ class MyViewModel @Inject constructor(
         val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
         if (indexQuery != -1) {
             val oldScanResult = scanResults[indexQuery]
-            Timber.d("Result already exists in a list $oldScanResult")
-            Timber.d("Old ScanResult device ${oldScanResult.device}")
             emit(MyPartialState.RemoveScanResult(oldScanResult))
             emit(MyPartialState.AddScanResult(result))
         } else {
@@ -106,6 +147,7 @@ class MyViewModel @Inject constructor(
     private val scanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
         .build()
+
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             if (ActivityCompat.checkSelfPermission(
@@ -144,6 +186,7 @@ class MyViewModel @Inject constructor(
                     processor.sendEvent(MyEvent.SetConnectedTo(address = gatt.device.address))
                     gatt.requestMtu(517)
                     gatt.discoverServices()
+                    processor.sendEvent(MyEvent.GoToMainView)
                 }
             } else {
                 Timber.d("Error $status encountered for $deviceAddress! Disconnecting...")
@@ -162,29 +205,6 @@ class MyViewModel @Inject constructor(
                 return
             }
             gatt?.printGattTable()
-            gatt?.services?.forEach { bluetoothGattService ->
-                val bleData = BleData(
-                    serviceUUID = bluetoothGattService.uuid,
-                    listAvailableCharacteristics = bluetoothGattService.characteristics
-                )
-                Timber.d("bluetoothGattService.characteristics ${bluetoothGattService.characteristics.forEach { it.uuid }}")
-                readFromCharacteristic(bleData = bleData, gatt)
-            }
-        }
-
-        private fun readFromCharacteristic(bleData: BleData, gatt: BluetoothGatt) {
-            bleData.listAvailableCharacteristics.forEach { characteristic ->
-                val read =
-                    gatt.getService(bleData.serviceUUID).getCharacteristic(characteristic.uuid)
-                if (ActivityCompat.checkSelfPermission(
-                        application.applicationContext,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    return
-                }
-                gatt.readCharacteristic(read)
-            }
         }
 
         override fun onCharacteristicRead(
@@ -199,7 +219,10 @@ class MyViewModel @Inject constructor(
                             "Read characteristic ${characteristic.uuid}:\n" +
                                 "${characteristic.value?.toHexString()}"
                         )
-                        Timber.d("Characteristic string ${characteristic.getStringValue(0)}")
+                        Timber.d(
+                            "Characteristic string " +
+                                characteristic.getStringValue(0)
+                        )
                     }
                 }
                 BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
