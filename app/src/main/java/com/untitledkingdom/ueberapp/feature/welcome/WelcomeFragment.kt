@@ -8,7 +8,9 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
+import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,5 +48,6 @@ class WelcomeFragment : Fragment() {
     }
 
     private fun goToMainFragment() {
+        findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }
 }

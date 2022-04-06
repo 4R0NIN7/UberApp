@@ -55,39 +55,6 @@ fun WelcomeScreen(processor: MyProcessor) {
     }
 }
 
-/*
-@Composable
-fun ConnectedDevice(processor: MyProcessor) {
-    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
-    val selectedDevice by processor.collectAsState { it.selectedDevice }
-    if (selectedGatt != null && selectedDevice != null) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Text(
-                text = "Selected device",
-                style = Typography.body1,
-                fontWeight = FontWeight.Normal,
-                color = Colors.FilterBlue,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(color = Colors.LightPurple)
-            ) {
-                DeviceItem(
-                    advertisement = selectedDevice!!,
-                    processor = processor,
-                    scannedDevice = selectedDevice!!.toScannedDevice()
-                )
-            }
-        }
-    }
-}
- */
-
 @Composable
 fun AppInfo(processor: MyProcessor) {
     Column(
@@ -159,7 +126,7 @@ fun DeviceItem(
     processor: MyProcessor,
     advertisement: Advertisement
 ) {
-    val device by processor.collectAsState { it.device }
+    val device by processor.collectAsState { it.peripheral }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,

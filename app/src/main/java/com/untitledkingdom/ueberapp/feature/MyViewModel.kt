@@ -19,9 +19,11 @@ import com.untitledkingdom.ueberapp.feature.state.MyState
 import com.untitledkingdom.ueberapp.utils.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
@@ -54,23 +56,50 @@ class MyViewModel @Inject constructor(
                 MyEvent.RemoveScannedDevices -> flowOf(MyPartialState.RemoveAdvertisements)
                 is MyEvent.TabChanged -> flowOf(MyPartialState.TabChanged(event.newTabIndex))
                 is MyEvent.EndConnectingToDevice -> disconnectFromDevice(device = event.device).toNoAction()
-                is MyEvent.SetConnectedTo -> TODO()
-                is MyEvent.SetConnectedToDeviceGatt -> TODO()
+                is MyEvent.ShowCharacteristics -> showCharacteristics(
+                    event.service,
+                    state.value.peripheral
+                ).toNoAction()
             }
         }
     )
 
+    private suspend fun showCharacteristics(service: UUID, device: Peripheral?) {
+        if (device == null) {
+            return
+        }
+        device.connect()
+        val characteristics = device.services?.first {
+            it.serviceUuid == service
+        }?.characteristics
+        Timber.d("Service $service")
+        characteristics?.forEach { characteristic ->
+            Timber.d("Characteristic ${characteristic.characteristicUuid}")
+            val data = device.read(characteristic)
+            Timber.d("Data is $data")
+        }
+    }
+
     private fun connectToDevice(
         effects: EffectsCollector<MyEffect>,
         advertisement: Advertisement
-    ) {
+    ): Flow<MyPartialState> = flow {
         try {
             val device = kableService.returnPeripheral(scope = scope, advertisement = advertisement)
+            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = advertisement))
+            emit(MyPartialState.SetConnectedToPeripheral(peripheral = device))
+            device.connect()
+            if (device.services != null) {
+                emit(MyPartialState.SetServicesFromPeripheral(device.services!!))
+            }
             effects.send(MyEffect.ConnectToDevice(device = device))
+            device.disconnect()
         } catch (ie: IllegalStateException) {
             Timber.d("IllegalStateException + ${ie.message}")
+            effects.send(MyEffect.ShowError("$ie"))
         } catch (ce: CancellationException) {
             Timber.d("Canceled")
+            effects.send(MyEffect.ShowError("$ce"))
         }
     }
 

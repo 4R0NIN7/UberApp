@@ -1,6 +1,5 @@
 package com.untitledkingdom.ueberapp.feature.main
 
-import android.bluetooth.BluetoothGattService
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.pager.ExperimentalPagerApi
+import com.juul.kable.DiscoveredService
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyProcessor
@@ -163,7 +163,6 @@ fun Tabs(processor: MyProcessor) {
 
 @Composable
 fun MainScreen(processor: MyProcessor) {
-    DeviceInfo(processor = processor)
 }
 
 @Composable
@@ -205,7 +204,7 @@ fun DeviceInfo(processor: MyProcessor) {
 
 @Composable
 fun Services(processor: MyProcessor) {
-    val services by processor.collectAsState { it.deviceToConnectBluetoothGatt!!.services }
+    val services by processor.collectAsState { it.services }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -221,7 +220,7 @@ fun Services(processor: MyProcessor) {
 }
 
 @Composable
-fun Service(service: BluetoothGattService, processor: MyProcessor) {
+fun Service(service: DiscoveredService, processor: MyProcessor) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -230,7 +229,7 @@ fun Service(service: BluetoothGattService, processor: MyProcessor) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    processor.sendEvent(MyEvent.ShowCharacteristics(service.uuid))
+                    processor.sendEvent(MyEvent.ShowCharacteristics(service.serviceUuid))
                 },
             shape = shape8,
             border = null,
@@ -241,7 +240,7 @@ fun Service(service: BluetoothGattService, processor: MyProcessor) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = service.uuid.toString(),
+                    text = service.serviceUuid.toString(),
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,
@@ -263,29 +262,27 @@ fun DividerGray(modifier: Modifier = Modifier) {
 
 @Composable
 fun ConnectedDevice(processor: MyProcessor) {
-    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
-    val selectedDevice by processor.collectAsState { it.selectedDevice }
-    if (selectedGatt != null && selectedDevice != null) {
+    val device by processor.collectAsState { it.advertisement }
+    if (device != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             Text(
                 text = "Selected device",
-                style = Typography.body1,
-                fontWeight = FontWeight.Normal,
+                style = Typography.h6,
+                fontWeight = FontWeight.SemiBold,
                 color = Colors.FilterBlue,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = Colors.LightPurple)
             ) {
                 DeviceItem(
-                    scanResult = selectedDevice!!,
+                    advertisement = device!!,
                     processor = processor,
-                    scannedDevice = selectedDevice!!.toScannedDevice()
+                    scannedDevice = device!!.toScannedDevice()
                 )
             }
         }

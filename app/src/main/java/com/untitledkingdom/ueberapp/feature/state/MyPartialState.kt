@@ -1,8 +1,8 @@
 package com.untitledkingdom.ueberapp.feature.state
 
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.le.ScanResult
 import com.juul.kable.Advertisement
+import com.juul.kable.DiscoveredService
+import com.juul.kable.Peripheral
 import com.tomcz.ellipse.PartialState
 
 sealed interface MyPartialState : PartialState<MyState> {
@@ -21,15 +21,19 @@ sealed interface MyPartialState : PartialState<MyState> {
             oldState.copy(advertisements = newAdvertisement)
     }
 
-    data class SetConnectedToBluetoothGatt(val bluetoothGatt: BluetoothGatt?) :
-        MyPartialState {
+    data class SetConnectedToPeripheral(val peripheral: Peripheral?) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(deviceToConnectBluetoothGatt = bluetoothGatt)
+            oldState.copy(peripheral = peripheral)
     }
 
-    data class SetConnectedToScanResult(val scanResult: ScanResult?) : MyPartialState {
+    data class SetServicesFromPeripheral(val services: List<DiscoveredService>) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(selectedDevice = scanResult)
+            oldState.copy(services = services)
+    }
+
+    data class SetConnectedToAdvertisement(val advertisement: Advertisement?) : MyPartialState {
+        override fun reduce(oldState: MyState): MyState =
+            oldState.copy(advertisement = advertisement)
     }
 
     data class TabChanged(val newTabIndex: Int) : MyPartialState {
