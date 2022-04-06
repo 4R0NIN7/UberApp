@@ -10,15 +10,19 @@
         android:label="Welcome Fragment" >
         <action
             android:id="@+id/action_welcomeFragment_to_mainFragment"
-            app:destination="@id/mainFragment" />
+            app:popUpTo="@+id/welcomeFragment"
+            app:destination="@id/mainFragment"
+            app:popUpToInclusive="true"/>
     </fragment>
 
     <fragment
         android:id="@+id/mainFragment"
         android:name="com.untitledkingdom.ueberapp.feature.main.MainFragment"
-        android:label="Main Fragment" >
+        android:label="Main Fragment">
         <action
             android:id="@+id/action_mainFragment_to_welcomeFragment"
+            app:popUpTo="@+id/mainFragment"
+            app:popUpToInclusive="true"
             app:destination="@id/welcomeFragment" />
     </fragment>
 </navigation>

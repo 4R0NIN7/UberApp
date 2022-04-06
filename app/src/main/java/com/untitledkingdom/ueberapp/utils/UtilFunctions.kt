@@ -35,7 +35,7 @@ private fun showAlertDialog(
 ) {
     AlertDialog.Builder(context)
         .setTitle(context.getString(R.string.ble_permission_need))
-        .setMessage(context.getString(R.string.ble_permission_long))
+        .setMessage(permissionType)
         .setPositiveButton(
             "OK"
         ) { _, _ ->

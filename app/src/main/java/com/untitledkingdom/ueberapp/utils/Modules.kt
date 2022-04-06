@@ -4,8 +4,9 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiService
-import com.untitledkingdom.ueberapp.ble.BleService
-import com.untitledkingdom.ueberapp.ble.BleServiceImpl
+import com.untitledkingdom.ueberapp.ble.KableService
+import com.untitledkingdom.ueberapp.ble.KableServiceImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -42,7 +43,11 @@ object Modules {
             .addInterceptor(httpLoggingInterceptor)
             .build()
     }
+}
 
-    @Provides
-    fun provideBleService(bleServiceImpl: BleServiceImpl): BleService = bleServiceImpl
+@Module
+@InstallIn(SingletonComponent::class)
+interface BindModules {
+    @Binds
+    fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
 }

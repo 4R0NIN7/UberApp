@@ -66,6 +66,9 @@ android {
 }
 
 dependencies {
+    // Kable
+    implementation"com.juul.kable:core:$kable_version"
+
     // Timber
     implementation "com.jakewharton.timber:timber:$timber_version"
 
@@ -97,31 +100,17 @@ dependencies {
     implementation "com.google.accompanist:accompanist-pager:$pager_version"
     implementation "com.google.accompanist:accompanist-pager-indicators:$pager_version"
 
-    //SwipeRefresh
-    implementation "com.google.accompanist:accompanist-swiperefresh:$swipe_version"
-
     // AndroidX
     implementation "androidx.core:core-ktx:$core_ktx_version"
     implementation "androidx.appcompat:appcompat:$app_compat_version"
     implementation "com.google.android.material:material:$material_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$runtime_ktx_version"
 
-    // MyViewModel
+    // ViewModel
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
 
-    // MyViewModel utilities for Compose
+    // ViewModel utilities for Compose
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
-
-    // Google One Tap
-    implementation "com.google.android.gms:play-services-auth:$auth_services_version"
-
-    // Preferences
-    implementation "androidx.datastore:datastore:$data_store_version"
-    implementation "androidx.datastore:datastore-rxjava2:$data_store_version"
-    implementation "androidx.datastore:datastore-rxjava3:$data_store_version"
-    implementation "androidx.datastore:datastore-preferences:$data_store_version"
-    implementation "androidx.datastore:datastore-preferences-rxjava2:$data_store_version"
-    implementation "androidx.datastore:datastore-preferences-rxjava3:$data_store_version"
 
     // Room
     implementation "androidx.room:room-runtime:$room_version"
@@ -156,17 +145,6 @@ dependencies {
 
     // View binding delegate
     implementation "com.github.kirich1409:viewbindingpropertydelegate:$view_binding_delegate_version"
-
-    // CameraX
-    implementation "androidx.camera:camera-camera2:$camera_version2"
-    implementation "androidx.camera:camera-lifecycle:$camera_version2"
-    implementation "androidx.camera:camera-view:$camera_view_version"
-
-    // Zxing
-    implementation "com.google.zxing:core:$zxing_version"
-
-    // Compose DatePicker
-    implementation "io.github.vanpra.compose-material-dialogs:datetime:$datetime_dialog_version"
 
     // Moshi
     implementation "com.squareup.moshi:moshi:$moshi_version"

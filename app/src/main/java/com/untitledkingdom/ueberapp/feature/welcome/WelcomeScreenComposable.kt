@@ -1,7 +1,5 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
-import android.annotation.SuppressLint
-import android.bluetooth.le.ScanResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +22,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.juul.kable.Advertisement
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
@@ -100,10 +99,9 @@ fun AppInfo(processor: MyProcessor) {
     }
 }
 
-@SuppressLint("MissingPermission")
 @Composable
 fun Devices(processor: MyProcessor) {
-    val scanResults by processor.collectAsState { it.scanResults }
+    val advertisements by processor.collectAsState { it.advertisements }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -112,11 +110,12 @@ fun Devices(processor: MyProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = scanResults.sortedByDescending { it.device.name }) {
+        items(items = advertisements.sortedByDescending { it.name }) {
             DeviceItem(
                 scannedDevice = it.toScannedDevice(),
                 processor = processor,
-                scanResult = it
+                advertisement = it,
+                canDisconnect = false
             )
         }
     }
@@ -126,9 +125,11 @@ fun Devices(processor: MyProcessor) {
 fun DeviceItem(
     scannedDevice: ScannedDevice,
     processor: MyProcessor,
-    scanResult: ScanResult
+    advertisement: Advertisement,
+    canDisconnect: Boolean
 ) {
-    val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
+    val device by processor.collectAsState { it.peripheral }
+    val isClickable by processor.collectAsState { it.isClickable }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -136,10 +137,14 @@ fun DeviceItem(
         Card(
             modifier = Modifier
                 .clickable {
-                    if (selectedDevice != null) {
-                        processor.sendEvent(MyEvent.EndConnectingToDevice(selectedDevice!!))
-                    } else {
-                        processor.sendEvent(MyEvent.StartConnectingToDevice(scanResult = scanResult))
+                    if (isClickable) {
+                        if (canDisconnect) {
+                            processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
+                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                        } else {
+                            processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
+                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                        }
                     }
                 }
                 .fillMaxWidth(),

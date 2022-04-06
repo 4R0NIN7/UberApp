@@ -1,13 +1,14 @@
 package com.untitledkingdom.ueberapp.feature.state
 
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.le.ScanResult
+import com.juul.kable.Advertisement
+import com.juul.kable.DiscoveredService
+import com.juul.kable.Peripheral
 import com.tomcz.ellipse.PartialState
 
 sealed interface MyPartialState : PartialState<MyState> {
-    object RemoveScannedDevices : MyPartialState {
+    object RemoveAdvertisements : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(scanResults = listOf())
+            oldState.copy(advertisements = listOf())
     }
 
     data class SetIsScanning(val isScanning: Boolean) : MyPartialState {
@@ -15,28 +16,31 @@ sealed interface MyPartialState : PartialState<MyState> {
             oldState.copy(isScanning = isScanning)
     }
 
-    data class AddScanResult(val scanResult: ScanResult) : MyPartialState {
+    data class SetAdvertisements(val newAdvertisement: List<Advertisement>) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(scanResults = oldState.scanResults + scanResult)
+            oldState.copy(advertisements = newAdvertisement)
     }
 
-    data class RemoveScanResult(val scanResult: ScanResult) : MyPartialState {
+    data class SetConnectedToPeripheral(val peripheral: Peripheral?) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(scanResults = oldState.scanResults - scanResult)
+            oldState.copy(peripheral = peripheral)
     }
 
-    data class SetConnectedToBluetoothGatt(val bluetoothGatt: BluetoothGatt?) :
-        MyPartialState {
+    data class SetServicesFromPeripheral(val services: List<DiscoveredService>) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(deviceToConnectBluetoothGatt = bluetoothGatt)
+            oldState.copy(services = services)
     }
 
-    data class SetConnectedToScanResult(val scanResult: ScanResult?) : MyPartialState {
+    data class SetConnectedToAdvertisement(val advertisement: Advertisement?) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(selectedDevice = scanResult)
+            oldState.copy(advertisement = advertisement)
     }
 
     data class TabChanged(val newTabIndex: Int) : MyPartialState {
         override fun reduce(oldState: MyState): MyState = oldState.copy(tabIndex = newTabIndex)
+    }
+
+    data class SetIsClickable(val isClickable: Boolean) : MyPartialState {
+        override fun reduce(oldState: MyState): MyState = oldState.copy(isClickable = isClickable)
     }
 }
