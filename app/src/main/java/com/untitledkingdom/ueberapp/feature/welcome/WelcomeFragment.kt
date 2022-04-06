@@ -59,7 +59,10 @@ class WelcomeFragment : Fragment() {
     }
 
     private fun showError(message: String) {
-        Toast.makeText(requireContext(), "Error check logs!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            requireContext(),
+            "Error check logs!", Toast.LENGTH_SHORT
+        ).show()
         Timber.d(message = message)
     }
 
