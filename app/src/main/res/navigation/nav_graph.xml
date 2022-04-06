@@ -10,7 +10,7 @@
         android:label="Welcome Fragment" >
         <action
             android:id="@+id/action_welcomeFragment_to_mainFragment"
-            app:launchSingleTop="true"
+            app:popUpTo="@+id/welcomeFragment"
             app:destination="@id/mainFragment"
             app:popUpToInclusive="true"/>
     </fragment>

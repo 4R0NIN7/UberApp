@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -15,6 +16,7 @@ import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
 
 @FlowPreview
 @AndroidEntryPoint
@@ -43,8 +45,13 @@ class WelcomeFragment : Fragment() {
     private fun trigger(effect: MyEffect) {
         when (effect) {
             is MyEffect.ConnectToDevice -> goToMainFragment()
-            is MyEffect.ShowError -> TODO()
+            is MyEffect.ShowError -> showError(effect.message)
         }
+    }
+
+    private fun showError(message: String) {
+        Toast.makeText(requireContext(), "Error check logs!", Toast.LENGTH_SHORT).show()
+        Timber.d(message = message)
     }
 
     private fun goToMainFragment() {
