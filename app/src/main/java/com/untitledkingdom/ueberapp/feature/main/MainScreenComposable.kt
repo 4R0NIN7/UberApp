@@ -163,6 +163,7 @@ fun Tabs(processor: MyProcessor) {
 
 @Composable
 fun MainScreen(processor: MyProcessor) {
+    DeviceInfo(processor = processor)
 }
 
 @Composable
