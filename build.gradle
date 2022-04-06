@@ -29,17 +29,12 @@ buildscript {
         gson_converter_version = '2.9.0'
         coroutines_test_version = '1.5.2'
         jupiter_version = '5.8.2'
-        pager_version = '0.21.2-beta'
-        swipe_version = '0.22.0-rc'
-        zxing_version = '3.4.1'
-        camera_version2 = '1.0.2'
-        camera_view_version = '1.0.0-alpha32'
         systemuicontroller_version = '0.17.0'
         moshi_version = '1.13.0'
         moshi_converter_version = '2.9.0'
-        datetime_dialog_version = '0.6.3'
         logging_version = '4.2.1'
         okhttp3_version = '4.2.1'
+        kable_version = '0.16.0'
     }
     repositories {
         google()
