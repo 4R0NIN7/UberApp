@@ -7,6 +7,7 @@ import com.juul.kable.Peripheral
 data class MyState(
     val tabIndex: Int = 0,
     val isScanning: Boolean = false,
+    val isClickable: Boolean = true,
     val advertisements: List<Advertisement> = listOf(),
     val advertisement: Advertisement? = null,
     val peripheral: Peripheral? = null,

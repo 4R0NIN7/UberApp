@@ -8,6 +8,7 @@ sealed interface MyEvent {
     object RemoveScannedDevices : MyEvent
     object StartScanning : MyEvent
     object StopScanning : MyEvent
+    data class SetIsClickable(val isClickable: Boolean) : MyEvent
     data class TabChanged(val newTabIndex: Int) : MyEvent
     data class ShowCharacteristics(val service: UUID) : MyEvent
     data class StartConnectingToDevice(val advertisement: Advertisement) : MyEvent

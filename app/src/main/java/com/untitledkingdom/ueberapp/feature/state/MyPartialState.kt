@@ -39,4 +39,8 @@ sealed interface MyPartialState : PartialState<MyState> {
     data class TabChanged(val newTabIndex: Int) : MyPartialState {
         override fun reduce(oldState: MyState): MyState = oldState.copy(tabIndex = newTabIndex)
     }
+
+    data class SetIsClickable(val isClickable: Boolean) : MyPartialState {
+        override fun reduce(oldState: MyState): MyState = oldState.copy(isClickable = isClickable)
+    }
 }

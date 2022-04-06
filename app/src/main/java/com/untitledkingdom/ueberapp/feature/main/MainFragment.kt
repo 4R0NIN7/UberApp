@@ -8,13 +8,17 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
+import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
+import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.flowOf
 
 @ExperimentalPagerApi
 @FlowPreview
@@ -32,6 +36,7 @@ class MainFragment : Fragment() {
             lifecycleState = Lifecycle.State.RESUMED,
             processor = myViewModel::processor,
             onEffect = ::trigger,
+            viewEvents = ::viewEvents
         )
         return ComposeView(
             requireContext()
@@ -42,9 +47,18 @@ class MainFragment : Fragment() {
         }
     }
 
+    private fun viewEvents() = listOf(
+        flowOf(MyEvent.SetIsClickable(true))
+    )
+
     private fun trigger(effect: MyEffect) {
         when (effect) {
+            MyEffect.GoToWelcome -> goToWelcome()
             else -> {}
         }
+    }
+
+    private fun goToWelcome() {
+        findNavController().navigate(R.id.action_mainFragment_to_welcomeFragment)
     }
 }

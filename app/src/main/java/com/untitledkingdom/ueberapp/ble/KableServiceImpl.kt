@@ -61,6 +61,15 @@ class KableServiceImpl @Inject constructor() : KableService {
 
     override fun returnPeripheral(scope: CoroutineScope, advertisement: Advertisement): Peripheral {
         Timber.d("Returning Peripheral")
-        return scope.peripheral(advertisement = advertisement)
+        return scope.peripheral(advertisement = advertisement) {
+            logging {
+                engine = SystemLogEngine
+                level = Logging.Level.Data
+                format = Logging.Format.Multiline
+                data = Logging.DataProcessor {
+                    String(it)
+                }
+            }
+        }
     }
 }

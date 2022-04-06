@@ -23,24 +23,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        requestPermission(
-            permissionType = Manifest.permission.BLUETOOTH_SCAN,
-            requestCode = RequestCodes.ACCESS_BLUETOOTH_SCAN,
-            activity = this,
-            context = this
+        val permissions = listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET
         )
-        requestPermission(
-            permissionType = Manifest.permission.BLUETOOTH_CONNECT,
-            requestCode = RequestCodes.ACCESS_BLUETOOTH_CONNECT,
-            activity = this,
-            context = this
-        )
-        requestPermission(
-            permissionType = Manifest.permission.ACCESS_FINE_LOCATION,
-            requestCode = RequestCodes.ACCESS_FINE_LOCATION,
-            activity = this,
-            context = this
-        )
+        permissions.forEach {
+            requestPermission(
+                permissionType = it,
+                requestCode = RequestCodes.PERMISSION_CODE,
+                activity = this,
+                context = this
+            )
+        }
     }
 
     override fun onResume() {

@@ -282,7 +282,8 @@ fun ConnectedDevice(processor: MyProcessor) {
                 DeviceItem(
                     advertisement = device!!,
                     processor = processor,
-                    scannedDevice = device!!.toScannedDevice()
+                    scannedDevice = device!!.toScannedDevice(),
+                    canDisconnect = true
                 )
             }
         }

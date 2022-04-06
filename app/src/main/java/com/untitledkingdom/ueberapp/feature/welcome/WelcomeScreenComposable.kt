@@ -114,7 +114,8 @@ fun Devices(processor: MyProcessor) {
             DeviceItem(
                 scannedDevice = it.toScannedDevice(),
                 processor = processor,
-                advertisement = it
+                advertisement = it,
+                canDisconnect = false
             )
         }
     }
@@ -124,9 +125,11 @@ fun Devices(processor: MyProcessor) {
 fun DeviceItem(
     scannedDevice: ScannedDevice,
     processor: MyProcessor,
-    advertisement: Advertisement
+    advertisement: Advertisement,
+    canDisconnect: Boolean
 ) {
     val device by processor.collectAsState { it.peripheral }
+    val isClickable by processor.collectAsState { it.isClickable }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -134,10 +137,14 @@ fun DeviceItem(
         Card(
             modifier = Modifier
                 .clickable {
-                    if (device != null) {
-                        processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
-                    } else {
-                        processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
+                    if (isClickable) {
+                        if (canDisconnect) {
+                            processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
+                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                        } else {
+                            processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
+                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                        }
                     }
                 }
                 .fillMaxWidth(),
