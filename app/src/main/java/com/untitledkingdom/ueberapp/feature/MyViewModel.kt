@@ -3,6 +3,7 @@ package com.untitledkingdom.ueberapp.feature
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.juul.kable.Advertisement
+import com.juul.kable.GattRequestRejectedException
 import com.juul.kable.Peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.PartialState
@@ -18,6 +19,7 @@ import com.untitledkingdom.ueberapp.feature.state.MyPartialState
 import com.untitledkingdom.ueberapp.feature.state.MyState
 import com.untitledkingdom.ueberapp.utils.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -33,8 +35,8 @@ typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 class MyViewModel @Inject constructor(
     private val kableService: KableService
 ) : ViewModel() {
-
     private val scope = viewModelScope.childScope()
+
     val processor: MyProcessor = processor(
         initialState = MyState(),
         onEvent = { event ->
@@ -74,9 +76,14 @@ class MyViewModel @Inject constructor(
         }?.characteristics
         Timber.d("Service $service")
         characteristics?.forEach { characteristic ->
-            Timber.d("Characteristic ${characteristic.characteristicUuid}")
-            val data = device.read(characteristic)
-            Timber.d("Data is $data")
+            try {
+                Timber.d("Characteristic ${characteristic.characteristicUuid}")
+                val data = device.read(characteristic)
+                Timber.d("Data is ${String(data)}")
+                delay(100)
+            } catch (e: GattRequestRejectedException) {
+                Timber.d("It could not read for $characteristic. Service is $service")
+            }
         }
     }
 
@@ -85,7 +92,7 @@ class MyViewModel @Inject constructor(
         advertisement: Advertisement
     ): Flow<MyPartialState> = flow {
         try {
-            val device = kableService.returnPeripheral(scope = scope, advertisement = advertisement)
+            val device = kableService.returnPeripheral(advertisement = advertisement, scope = scope)
             emit(MyPartialState.SetConnectedToAdvertisement(advertisement = advertisement))
             emit(MyPartialState.SetConnectedToPeripheral(peripheral = device))
             device.connect()
