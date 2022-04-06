@@ -1,18 +1,17 @@
 package com.untitledkingdom.ueberapp.feature
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.juul.kable.Advertisement
+import com.juul.kable.Peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.PartialState
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.NoAction
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
-import com.untitledkingdom.ueberapp.ble.BleService
 import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.ScanStatus
+import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.state.MyPartialState
@@ -23,16 +22,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
 typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 
 @HiltViewModel
 class MyViewModel @Inject constructor(
-    private val bleService: BleService,
-    private val kableService: KableService,
-    private val application: Application
+    private val kableService: KableService
 ) : ViewModel() {
+
     private val scope = viewModelScope.childScope()
     val processor: MyProcessor = processor(
         initialState = MyState(),
@@ -48,19 +47,40 @@ class MyViewModel @Inject constructor(
                 is MyEvent.SetScanningTo -> flowOf(
                     MyPartialState.SetIsScanning(isScanning = event.scanningTo)
                 )
-                is MyEvent.StartConnectingToDevice -> {
-                    effects.send(MyEffect.StopScanDevices).toNoAction()
-                }
+                is MyEvent.StartConnectingToDevice -> connectToDevice(
+                    effects = effects,
+                    advertisement = event.advertisement
+                ).toNoAction()
                 MyEvent.RemoveScannedDevices -> flowOf(MyPartialState.RemoveAdvertisements)
                 is MyEvent.TabChanged -> flowOf(MyPartialState.TabChanged(event.newTabIndex))
-                else -> effects.send(MyEffect.ScanDevices).toNoAction()
+                is MyEvent.EndConnectingToDevice -> disconnectFromDevice(device = event.device).toNoAction()
+                is MyEvent.SetConnectedTo -> TODO()
+                is MyEvent.SetConnectedToDeviceGatt -> TODO()
             }
         }
     )
 
+    private fun connectToDevice(
+        effects: EffectsCollector<MyEffect>,
+        advertisement: Advertisement
+    ) {
+        try {
+            val device = kableService.returnPeripheral(scope = scope, advertisement = advertisement)
+            effects.send(MyEffect.ConnectToDevice(device = device))
+        } catch (ie: IllegalStateException) {
+            Timber.d("IllegalStateException + ${ie.message}")
+        } catch (ce: CancellationException) {
+            Timber.d("Canceled")
+        }
+    }
+
+    private suspend fun disconnectFromDevice(device: Peripheral) {
+        device.disconnect()
+    }
+
     private fun startScanning(
         effects: EffectsCollector<MyEffect>,
-    ): Flow<PartialState<MyState>> = kableService.startScan()
+    ): Flow<PartialState<MyState>> = kableService.scan()
         .map { status ->
             when (status) {
                 ScanStatus.Scanning -> setIsScanningPartial(true)
@@ -80,7 +100,7 @@ class MyViewModel @Inject constructor(
     private fun setAdvertisements(
         advertisement: Advertisement,
     ): MyPartialState {
-        Timber.d("Advertisments in viewModel $advertisement")
+        Timber.d("Advertisements in viewModel $advertisement")
         return MyPartialState.SetAdvertisements(
             checkIfAdvertisementAlreadyExists(advertisement)
         )

@@ -8,16 +8,12 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
-import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
-@ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
 class WelcomeFragment : Fragment() {
@@ -44,11 +40,11 @@ class WelcomeFragment : Fragment() {
 
     private fun trigger(effect: MyEffect) {
         when (effect) {
-            MyEffect.GoToMainView -> openMain()
+            is MyEffect.ConnectToDevice -> goToMainFragment()
+            is MyEffect.ShowError -> TODO()
         }
     }
 
-    private fun openMain() {
-        findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
+    private fun goToMainFragment() {
     }
 }

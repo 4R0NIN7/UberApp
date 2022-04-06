@@ -159,7 +159,7 @@ fun DeviceItem(
     processor: MyProcessor,
     advertisement: Advertisement
 ) {
-    val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
+    val device by processor.collectAsState { it.device }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -167,8 +167,8 @@ fun DeviceItem(
         Card(
             modifier = Modifier
                 .clickable {
-                    if (selectedDevice != null) {
-                        processor.sendEvent(MyEvent.EndConnectingToDevice(selectedDevice!!))
+                    if (device != null) {
+                        processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
                     } else {
                         processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
                     }
