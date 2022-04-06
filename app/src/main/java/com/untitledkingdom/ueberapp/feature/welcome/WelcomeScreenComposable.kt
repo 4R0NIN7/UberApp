@@ -1,7 +1,5 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
-import android.annotation.SuppressLint
-import android.bluetooth.le.ScanResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +22,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.juul.kable.Advertisement
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
@@ -55,6 +54,39 @@ fun WelcomeScreen(processor: MyProcessor) {
         Devices(processor = processor)
     }
 }
+
+/*
+@Composable
+fun ConnectedDevice(processor: MyProcessor) {
+    val selectedGatt by processor.collectAsState { it.deviceToConnectBluetoothGatt }
+    val selectedDevice by processor.collectAsState { it.selectedDevice }
+    if (selectedGatt != null && selectedDevice != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Text(
+                text = "Selected device",
+                style = Typography.body1,
+                fontWeight = FontWeight.Normal,
+                color = Colors.FilterBlue,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Colors.LightPurple)
+            ) {
+                DeviceItem(
+                    advertisement = selectedDevice!!,
+                    processor = processor,
+                    scannedDevice = selectedDevice!!.toScannedDevice()
+                )
+            }
+        }
+    }
+}
+ */
 
 @Composable
 fun AppInfo(processor: MyProcessor) {
@@ -100,10 +132,9 @@ fun AppInfo(processor: MyProcessor) {
     }
 }
 
-@SuppressLint("MissingPermission")
 @Composable
 fun Devices(processor: MyProcessor) {
-    val scanResults by processor.collectAsState { it.scanResults }
+    val advertisements by processor.collectAsState { it.advertisements }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -112,11 +143,11 @@ fun Devices(processor: MyProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = scanResults.sortedByDescending { it.device.name }) {
+        items(items = advertisements.sortedByDescending { it.name }) {
             DeviceItem(
                 scannedDevice = it.toScannedDevice(),
                 processor = processor,
-                scanResult = it
+                advertisement = it
             )
         }
     }
@@ -126,7 +157,7 @@ fun Devices(processor: MyProcessor) {
 fun DeviceItem(
     scannedDevice: ScannedDevice,
     processor: MyProcessor,
-    scanResult: ScanResult
+    advertisement: Advertisement
 ) {
     val selectedDevice by processor.collectAsState { it.deviceToConnectBluetoothGatt }
     Column(
@@ -139,7 +170,7 @@ fun DeviceItem(
                     if (selectedDevice != null) {
                         processor.sendEvent(MyEvent.EndConnectingToDevice(selectedDevice!!))
                     } else {
-                        processor.sendEvent(MyEvent.StartConnectingToDevice(scanResult = scanResult))
+                        processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
                     }
                 }
                 .fillMaxWidth(),

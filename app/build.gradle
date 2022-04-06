@@ -96,6 +96,9 @@ dependencies {
     implementation "androidx.navigation:navigation-dynamic-features-fragment:$navigation_version"
     implementation "androidx.navigation:navigation-compose:$navigation_compose_version"
 
+    // Pager
+    implementation "com.google.accompanist:accompanist-pager:$pager_version"
+    implementation "com.google.accompanist:accompanist-pager-indicators:$pager_version"
 
     // AndroidX
     implementation "androidx.core:core-ktx:$core_ktx_version"
