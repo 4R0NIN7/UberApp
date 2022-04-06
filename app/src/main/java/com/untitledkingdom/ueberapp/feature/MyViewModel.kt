@@ -99,6 +99,7 @@ class MyViewModel @Inject constructor(
             emit(MyPartialState.SetConnectedToAdvertisement(advertisement = advertisement))
             emit(MyPartialState.SetConnectedToPeripheral(peripheral = device))
             device.connect()
+            Timber.d("Device services ${device.services ?: "services empty!"}")
             if (device.services != null) {
                 emit(MyPartialState.SetServicesFromPeripheral(device.services!!))
             }
