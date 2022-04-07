@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.ui
+package com.untitledkingdom.ueberapp.ui.values
 
 import androidx.compose.ui.unit.sp
 

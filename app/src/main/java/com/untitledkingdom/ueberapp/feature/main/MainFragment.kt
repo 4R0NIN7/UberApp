@@ -15,6 +15,7 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.utils.showError
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -54,6 +55,7 @@ class MainFragment : Fragment() {
     private fun trigger(effect: MyEffect) {
         when (effect) {
             MyEffect.GoToWelcome -> goToWelcome()
+            is MyEffect.ShowError -> showError(message = effect.message, context = requireContext())
             else -> {}
         }
     }

@@ -15,10 +15,10 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.utils.showError
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
-import timber.log.Timber
 
 @FlowPreview
 @AndroidEntryPoint
@@ -53,17 +53,9 @@ class WelcomeFragment : Fragment() {
     private fun trigger(effect: MyEffect) {
         when (effect) {
             is MyEffect.ConnectToDevice -> goToMainFragment()
-            is MyEffect.ShowError -> showError(effect.message)
+            is MyEffect.ShowError -> showError(message = effect.message, context = requireContext())
             else -> {}
         }
-    }
-
-    private fun showError(message: String) {
-        Toast.makeText(
-            requireContext(),
-            "Error check logs!", Toast.LENGTH_SHORT
-        ).show()
-        Timber.d(message = message)
     }
 
     private fun goToMainFragment() {
