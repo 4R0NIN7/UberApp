@@ -38,11 +38,42 @@ class KableServiceImpl @Inject constructor() : KableService {
                 )
             }
             .collect { advertisement ->
+                if (advertisement.name != null) {
+                    emit(
+                        ScanStatus.Found(
+                            advertisement = advertisement
+                        )
+                    )
+                }
+            }
+    }.onStart {
+        emit(ScanStatus.Scanning)
+        isScanning = true
+    }.takeWhile {
+        isScanning
+    }.onCompletion {
+        emit(ScanStatus.Stopped)
+        isScanning = true
+    }
+
+    override fun refreshDeviceData(selectedAdvertisement: Advertisement): Flow<ScanStatus> = flow {
+        scanner
+            .advertisements
+            .catch { cause ->
                 emit(
-                    ScanStatus.Found(
-                        advertisement = advertisement
+                    ScanStatus.Failed(
+                        cause.message ?: "Error during scanning!"
                     )
                 )
+            }
+            .collect { advertisement ->
+                if (advertisement.address == selectedAdvertisement.address) {
+                    emit(
+                        ScanStatus.Found(
+                            advertisement = advertisement
+                        )
+                    )
+                }
             }
     }.onStart {
         emit(ScanStatus.Scanning)

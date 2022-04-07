@@ -8,8 +8,9 @@ sealed interface MyEvent {
     object StartScanning : MyEvent
     object StopScanning : MyEvent
     object ReadCharacteristic : MyEvent
-    object WriteCharacteristic : MyEvent
+    object StopReadingCharacteristic : MyEvent
     object ReadDataInLoop : MyEvent
+    object RefreshDeviceData : MyEvent
     data class AddValue(val value: String) : MyEvent
     data class SetIsClickable(val isClickable: Boolean) : MyEvent
     data class TabChanged(val newTabIndex: Int) : MyEvent

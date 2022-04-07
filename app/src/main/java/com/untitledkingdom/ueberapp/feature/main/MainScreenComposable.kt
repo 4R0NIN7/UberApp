@@ -60,7 +60,6 @@ import com.untitledkingdom.ueberapp.ui.values.padding24
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.toScannedDevice
-import timber.log.Timber
 
 @ExperimentalPagerApi
 @Composable
@@ -218,10 +217,10 @@ fun DeviceInfo(processor: MyProcessor) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(onClick = { processor.sendEvent(MyEvent.ReadCharacteristic) }) {
-                Text("Read")
+                Text("Start Reading")
             }
-            Button(onClick = { processor.sendEvent(MyEvent.WriteCharacteristic) }) {
-                Text("Write")
+            Button(onClick = { processor.sendEvent(MyEvent.StopReadingCharacteristic) }) {
+                Text("Stop Reading")
             }
         }
     }
@@ -239,7 +238,6 @@ fun Values(processor: MyProcessor) {
         contentPadding = PaddingValues(bottom = padding16)
     ) {
         items(items = readValues) { value ->
-            Timber.d(value)
             Value(
                 value = value,
                 indexOf = readValues.indexOf(value)
@@ -314,7 +312,8 @@ fun DividerGray(modifier: Modifier = Modifier) {
 @Composable
 fun ConnectedDevice(processor: MyProcessor) {
     val device by processor.collectAsState { it.device }
-    if (device != null) {
+    val selectedAdvertisement by processor.collectAsState { it.selectedAdvertisement }
+    if (device != null && selectedAdvertisement != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
@@ -330,9 +329,9 @@ fun ConnectedDevice(processor: MyProcessor) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 DeviceItem(
-                    advertisement = device!!.advertisement,
+                    advertisement = selectedAdvertisement!!,
                     processor = processor,
-                    scannedDevice = device!!.advertisement.toScannedDevice(),
+                    scannedDevice = selectedAdvertisement!!.toScannedDevice(),
                     canDisconnect = true
                 )
             }

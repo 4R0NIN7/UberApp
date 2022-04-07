@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface KableService {
     fun scan(): Flow<ScanStatus>
+    fun refreshDeviceData(selectedAdvertisement: Advertisement): Flow<ScanStatus>
     fun stopScan()
     fun returnPeripheral(scope: CoroutineScope, advertisement: Advertisement): Peripheral
 }

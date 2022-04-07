@@ -42,6 +42,7 @@ fun DeviceItem(
 ) {
     val device by processor.collectAsState { it.device }
     val isClickable by processor.collectAsState { it.isClickable }
+    val isScanning by processor.collectAsState { it.isScanning }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -51,11 +52,18 @@ fun DeviceItem(
                 .clickable {
                     if (isClickable) {
                         if (canDisconnect) {
-                            processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
-                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                            processor.sendEvent(
+                                MyEvent.SetIsClickable(false),
+                                MyEvent.EndConnectingToDevice(device!!)
+                            )
                         } else {
-                            processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
-                            processor.sendEvent(MyEvent.SetIsClickable(false))
+                            if (isScanning) {
+                                processor.sendEvent(MyEvent.StopScanning)
+                            }
+                            processor.sendEvent(
+                                MyEvent.StartConnectingToDevice(advertisement = advertisement),
+                                MyEvent.SetIsClickable(false)
+                            )
                         }
                     }
                 }

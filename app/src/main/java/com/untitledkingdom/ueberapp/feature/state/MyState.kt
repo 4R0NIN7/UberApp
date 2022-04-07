@@ -8,6 +8,7 @@ data class MyState(
     val isScanning: Boolean = false,
     val isClickable: Boolean = true,
     val advertisements: List<Advertisement> = listOf(),
+    val selectedAdvertisement: Advertisement? = null,
     val device: BleDevice? = null,
     val readValues: List<String> = listOf()
 )

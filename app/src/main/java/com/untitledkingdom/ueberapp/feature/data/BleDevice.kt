@@ -1,6 +1,5 @@
 package com.untitledkingdom.ueberapp.feature.data
 
-import com.juul.kable.Advertisement
 import com.juul.kable.DiscoveredService
 import com.juul.kable.Peripheral
 import com.juul.kable.WriteType
@@ -8,23 +7,48 @@ import com.juul.kable.characteristicOf
 import com.untitledkingdom.ueberapp.utils.generateRandomString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import java.util.*
 
 class BleDevice constructor(
     val device: Peripheral,
-    val advertisement: Advertisement,
     val services: List<DiscoveredService>
 ) {
     private val service: DiscoveredService = services.first {
         it.serviceUuid == UUID.fromString("00001813-0000-1000-8000-00805f9b34fb")
     }
     private val characteristic = "00002a31-0000-1000-8000-00805f9b34fb"
+    private var isReading = true
 
-    fun readFromDevice(): Flow<BleDeviceStatus> = flow {
+    fun readFromDeviceInLoop(): Flow<BleDeviceStatus> = flow {
+        while (true) {
+            write(generateRandomString())
+            delay(1000)
+            read()
+                .catch { cause -> emit(BleDeviceStatus.Error(cause.message ?: "Error")) }
+                .collect {
+                    emit(BleDeviceStatus.Success(it))
+                }
+        }
+    }.takeWhile {
+        isReading
+    }.onStart {
+        device.connect()
+    }.onCompletion {
+        device.disconnect()
+        isReading = true
+    }
+
+    fun endReading() {
+        isReading = false
+    }
+
+    private fun read(): Flow<String> = flow {
         try {
             device.services?.first {
                 it.serviceUuid == service.serviceUuid
@@ -36,58 +60,17 @@ class BleDevice constructor(
                             characteristic = characteristic
                         )
                     )
-                    emit(BleDeviceStatus.Success(data = String(data)))
+                    emit(String(data))
                 }
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
-            emit(BleDeviceStatus.Error(message = e.message ?: "Unknown error!"))
+            throw e
         }
-    }.onStart {
-        device.connect()
-    }.onCompletion {
-        device.disconnect()
     }
 
-    fun readFromDeviceInLoop() = flow {
-        while (true) {
-            try {
-                device.services?.first {
-                    it.serviceUuid == service.serviceUuid
-                }?.characteristics?.forEach {
-                    if (it.characteristicUuid == UUID.fromString(characteristic)) {
-                        device.write(
-                            characteristicOf(
-                                service = service.serviceUuid.toString(),
-                                characteristic = characteristic
-                            ),
-                            generateRandomString().toByteArray(),
-                            writeType = WriteType.WithResponse
-                        )
-                        delay(2000)
-                        val data = device.read(
-                            characteristicOf(
-                                service = service.serviceUuid.toString(),
-                                characteristic = characteristic
-                            )
-                        )
-                        emit(BleDeviceStatus.Success(data = String(data)))
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.d("Exception in writeToDevice! + $e")
-                emit(BleDeviceStatus.Error(message = e.message ?: "Unknown error!"))
-            }
-        }
-    }.onStart {
-        device.connect()
-    }.onCompletion {
-        device.disconnect()
-    }
-
-    suspend fun writeToDevice(value: String) {
+    private suspend fun write(value: String) {
         try {
-            device.connect()
             device.services?.first {
                 it.serviceUuid == service.serviceUuid
             }?.characteristics?.forEach {
@@ -104,6 +87,13 @@ class BleDevice constructor(
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
+        }
+    }
+
+    fun printService() {
+        println("Services are")
+        services.forEach {
+            println(it.serviceUuid)
         }
     }
 }

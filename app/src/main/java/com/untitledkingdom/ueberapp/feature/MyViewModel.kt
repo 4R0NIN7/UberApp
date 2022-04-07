@@ -19,16 +19,17 @@ import com.untitledkingdom.ueberapp.feature.state.MyPartialState
 import com.untitledkingdom.ueberapp.feature.state.MyState
 import com.untitledkingdom.ueberapp.utils.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.random.Random
 
 typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 
+@ExperimentalCoroutinesApi
 @HiltViewModel
 class MyViewModel @Inject constructor(
     private val kableService: KableService
@@ -49,63 +50,66 @@ class MyViewModel @Inject constructor(
                 is MyEvent.SetScanningTo -> flowOf(
                     MyPartialState.SetIsScanning(isScanning = event.scanningTo)
                 )
-                is MyEvent.StartConnectingToDevice -> connectToDeviceAndGoToMain(
-                    effects = effects,
-                    advertisement = event.advertisement
-                )
+                is MyEvent.StartConnectingToDevice -> {
+                    connectToDeviceAndGoToMain(
+                        effects = effects,
+                        advertisement = event.advertisement
+                    )
+                }
                 MyEvent.RemoveScannedDevices -> flowOf(MyPartialState.RemoveAdvertisements)
                 is MyEvent.TabChanged -> flowOf(MyPartialState.TabChanged(event.newTabIndex))
                 is MyEvent.EndConnectingToDevice -> flow {
-                    emit(MyPartialState.SetConnectedToBleDevice(bleDevice = null))
+                    state.value.device?.endReading()
+                    kableService.stopScan()
+                    emit(MyPartialState.ReleaseState)
                     effects.send(MyEffect.GoToWelcome)
                 }
-                MyEvent.ReadCharacteristic -> read(state.value.device, effects)
-                MyEvent.WriteCharacteristic -> write(
-                    device = state.value.device,
-                    value = generateRandomString()
-                ).toNoAction()
+                MyEvent.ReadCharacteristic -> {
+                    readDataInLoop(state.value.device, effects)
+                }
+                MyEvent.StopReadingCharacteristic -> {
+                    state.value.device?.endReading().toNoAction()
+                }
                 is MyEvent.SetIsClickable -> flowOf(MyPartialState.SetIsClickable(event.isClickable))
                 is MyEvent.AddValue -> flowOf(MyPartialState.AddValue(event.value))
                 MyEvent.ReadDataInLoop -> readDataInLoop(state.value.device, effects)
+                MyEvent.RefreshDeviceData -> {
+                    if (state.value.selectedAdvertisement != null) {
+                        refreshDeviceData(
+                            state.value.selectedAdvertisement!!,
+                            effects
+                        )
+                    } else {
+                        toNoAction()
+                    }
+                }
             }
         }
     )
 
+    private fun refreshDeviceData(
+        selectedAdvertisement: Advertisement,
+        effects: EffectsCollector<MyEffect>
+    ): Flow<PartialState<MyState>> =
+        kableService.refreshDeviceData(selectedAdvertisement = selectedAdvertisement)
+            .map { status ->
+                when (status) {
+                    is ScanStatus.Failed -> effects.send(MyEffect.ShowError(status.message as String))
+                        .let { NoAction() }
+                    is ScanStatus.Found -> setAdvertisementPartial(status.advertisement)
+                    ScanStatus.Scanning -> setIsScanningPartial(true)
+                    ScanStatus.Stopped -> setIsScanningPartial(false)
+                }
+            }
+
+    private fun setAdvertisementPartial(advertisement: Advertisement): MyPartialState {
+        return MyPartialState.SetAdvertisement(advertisement)
+    }
+
     private fun readDataInLoop(
         device: BleDevice?,
         effects: EffectsCollector<MyEffect>
-    ): Flow<PartialState<MyState>> =
-        device!!.readFromDeviceInLoop().map { status ->
-            when (status) {
-                is BleDeviceStatus.Success -> {
-                    Timber.d("Data is ${status.data}")
-                    Timber.d("Values are ${processor.state.value.readValues}")
-                    MyPartialState.AddValue(status.data)
-                }
-                is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
-                    .let { NoAction() }
-            }
-        }
-
-    private fun generateRandomString(): String {
-        val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-        return (1..15)
-            .map { i -> Random.nextInt(0, charPool.size) }
-            .map(charPool::get)
-            .joinToString("")
-    }
-
-    private suspend fun write(
-        device: BleDevice?,
-        value: String,
-    ) {
-        device!!.writeToDevice(value)
-    }
-
-    private fun read(
-        device: BleDevice?,
-        effects: EffectsCollector<MyEffect>
-    ): Flow<PartialState<MyState>> = device!!.readFromDevice().map { status ->
+    ): Flow<PartialState<MyState>> = device!!.readFromDeviceInLoop().map { status ->
         when (status) {
             is BleDeviceStatus.Success -> {
                 Timber.d("Data is ${status.data}")
@@ -131,10 +135,11 @@ class MyViewModel @Inject constructor(
             val services = peripheral.services ?: listOf()
             val device = BleDevice(
                 device = peripheral,
-                advertisement = advertisement,
                 services = services
             )
+            device.printService()
             emit(MyPartialState.SetConnectedToBleDevice(bleDevice = device))
+            emit(MyPartialState.SetAdvertisement(advertisement))
             effects.send(MyEffect.GoToMain)
         } catch (e: Exception) {
             Timber.d("Exception in connect to device! + ${e.message}")

@@ -50,7 +50,8 @@ class MainFragment : Fragment() {
 
     private fun viewEvents() = listOf(
         flowOf(MyEvent.SetIsClickable(true)),
-        flowOf(MyEvent.ReadDataInLoop)
+        flowOf(MyEvent.ReadDataInLoop),
+        flowOf(MyEvent.RefreshDeviceData)
     )
 
     private fun trigger(effect: MyEffect) {

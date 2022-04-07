@@ -10,6 +10,10 @@ sealed interface MyPartialState : PartialState<MyState> {
             oldState.copy(advertisements = listOf())
     }
 
+    object ReleaseState : MyPartialState {
+        override fun reduce(oldState: MyState): MyState = MyState()
+    }
+
     data class SetIsScanning(val isScanning: Boolean) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
             oldState.copy(isScanning = isScanning)
@@ -26,6 +30,11 @@ sealed interface MyPartialState : PartialState<MyState> {
 
     data class TabChanged(val newTabIndex: Int) : MyPartialState {
         override fun reduce(oldState: MyState): MyState = oldState.copy(tabIndex = newTabIndex)
+    }
+
+    data class SetAdvertisement(val advertisement: Advertisement?) : MyPartialState {
+        override fun reduce(oldState: MyState): MyState =
+            oldState.copy(selectedAdvertisement = advertisement)
     }
 
     data class AddValue(val value: String) : MyPartialState {
