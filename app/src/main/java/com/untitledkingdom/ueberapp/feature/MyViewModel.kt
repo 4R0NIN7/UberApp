@@ -3,8 +3,6 @@ package com.untitledkingdom.ueberapp.feature
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.juul.kable.Advertisement
-import com.juul.kable.ConnectionLostException
-import com.juul.kable.GattRequestRejectedException
 import com.juul.kable.Peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.PartialState
@@ -20,7 +18,6 @@ import com.untitledkingdom.ueberapp.feature.state.MyPartialState
 import com.untitledkingdom.ueberapp.feature.state.MyState
 import com.untitledkingdom.ueberapp.utils.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -62,15 +59,20 @@ class MyViewModel @Inject constructor(
                     effects = effects
                 )
                 is MyEvent.ShowCharacteristics -> showCharacteristics(
-                    event.service,
-                    state.value.peripheral
+                    service = event.service,
+                    device = state.value.peripheral,
+                    effects = effects
                 ).toNoAction()
                 is MyEvent.SetIsClickable -> flowOf(MyPartialState.SetIsClickable(event.isClickable))
             }
         }
     )
 
-    private suspend fun showCharacteristics(service: UUID, device: Peripheral?) {
+    private suspend fun showCharacteristics(
+        service: UUID,
+        device: Peripheral?,
+        effects: EffectsCollector<MyEffect>
+    ) {
         if (device == null) {
             return
         }
@@ -81,8 +83,10 @@ class MyViewModel @Inject constructor(
         characteristics?.forEach { characteristic ->
             try {
                 device.read(characteristic)
-            } catch (e: GattRequestRejectedException) {
+            } catch (e: Exception) {
                 Timber.d("It could not read for $characteristic. Service is $service")
+                Timber.d("Exception in showCharacteristics! + ${e.message}")
+                effects.send(MyEffect.ShowError("${e.message}"))
                 device.disconnect()
             }
         }
@@ -105,15 +109,11 @@ class MyViewModel @Inject constructor(
             }
             effects.send(MyEffect.ConnectToDevice(device = device))
             device.disconnect()
-        } catch (ie: IllegalStateException) {
-            Timber.d("IllegalStateException + ${ie.message}")
-            effects.send(MyEffect.ShowError("$ie"))
-        } catch (co: ConnectionLostException) {
-            Timber.d("IllegalStateException + ${co.message}")
-            effects.send(MyEffect.ShowError("$co"))
-        } catch (ce: CancellationException) {
-            Timber.d("Canceled")
-            effects.send(MyEffect.ShowError("$ce"))
+        } catch (e: Exception) {
+            Timber.d("Exception in connect to device! + ${e.message}")
+            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
+            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
+            effects.send(MyEffect.ShowError("${e.message}"))
         }
     }
 
@@ -121,13 +121,20 @@ class MyViewModel @Inject constructor(
         effects: EffectsCollector<MyEffect>,
         device: Peripheral
     ): Flow<MyPartialState> = flow {
-        device.disconnect()
-        Timber.d("Disconnected!")
-        emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
-        emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
-        emit(MyPartialState.SetServicesFromPeripheral(listOf()))
-        emit(MyPartialState.SetIsClickable(true))
-        effects.send(MyEffect.GoToWelcome)
+        try {
+            device.disconnect()
+            Timber.d("Disconnected!")
+            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
+            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
+            emit(MyPartialState.SetServicesFromPeripheral(listOf()))
+            emit(MyPartialState.SetIsClickable(true))
+            effects.send(MyEffect.GoToWelcome)
+        } catch (e: Exception) {
+            Timber.d("Exception in disconnectFromDevice! + ${e.message}")
+            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
+            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
+            effects.send(MyEffect.ShowError("${e.message}"))
+        }
     }
 
     private fun startScanning(

@@ -1,7 +1,6 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
-import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,22 +20,18 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
-import com.juul.kable.Advertisement
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyProcessor
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.state.MyState
-import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
-import com.untitledkingdom.ueberapp.ui.Colors
-import com.untitledkingdom.ueberapp.ui.Paddings.padding12
-import com.untitledkingdom.ueberapp.ui.Paddings.padding16
-import com.untitledkingdom.ueberapp.ui.Paddings.padding8
-import com.untitledkingdom.ueberapp.ui.Shapes.shape8
-import com.untitledkingdom.ueberapp.ui.Typography
-import com.untitledkingdom.ueberapp.ui.fontSize14
-import com.untitledkingdom.ueberapp.ui.fontSize18
+import com.untitledkingdom.ueberapp.ui.common.DeviceItem
+import com.untitledkingdom.ueberapp.ui.values.AppBackground
+import com.untitledkingdom.ueberapp.ui.values.Typography
+import com.untitledkingdom.ueberapp.ui.values.padding12
+import com.untitledkingdom.ueberapp.ui.values.padding16
+import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.utils.toScannedDevice
 
 @Composable
@@ -47,7 +41,7 @@ fun WelcomeScreen(processor: MyProcessor) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .background(color = Colors.AppBackground)
+            .background(color = AppBackground)
             .padding(horizontal = padding12)
     ) {
         AppInfo(processor = processor)
@@ -117,67 +111,6 @@ fun Devices(processor: MyProcessor) {
                 advertisement = it,
                 canDisconnect = false
             )
-        }
-    }
-}
-
-@Composable
-fun DeviceItem(
-    scannedDevice: ScannedDevice,
-    processor: MyProcessor,
-    advertisement: Advertisement,
-    canDisconnect: Boolean
-) {
-    val device by processor.collectAsState { it.peripheral }
-    val isClickable by processor.collectAsState { it.isClickable }
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Card(
-            modifier = Modifier
-                .clickable {
-                    if (isClickable) {
-                        if (canDisconnect) {
-                            processor.sendEvent(MyEvent.EndConnectingToDevice(device!!))
-                            processor.sendEvent(MyEvent.SetIsClickable(false))
-                        } else {
-                            processor.sendEvent(MyEvent.StartConnectingToDevice(advertisement = advertisement))
-                            processor.sendEvent(MyEvent.SetIsClickable(false))
-                        }
-                    }
-                }
-                .fillMaxWidth(),
-            shape = shape8,
-            border = null,
-            backgroundColor = Colors.AppBackground
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceAround,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Device Name: ${scannedDevice.name}",
-                    style = Typography.body1,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = fontSize18,
-                    color = Colors.RoomName2Color
-                )
-                Text(
-                    text = "Device Address: ${scannedDevice.address}",
-                    style = Typography.body1,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = fontSize14,
-                    color = Colors.RoomName7Color
-                )
-                Text(
-                    text = "Transmit power: ${scannedDevice.rssi}",
-                    style = Typography.body1,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = fontSize14,
-                    color = Colors.RoomName5Color
-                )
-            }
         }
     }
 }

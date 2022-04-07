@@ -42,23 +42,29 @@ import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyProcessor
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.feature.welcome.DeviceItem
-import com.untitledkingdom.ueberapp.ui.Colors
-import com.untitledkingdom.ueberapp.ui.Paddings
-import com.untitledkingdom.ueberapp.ui.Paddings.padding12
-import com.untitledkingdom.ueberapp.ui.Paddings.padding16
-import com.untitledkingdom.ueberapp.ui.Paddings.padding2
-import com.untitledkingdom.ueberapp.ui.Paddings.padding24
-import com.untitledkingdom.ueberapp.ui.Shapes.shape8
-import com.untitledkingdom.ueberapp.ui.Typography
-import com.untitledkingdom.ueberapp.ui.fontSize18
+import com.untitledkingdom.ueberapp.ui.common.DeviceItem
+import com.untitledkingdom.ueberapp.ui.values.AppBackground
+import com.untitledkingdom.ueberapp.ui.values.Black
+import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
+import com.untitledkingdom.ueberapp.ui.values.DevicesTabsColorBlack
+import com.untitledkingdom.ueberapp.ui.values.Gray
+import com.untitledkingdom.ueberapp.ui.values.SectionDividerLight
+import com.untitledkingdom.ueberapp.ui.values.Typography
+import com.untitledkingdom.ueberapp.ui.values.White
+import com.untitledkingdom.ueberapp.ui.values.fontSize18
+import com.untitledkingdom.ueberapp.ui.values.padding12
+import com.untitledkingdom.ueberapp.ui.values.padding16
+import com.untitledkingdom.ueberapp.ui.values.padding2
+import com.untitledkingdom.ueberapp.ui.values.padding24
+import com.untitledkingdom.ueberapp.ui.values.padding8
+import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.toScannedDevice
 
 @ExperimentalPagerApi
 @Composable
 fun MainScreenCompose(processor: MyProcessor) {
     Scaffold(
-        backgroundColor = Colors.AppBackground,
+        backgroundColor = AppBackground,
         topBar = {
             Tabs(processor = processor)
         },
@@ -78,7 +84,7 @@ fun Tabs(processor: MyProcessor) {
     )
     Column(
         modifier = Modifier.background(
-            Colors.AppBackground
+            AppBackground
         )
     ) {
         Card(
@@ -86,7 +92,7 @@ fun Tabs(processor: MyProcessor) {
                 .padding(horizontal = padding12)
                 .padding(top = padding12),
             shape = shape8,
-            backgroundColor = Colors.AppBackground
+            backgroundColor = AppBackground
         ) {
             TabRow(
                 selectedTabIndex = tabIndex,
@@ -101,12 +107,12 @@ fun Tabs(processor: MyProcessor) {
                                 )
                             )
                             .padding(horizontal = padding16)
-                            .background(Colors.White)
+                            .background(White)
                             .height(padding2)
                     )
                 },
-                contentColor = Colors.DevicesTabsColorBlack,
-                backgroundColor = Colors.DevicesTabsColorBlack
+                contentColor = DevicesTabsColorBlack,
+                backgroundColor = DevicesTabsColorBlack
             ) {
                 tabs.forEachIndexed { index, title ->
                     Box(
@@ -114,8 +120,8 @@ fun Tabs(processor: MyProcessor) {
                             .height(IntrinsicSize.Min)
                     ) {
                         Tab(
-                            selectedContentColor = Colors.White,
-                            unselectedContentColor = Colors.Gray,
+                            selectedContentColor = White,
+                            unselectedContentColor = Gray,
                             modifier = Modifier.wrapContentWidth(Alignment.Start),
                             selected = tabIndex == index,
                             onClick = {
@@ -140,7 +146,7 @@ fun Tabs(processor: MyProcessor) {
         }
         Column(
             modifier = Modifier.background(
-                Colors.AppBackground,
+                AppBackground,
             )
         ) {
             when (tabIndex) {
@@ -211,7 +217,7 @@ fun Services(processor: MyProcessor) {
             .fillMaxSize()
             .padding(horizontal = padding16)
             .padding(top = padding16),
-        verticalArrangement = Arrangement.spacedBy(Paddings.padding8),
+        verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
         items(items = services) {
@@ -234,7 +240,7 @@ fun Service(service: DiscoveredService, processor: MyProcessor) {
                 },
             shape = shape8,
             border = null,
-            backgroundColor = Colors.AppBackground
+            backgroundColor = AppBackground
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceAround,
@@ -245,7 +251,7 @@ fun Service(service: DiscoveredService, processor: MyProcessor) {
                     style = Typography.body1,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = fontSize18,
-                    color = Colors.Black
+                    color = Black
                 )
             }
         }
@@ -257,7 +263,7 @@ fun DividerGray(modifier: Modifier = Modifier) {
     Divider(
         modifier = modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = Colors.SectionDividerLight,
+        color = SectionDividerLight,
     )
 }
 
@@ -273,7 +279,7 @@ fun ConnectedDevice(processor: MyProcessor) {
                 text = "Selected device",
                 style = Typography.h6,
                 fontWeight = FontWeight.SemiBold,
-                color = Colors.FilterBlue,
+                color = BlackSelectedDay,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
