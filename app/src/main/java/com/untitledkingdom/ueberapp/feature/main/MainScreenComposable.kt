@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.Scaffold
@@ -197,32 +198,73 @@ private fun TabTitle(title: String) {
 @Composable
 fun DeviceInfo(processor: MyProcessor) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(padding24),
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
             .padding(top = padding24)
             .padding(horizontal = padding12)
     ) {
-        ConnectedDevice(processor = processor)
-        Services(processor = processor)
+        Column {
+            ConnectedDevice(processor = processor)
+        }
+        Values(processor = processor)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(padding8),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(onClick = { processor.sendEvent(MyEvent.ReadCharacteristic) }) {
+                Text("Start Reading")
+            }
+            Button(onClick = { processor.sendEvent(MyEvent.StopReadingCharacteristic) }) {
+                Text("Stop Reading")
+            }
+        }
     }
 }
 
 @Composable
-fun Services(processor: MyProcessor) {
-    val services by processor.collectAsState { it.services }
+fun Values(processor: MyProcessor) {
+    val readValues by processor.collectAsState { it.readValues }
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
+            .height(300.dp)
             .padding(horizontal = padding16)
             .padding(top = padding16),
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = services) {
-            Service(it, processor)
+        items(items = readValues) { value ->
+            Value(
+                value = value,
+                indexOf = readValues.indexOf(value)
+            )
         }
+    }
+}
+
+@Composable
+fun Value(value: String, indexOf: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Value $indexOf",
+            style = Typography.h6,
+            fontWeight = FontWeight.SemiBold,
+            color = BlackSelectedDay,
+        )
+        Text(
+            text = " $value",
+            style = Typography.h6,
+            fontWeight = FontWeight.Normal,
+            color = Gray,
+        )
     }
 }
 
@@ -236,7 +278,7 @@ fun Service(service: DiscoveredService, processor: MyProcessor) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    processor.sendEvent(MyEvent.ShowCharacteristics(service.serviceUuid))
+                    processor.sendEvent(MyEvent.ReadCharacteristic)
                 },
             shape = shape8,
             border = null,
@@ -269,8 +311,9 @@ fun DividerGray(modifier: Modifier = Modifier) {
 
 @Composable
 fun ConnectedDevice(processor: MyProcessor) {
-    val device by processor.collectAsState { it.advertisement }
-    if (device != null) {
+    val device by processor.collectAsState { it.device }
+    val selectedAdvertisement by processor.collectAsState { it.selectedAdvertisement }
+    if (device != null && selectedAdvertisement != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
@@ -283,13 +326,12 @@ fun ConnectedDevice(processor: MyProcessor) {
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 DeviceItem(
-                    advertisement = device!!,
+                    advertisement = selectedAdvertisement!!,
                     processor = processor,
-                    scannedDevice = device!!.toScannedDevice(),
+                    scannedDevice = selectedAdvertisement!!.toScannedDevice(),
                     canDisconnect = true
                 )
             }

@@ -15,7 +15,7 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.utils.showError
+import com.untitledkingdom.ueberapp.utils.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
@@ -52,8 +52,8 @@ class WelcomeFragment : Fragment() {
 
     private fun trigger(effect: MyEffect) {
         when (effect) {
-            is MyEffect.ConnectToDevice -> goToMainFragment()
-            is MyEffect.ShowError -> showError(message = effect.message, context = requireContext())
+            MyEffect.GoToMain -> goToMainFragment()
+            is MyEffect.ShowError -> toastMessage(message = effect.message, context = requireContext())
             else -> {}
         }
     }

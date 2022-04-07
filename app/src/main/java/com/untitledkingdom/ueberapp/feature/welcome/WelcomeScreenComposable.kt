@@ -79,8 +79,7 @@ fun AppInfo(processor: MyProcessor) {
         if (!isScanning) {
             Button(
                 onClick = {
-                    processor.sendEvent(MyEvent.RemoveScannedDevices)
-                    processor.sendEvent(MyEvent.StartScanning)
+                    processor.sendEvent(MyEvent.RemoveScannedDevices, MyEvent.StartScanning)
                 }
             ) {
                 Text(text = "Start Scan")
