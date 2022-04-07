@@ -3,7 +3,6 @@ package com.untitledkingdom.ueberapp.feature
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.juul.kable.Advertisement
-import com.juul.kable.Peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.PartialState
 import com.tomcz.ellipse.Processor
@@ -12,6 +11,8 @@ import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
 import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
+import com.untitledkingdom.ueberapp.feature.data.BleDevice
+import com.untitledkingdom.ueberapp.feature.data.BleDeviceStatus
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.state.MyPartialState
@@ -23,8 +24,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
-import java.util.*
 import javax.inject.Inject
+import kotlin.random.Random
 
 typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 
@@ -48,112 +49,123 @@ class MyViewModel @Inject constructor(
                 is MyEvent.SetScanningTo -> flowOf(
                     MyPartialState.SetIsScanning(isScanning = event.scanningTo)
                 )
-                is MyEvent.StartConnectingToDevice -> connectToDevice(
+                is MyEvent.StartConnectingToDevice -> connectToDeviceAndGoToMain(
                     effects = effects,
                     advertisement = event.advertisement
                 )
                 MyEvent.RemoveScannedDevices -> flowOf(MyPartialState.RemoveAdvertisements)
                 is MyEvent.TabChanged -> flowOf(MyPartialState.TabChanged(event.newTabIndex))
-                is MyEvent.EndConnectingToDevice -> disconnectFromDevice(
-                    device = event.device,
-                    effects = effects
-                )
-                is MyEvent.ShowCharacteristics -> showCharacteristics(
-                    service = event.service,
-                    device = state.value.peripheral,
-                    effects = effects
+                is MyEvent.EndConnectingToDevice -> flow {
+                    emit(MyPartialState.SetConnectedToBleDevice(bleDevice = null))
+                    effects.send(MyEffect.GoToWelcome)
+                }
+                MyEvent.ReadCharacteristic -> read(state.value.device, effects)
+                MyEvent.WriteCharacteristic -> write(
+                    device = state.value.device,
+                    value = generateRandomString()
                 ).toNoAction()
                 is MyEvent.SetIsClickable -> flowOf(MyPartialState.SetIsClickable(event.isClickable))
+                is MyEvent.AddValue -> flowOf(MyPartialState.AddValue(event.value))
+                MyEvent.ReadDataInLoop -> readDataInLoop(state.value.device, effects)
             }
         }
     )
 
-    private suspend fun showCharacteristics(
-        service: UUID,
-        device: Peripheral?,
+    private fun readDataInLoop(
+        device: BleDevice?,
         effects: EffectsCollector<MyEffect>
-    ) {
-        if (device == null) {
-            return
-        }
-        device.connect()
-        val characteristics = device.services?.first {
-            it.serviceUuid == service
-        }?.characteristics
-        characteristics?.forEach { characteristic ->
-            try {
-                device.read(characteristic)
-            } catch (e: Exception) {
-                Timber.d("It could not read for $characteristic. Service is $service")
-                Timber.d("Exception in showCharacteristics! + ${e.message}")
-                effects.send(MyEffect.ShowError("${e.message}"))
-                device.disconnect()
+    ): Flow<PartialState<MyState>> =
+        device!!.readFromDeviceInLoop().map { status ->
+            when (status) {
+                is BleDeviceStatus.Success -> {
+                    Timber.d("Data is ${status.data}")
+                    Timber.d("Values are ${processor.state.value.readValues}")
+                    MyPartialState.AddValue(status.data)
+                }
+                is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
+                    .let { NoAction() }
             }
         }
-        device.disconnect()
+
+    private fun generateRandomString(): String {
+        val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+        return (1..15)
+            .map { i -> Random.nextInt(0, charPool.size) }
+            .map(charPool::get)
+            .joinToString("")
     }
 
-    private fun connectToDevice(
+    private suspend fun write(
+        device: BleDevice?,
+        value: String,
+    ) {
+        device!!.writeToDevice(value)
+    }
+
+    private fun read(
+        device: BleDevice?,
+        effects: EffectsCollector<MyEffect>
+    ): Flow<PartialState<MyState>> = device!!.readFromDevice().map { status ->
+        when (status) {
+            is BleDeviceStatus.Success -> {
+                Timber.d("Data is ${status.data}")
+                Timber.d("Values are ${processor.state.value.readValues}")
+                MyPartialState.AddValue(status.data)
+            }
+            is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
+                .let { NoAction() }
+        }
+    }
+
+    private fun connectToDeviceAndGoToMain(
         effects: EffectsCollector<MyEffect>,
         advertisement: Advertisement
     ): Flow<MyPartialState> = flow {
         emit(MyPartialState.SetIsClickable(true))
         try {
-            val device = kableService.returnPeripheral(advertisement = advertisement, scope = scope)
-            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = advertisement))
-            emit(MyPartialState.SetConnectedToPeripheral(peripheral = device))
-            device.connect()
-            Timber.d("Device services ${device.services ?: "services empty!"}")
-            if (device.services != null) {
-                emit(MyPartialState.SetServicesFromPeripheral(device.services!!))
-            }
-            effects.send(MyEffect.ConnectToDevice(device = device))
-            device.disconnect()
+            val peripheral = kableService.returnPeripheral(
+                advertisement = advertisement,
+                scope = scope
+            )
+            peripheral.connect()
+            val services = peripheral.services ?: listOf()
+            val device = BleDevice(
+                device = peripheral,
+                advertisement = advertisement,
+                services = services
+            )
+            emit(MyPartialState.SetConnectedToBleDevice(bleDevice = device))
+            effects.send(MyEffect.GoToMain)
         } catch (e: Exception) {
             Timber.d("Exception in connect to device! + ${e.message}")
-            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
-            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
-            effects.send(MyEffect.ShowError("${e.message}"))
-        }
-    }
-
-    private suspend fun disconnectFromDevice(
-        effects: EffectsCollector<MyEffect>,
-        device: Peripheral
-    ): Flow<MyPartialState> = flow {
-        try {
-            device.disconnect()
-            Timber.d("Disconnected!")
-            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
-            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
-            emit(MyPartialState.SetServicesFromPeripheral(listOf()))
-            emit(MyPartialState.SetIsClickable(true))
-            effects.send(MyEffect.GoToWelcome)
-        } catch (e: Exception) {
-            Timber.d("Exception in disconnectFromDevice! + ${e.message}")
-            emit(MyPartialState.SetConnectedToAdvertisement(advertisement = null))
-            emit(MyPartialState.SetConnectedToPeripheral(peripheral = null))
+            emit(MyPartialState.SetConnectedToBleDevice(bleDevice = null))
             effects.send(MyEffect.ShowError("${e.message}"))
         }
     }
 
     private fun startScanning(
         effects: EffectsCollector<MyEffect>,
-    ): Flow<PartialState<MyState>> = kableService.scan()
-        .map { status ->
-            when (status) {
-                ScanStatus.Scanning -> setIsScanningPartial(true)
-                is ScanStatus.Found -> setAdvertisements(
-                    advertisement = status.advertisement
-                )
-                is ScanStatus.Failed -> effects.send(MyEffect.ShowError(status.message as String))
-                    .let { NoAction() }
-                ScanStatus.Stopped -> setIsScanningPartial(false)
+    ): Flow<PartialState<MyState>> = kableService.scan().map { status ->
+        when (status) {
+            ScanStatus.Scanning -> {
+                setIsClickablePartial(true)
+                setIsScanningPartial(true)
             }
+            is ScanStatus.Found -> setAdvertisements(
+                advertisement = status.advertisement
+            )
+            is ScanStatus.Failed -> effects.send(MyEffect.ShowError(status.message as String))
+                .let { NoAction() }
+            ScanStatus.Stopped -> setIsScanningPartial(false)
         }
+    }
 
     private fun setIsScanningPartial(isScanning: Boolean): MyPartialState {
         return MyPartialState.SetIsScanning(isScanning)
+    }
+
+    private fun setIsClickablePartial(isClickable: Boolean): MyPartialState {
+        return MyPartialState.SetIsClickable(isClickable)
     }
 
     private fun setAdvertisements(

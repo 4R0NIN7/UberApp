@@ -40,7 +40,7 @@ fun DeviceItem(
     advertisement: Advertisement,
     canDisconnect: Boolean
 ) {
-    val device by processor.collectAsState { it.peripheral }
+    val device by processor.collectAsState { it.device }
     val isClickable by processor.collectAsState { it.isClickable }
     Column(
         verticalArrangement = Arrangement.Center,

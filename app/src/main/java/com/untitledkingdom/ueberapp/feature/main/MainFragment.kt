@@ -15,7 +15,7 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.utils.showError
+import com.untitledkingdom.ueberapp.utils.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -49,13 +49,21 @@ class MainFragment : Fragment() {
     }
 
     private fun viewEvents() = listOf(
-        flowOf(MyEvent.SetIsClickable(true))
+        flowOf(MyEvent.SetIsClickable(true)),
+        flowOf(MyEvent.ReadDataInLoop)
     )
 
     private fun trigger(effect: MyEffect) {
         when (effect) {
             MyEffect.GoToWelcome -> goToWelcome()
-            is MyEffect.ShowError -> showError(message = effect.message, context = requireContext())
+            is MyEffect.ShowData -> toastMessage(
+                message = effect.data,
+                context = requireContext()
+            )
+            is MyEffect.ShowError -> toastMessage(
+                message = effect.message,
+                context = requireContext()
+            )
             else -> {}
         }
     }
