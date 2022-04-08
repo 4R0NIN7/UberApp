@@ -15,11 +15,13 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.utils.toastMessage
+import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
 
+@ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
 class WelcomeFragment : Fragment() {

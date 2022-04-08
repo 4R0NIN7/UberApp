@@ -60,7 +60,7 @@ import com.untitledkingdom.ueberapp.ui.values.padding2
 import com.untitledkingdom.ueberapp.ui.values.padding24
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
-import com.untitledkingdom.ueberapp.utils.toScannedDevice
+import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 import java.time.format.DateTimeFormatter
 
 @ExperimentalPagerApi

@@ -9,13 +9,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.work.WorkManager
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.utils.toastMessage
+import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -39,6 +40,11 @@ class MainFragment : Fragment() {
             onEffect = ::trigger,
             viewEvents = ::viewEvents
         )
+        myViewModel.processor.state.value.device?.let {
+            WorkManager.getInstance(requireContext()).enqueue(
+                it.periodicWorkRequest
+            )
+        }
         return ComposeView(
             requireContext()
         ).apply {

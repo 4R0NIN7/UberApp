@@ -32,7 +32,7 @@ import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
-import com.untitledkingdom.ueberapp.utils.toScannedDevice
+import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 
 @Composable
 fun WelcomeScreen(processor: MyProcessor) {

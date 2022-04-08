@@ -1,10 +1,12 @@
 package com.untitledkingdom.ueberapp.feature.data
 
+import androidx.work.PeriodicWorkRequest
 import com.juul.kable.DiscoveredService
 import com.juul.kable.Peripheral
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
-import com.untitledkingdom.ueberapp.utils.generateRandomString
+import com.untitledkingdom.ueberapp.utils.functions.generateRandomString
+import com.untitledkingdom.ueberapp.workManager.ReadingWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -14,13 +16,18 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import java.util.*
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
-class BleDevice constructor(
+class BleDevice @Inject constructor(
     val device: Peripheral,
-    val services: List<DiscoveredService>
+    val services: List<DiscoveredService>,
 ) {
     val serviceUUID = "00001813-0000-1000-8000-00805f9b34fb"
     val characteristicUUID = "00002a31-0000-1000-8000-00805f9b34fb"
+    val periodicWorkRequest = PeriodicWorkRequest
+        .Builder(ReadingWorker::class.java, 15, TimeUnit.MINUTES)
+        .build()
     private val service: DiscoveredService = services.first {
         it.serviceUuid == UUID.fromString(serviceUUID)
     }
@@ -47,6 +54,20 @@ class BleDevice constructor(
 
     fun endReading() {
         isReading = false
+    }
+
+    fun readOnce(): Flow<BleDeviceStatus> = flow {
+        write(generateRandomString())
+        delay(1000)
+        read()
+            .catch { cause -> emit(BleDeviceStatus.Error(cause.message ?: "Error")) }
+            .collect {
+                emit(BleDeviceStatus.Success(it))
+            }
+    }.onStart {
+        device.connect()
+    }.onCompletion {
+        device.disconnect()
     }
 
     private fun read(): Flow<String> = flow {

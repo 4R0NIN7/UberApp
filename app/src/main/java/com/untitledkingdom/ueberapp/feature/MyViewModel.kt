@@ -17,7 +17,7 @@ import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.state.MyPartialState
 import com.untitledkingdom.ueberapp.feature.state.MyState
-import com.untitledkingdom.ueberapp.utils.childScope
+import com.untitledkingdom.ueberapp.utils.functions.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -33,10 +33,9 @@ typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 @HiltViewModel
 class MyViewModel @Inject constructor(
     private val kableService: KableService,
-    private val repository: Repository
+    private val repository: Repository,
 ) : ViewModel() {
     private val scope = viewModelScope.childScope()
-
     val processor: MyProcessor = processor(
         initialState = MyState(),
         onEvent = { event ->
@@ -162,7 +161,7 @@ class MyViewModel @Inject constructor(
             emit(MyPartialState.SetAdvertisement(advertisement))
             effects.send(MyEffect.GoToMain)
         } catch (e: Exception) {
-            Timber.d("Exception in connect to device! + ${e.message}")
+            Timber.d("Exception in connect to device! + $e")
             emit(MyPartialState.SetConnectedToBleDevice(bleDevice = null))
             effects.send(MyEffect.ShowError("${e.message}"))
         }

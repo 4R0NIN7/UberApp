@@ -1,11 +1,18 @@
-package com.untitledkingdom.ueberapp.utils
+package com.untitledkingdom.ueberapp.utils.functions
 
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
+import timber.log.Timber
+import kotlin.random.Random
+
+object RequestCodes {
+    const val PERMISSION_CODE = 1337
+}
 
 fun requestPermission(
     permissionType: String,
@@ -47,4 +54,20 @@ private fun showAlertDialog(
         }
         .create()
         .show()
+}
+
+fun toastMessage(message: String, context: Context) {
+    Toast.makeText(
+        context,
+        message, Toast.LENGTH_SHORT
+    ).show()
+    Timber.d(message = message)
+}
+
+fun generateRandomString(): String {
+    val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+    return (1..15)
+        .map { i -> Random.nextInt(0, charPool.size) }
+        .map(charPool::get)
+        .joinToString("")
 }

@@ -9,8 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.untitledkingdom.ueberapp.utils.RequestCodes
-import com.untitledkingdom.ueberapp.utils.requestPermission
+import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
+import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 
