@@ -10,16 +10,33 @@ class RepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager
 ) : Repository {
-    override suspend fun saveToDataBase(value: String) {
+    override suspend fun saveToDataBase(
+        value: String,
+        characteristicUUID: String,
+        serviceUUID: String
+    ) {
         val now = timeManager.provideCurrentLocalDateTime()
-        val bleData = BleData(data = value, localDateTime = now)
+        val bleData = BleData(
+            data = value,
+            localDateTime = now,
+            serviceUUID = serviceUUID,
+            characteristicUUID = characteristicUUID
+        )
         database.getDao().saveData(data = bleData)
         Timber.d("Saved to dataBase")
     }
 
-    override suspend fun getDataFromDataBase(): List<BleData> = database.getDao().getAllData()
+    override suspend fun getDataFromDataBase(
+        serviceUUID: String,
+        characteristicUUID: String
+    ): List<BleData> = database
+        .getDao()
+        .getAllData()
+        .filter { it.serviceUUID == serviceUUID && it.characteristicUUID == characteristicUUID }
+
+    override suspend fun wipeData() = database.getDao().wipeData()
 
     override fun sendData() {
-        TODO("Not implemented yet")
+        Timber.d("sendData - There's 20 records!")
     }
 }

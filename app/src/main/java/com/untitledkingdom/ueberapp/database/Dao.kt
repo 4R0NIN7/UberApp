@@ -21,5 +21,5 @@ interface Dao {
     suspend fun saveAllData(dataList: List<BleData>)
 
     @Query("DELETE from ${DatabaseConstants.TABLE}")
-    suspend fun deleteAllData()
+    suspend fun wipeData()
 }

@@ -112,12 +112,32 @@ class MyViewModel @Inject constructor(
     ): Flow<PartialState<MyState>> = device!!.readFromDeviceInLoop().map { status ->
         when (status) {
             is BleDeviceStatus.Success -> {
-                repository.saveToDataBase(status.data)
-                MyPartialState.AddValue(repository.getDataFromDataBase())
+                setData(data = status.data, device.serviceUUID, device.characteristicUUID)
             }
             is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
                 .let { NoAction() }
         }
+    }
+
+    private suspend fun setData(
+        data: String,
+        serviceUUID: String,
+        characteristicUUID: String
+    ): MyPartialState {
+        repository.saveToDataBase(
+            data,
+            serviceUUID = serviceUUID,
+            characteristicUUID = characteristicUUID
+        )
+        val valuesFromDataBase = repository.getDataFromDataBase(
+            serviceUUID = serviceUUID,
+            characteristicUUID = characteristicUUID
+        )
+        Timber.d("valuesFromDataBase size ${valuesFromDataBase.size}")
+        if (valuesFromDataBase.size % 20 == 0) {
+            repository.sendData()
+        }
+        return MyPartialState.AddValue(valuesFromDataBase)
     }
 
     private fun connectToDeviceAndGoToMain(
@@ -137,6 +157,7 @@ class MyViewModel @Inject constructor(
                 services = services
             )
             device.printService()
+            repository.wipeData()
             emit(MyPartialState.SetConnectedToBleDevice(bleDevice = device))
             emit(MyPartialState.SetAdvertisement(advertisement))
             effects.send(MyEffect.GoToMain)

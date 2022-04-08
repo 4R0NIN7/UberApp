@@ -7,8 +7,10 @@ import java.time.LocalDateTime
 
 @Entity(tableName = DatabaseConstants.TABLE)
 data class BleData(
-    @PrimaryKey(autoGenerate = false)
+    @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val data: String,
-    val localDateTime: LocalDateTime
+    val localDateTime: LocalDateTime,
+    val serviceUUID: String,
+    val characteristicUUID: String
 )
