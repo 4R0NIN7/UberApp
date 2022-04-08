@@ -10,5 +10,5 @@ data class BleData(
     @PrimaryKey(autoGenerate = false)
     val id: Int = 0,
     val data: String,
-    val date: LocalDateTime
+    val localDateTime: LocalDateTime
 )

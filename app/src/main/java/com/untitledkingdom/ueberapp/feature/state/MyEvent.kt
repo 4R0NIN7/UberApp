@@ -11,7 +11,6 @@ sealed interface MyEvent {
     object StopReadingCharacteristic : MyEvent
     object ReadDataInLoop : MyEvent
     object RefreshDeviceData : MyEvent
-    data class AddValue(val value: String) : MyEvent
     data class SetIsClickable(val isClickable: Boolean) : MyEvent
     data class TabChanged(val newTabIndex: Int) : MyEvent
     data class StartConnectingToDevice(val advertisement: Advertisement) : MyEvent

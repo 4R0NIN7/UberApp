@@ -12,10 +12,12 @@ class RepositoryImpl @Inject constructor(
 ) : Repository {
     override suspend fun saveToDataBase(value: String) {
         val now = timeManager.provideCurrentLocalDateTime()
-        val bleData = BleData(data = value, date = now)
+        val bleData = BleData(data = value, localDateTime = now)
         database.getDao().saveData(data = bleData)
         Timber.d("Saved to dataBase")
     }
+
+    override suspend fun getDataFromDataBase(): List<BleData> = database.getDao().getAllData()
 
     override fun sendData() {
         TODO("Not implemented yet")

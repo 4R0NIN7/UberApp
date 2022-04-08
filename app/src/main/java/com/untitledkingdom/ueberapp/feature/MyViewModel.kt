@@ -72,7 +72,6 @@ class MyViewModel @Inject constructor(
                     state.value.device?.endReading().toNoAction()
                 }
                 is MyEvent.SetIsClickable -> flowOf(MyPartialState.SetIsClickable(event.isClickable))
-                is MyEvent.AddValue -> flowOf(MyPartialState.AddValue(event.value))
                 MyEvent.ReadDataInLoop -> readDataInLoop(state.value.device, effects)
                 MyEvent.RefreshDeviceData -> {
                     if (state.value.selectedAdvertisement != null) {
@@ -113,10 +112,8 @@ class MyViewModel @Inject constructor(
     ): Flow<PartialState<MyState>> = device!!.readFromDeviceInLoop().map { status ->
         when (status) {
             is BleDeviceStatus.Success -> {
-                Timber.d("Data is ${status.data}")
-                Timber.d("Values are ${processor.state.value.readValues}")
                 repository.saveToDataBase(status.data)
-                MyPartialState.AddValue(status.data)
+                MyPartialState.AddValue(repository.getDataFromDataBase())
             }
             is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
                 .let { NoAction() }
