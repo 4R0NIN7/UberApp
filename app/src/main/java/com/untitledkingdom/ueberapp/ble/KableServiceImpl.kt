@@ -38,6 +38,7 @@ class KableServiceImpl @Inject constructor() : KableService {
                 )
             }
             .collect { advertisement ->
+                Timber.d("Mac Address ${advertisement.address}")
                 if (advertisement.name != null) {
                     emit(
                         ScanStatus.Found(

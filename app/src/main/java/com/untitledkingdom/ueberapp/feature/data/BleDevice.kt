@@ -1,12 +1,10 @@
 package com.untitledkingdom.ueberapp.feature.data
 
-import androidx.work.PeriodicWorkRequest
-import com.juul.kable.DiscoveredService
-import com.juul.kable.Peripheral
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
+import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.utils.functions.generateRandomString
-import com.untitledkingdom.ueberapp.workManager.ReadingWorker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -16,23 +14,13 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-class BleDevice @Inject constructor(
-    val device: Peripheral,
-    val services: List<DiscoveredService>,
-) {
+class BleDevice @Inject constructor(scope: CoroutineScope, macAddress: String) {
+    private val device = scope.peripheral(macAddress)
     val serviceUUID = "00001813-0000-1000-8000-00805f9b34fb"
     val characteristicUUID = "00002a31-0000-1000-8000-00805f9b34fb"
-    val periodicWorkRequest = PeriodicWorkRequest
-        .Builder(ReadingWorker::class.java, 15, TimeUnit.MINUTES)
-        .build()
-    private val service: DiscoveredService = services.first {
-        it.serviceUuid == UUID.fromString(serviceUUID)
-    }
     private var isReading = true
-
     fun readFromDeviceInLoop(): Flow<BleDeviceStatus> = flow {
         while (true) {
             write(generateRandomString())
@@ -73,12 +61,12 @@ class BleDevice @Inject constructor(
     private fun read(): Flow<String> = flow {
         try {
             device.services?.first {
-                it.serviceUuid == service.serviceUuid
+                it.serviceUuid == UUID.fromString(serviceUUID)
             }?.characteristics?.forEach {
                 if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
                     val data = device.read(
                         characteristicOf(
-                            service = service.serviceUuid.toString(),
+                            service = serviceUUID,
                             characteristic = characteristicUUID
                         )
                     )
@@ -94,12 +82,12 @@ class BleDevice @Inject constructor(
     private suspend fun write(value: String) {
         try {
             device.services?.first {
-                it.serviceUuid == service.serviceUuid
+                it.serviceUuid == UUID.fromString(serviceUUID)
             }?.characteristics?.forEach {
                 if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
                     device.write(
                         characteristicOf(
-                            service = service.serviceUuid.toString(),
+                            service = serviceUUID,
                             characteristic = characteristicUUID
                         ),
                         value.toByteArray(),
@@ -109,13 +97,6 @@ class BleDevice @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
-        }
-    }
-
-    fun printService() {
-        println("Services are")
-        services.forEach {
-            println(it.serviceUuid)
         }
     }
 }

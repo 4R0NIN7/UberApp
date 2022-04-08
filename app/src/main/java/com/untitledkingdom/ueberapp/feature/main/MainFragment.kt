@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
@@ -17,10 +18,13 @@ import com.untitledkingdom.ueberapp.feature.MyViewModel
 import com.untitledkingdom.ueberapp.feature.state.MyEffect
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
+import com.untitledkingdom.ueberapp.workManager.ReadingWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
+import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 @ExperimentalPagerApi
 @FlowPreview
@@ -41,8 +45,12 @@ class MainFragment : Fragment() {
             viewEvents = ::viewEvents
         )
         myViewModel.processor.state.value.device?.let {
+            val periodicWorkRequest = PeriodicWorkRequest
+                .Builder(ReadingWorker::class.java, 15, TimeUnit.MINUTES)
+                .addTag("WorkManager")
+                .build()
             WorkManager.getInstance(requireContext()).enqueue(
-                it.periodicWorkRequest
+                periodicWorkRequest
             )
         }
         return ComposeView(
@@ -73,6 +81,12 @@ class MainFragment : Fragment() {
             )
             else -> {}
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        Timber.d("WorkManager cancelled")
+        WorkManager.getInstance(requireContext()).cancelAllWork()
     }
 
     private fun goToWelcome() {

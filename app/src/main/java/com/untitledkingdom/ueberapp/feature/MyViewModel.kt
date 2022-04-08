@@ -150,14 +150,9 @@ class MyViewModel @Inject constructor(
                 scope = scope
             )
             peripheral.connect()
-            val services = peripheral.services ?: listOf()
-            val device = BleDevice(
-                device = peripheral,
-                services = services
-            )
-            device.printService()
             repository.wipeData()
-            emit(MyPartialState.SetConnectedToBleDevice(bleDevice = device))
+            val bleDevice = BleDevice(scope = scope, advertisement.address)
+            emit(MyPartialState.SetConnectedToBleDevice(bleDevice = bleDevice))
             emit(MyPartialState.SetAdvertisement(advertisement))
             effects.send(MyEffect.GoToMain)
         } catch (e: Exception) {

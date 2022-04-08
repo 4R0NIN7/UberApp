@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConstants
 import com.untitledkingdom.ueberapp.feature.Repository
 import com.untitledkingdom.ueberapp.feature.RepositoryImpl
+import com.untitledkingdom.ueberapp.feature.data.BleDevice
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
@@ -19,6 +20,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -60,6 +65,16 @@ object Modules {
             Database::class.java,
             DatabaseConstants.DATABASE_NAME
         ).fallbackToDestructiveMigration().build()
+
+    @Provides
+    @Singleton
+    fun provideBleDevice(scope: CoroutineScope): BleDevice = BleDevice(scope, "F8:FF:C2:62:FE:89")
+
+    @ExperimentalCoroutinesApi
+    @Provides
+    fun provideScope(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
 }
 
 @Module

@@ -9,17 +9,18 @@ import com.untitledkingdom.ueberapp.feature.data.BleData
 import com.untitledkingdom.ueberapp.feature.data.BleDevice
 import com.untitledkingdom.ueberapp.feature.data.BleDeviceStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltWorker
-class ReadingWorker @Inject constructor(
+class ReadingWorker @AssistedInject constructor(
     private val bleDevice: BleDevice,
     private val database: Database,
     private val timeManager: TimeManager,
-    context: Context,
-    params: WorkerParameters
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
