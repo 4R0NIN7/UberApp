@@ -1,6 +1,7 @@
 package com.untitledkingdom.ueberapp.feature.state
 
 import com.juul.kable.Advertisement
+import com.untitledkingdom.ueberapp.feature.data.BleData
 import com.untitledkingdom.ueberapp.feature.data.BleDevice
 
 data class MyState(
@@ -10,5 +11,5 @@ data class MyState(
     val advertisements: List<Advertisement> = listOf(),
     val selectedAdvertisement: Advertisement? = null,
     val device: BleDevice? = null,
-    val readValues: List<String> = listOf()
+    val readValues: List<BleData> = listOf()
 )

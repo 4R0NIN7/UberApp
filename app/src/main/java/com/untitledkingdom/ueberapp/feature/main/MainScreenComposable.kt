@@ -42,6 +42,7 @@ import com.juul.kable.DiscoveredService
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.MyProcessor
+import com.untitledkingdom.ueberapp.feature.data.BleData
 import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
@@ -60,6 +61,7 @@ import com.untitledkingdom.ueberapp.ui.values.padding24
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.toScannedDevice
+import java.time.format.DateTimeFormatter
 
 @ExperimentalPagerApi
 @Composable
@@ -239,29 +241,29 @@ fun Values(processor: MyProcessor) {
     ) {
         items(items = readValues) { value ->
             Value(
-                value = value,
-                indexOf = readValues.indexOf(value)
+                value = value
             )
         }
     }
 }
 
 @Composable
-fun Value(value: String, indexOf: Int) {
+fun Value(value: BleData) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Value $indexOf",
-            style = Typography.h6,
+            text = value.localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            style = Typography.body1,
             fontWeight = FontWeight.SemiBold,
             color = BlackSelectedDay,
+            softWrap = true
         )
         Text(
-            text = " $value",
-            style = Typography.h6,
+            text = " ${value.data}",
+            style = Typography.body1,
             fontWeight = FontWeight.Normal,
             color = Gray,
         )

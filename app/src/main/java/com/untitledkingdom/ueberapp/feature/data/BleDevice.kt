@@ -19,10 +19,11 @@ class BleDevice constructor(
     val device: Peripheral,
     val services: List<DiscoveredService>
 ) {
+    val serviceUUID = "00001813-0000-1000-8000-00805f9b34fb"
+    val characteristicUUID = "00002a31-0000-1000-8000-00805f9b34fb"
     private val service: DiscoveredService = services.first {
-        it.serviceUuid == UUID.fromString("00001813-0000-1000-8000-00805f9b34fb")
+        it.serviceUuid == UUID.fromString(serviceUUID)
     }
-    private val characteristic = "00002a31-0000-1000-8000-00805f9b34fb"
     private var isReading = true
 
     fun readFromDeviceInLoop(): Flow<BleDeviceStatus> = flow {
@@ -53,11 +54,11 @@ class BleDevice constructor(
             device.services?.first {
                 it.serviceUuid == service.serviceUuid
             }?.characteristics?.forEach {
-                if (it.characteristicUuid == UUID.fromString(characteristic)) {
+                if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
                     val data = device.read(
                         characteristicOf(
                             service = service.serviceUuid.toString(),
-                            characteristic = characteristic
+                            characteristic = characteristicUUID
                         )
                     )
                     emit(String(data))
@@ -74,11 +75,11 @@ class BleDevice constructor(
             device.services?.first {
                 it.serviceUuid == service.serviceUuid
             }?.characteristics?.forEach {
-                if (it.characteristicUuid == UUID.fromString(characteristic)) {
+                if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
                     device.write(
                         characteristicOf(
                             service = service.serviceUuid.toString(),
-                            characteristic = characteristic
+                            characteristic = characteristicUUID
                         ),
                         value.toByteArray(),
                         writeType = WriteType.WithResponse

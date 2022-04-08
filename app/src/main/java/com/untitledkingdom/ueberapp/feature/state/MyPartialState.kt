@@ -2,6 +2,7 @@ package com.untitledkingdom.ueberapp.feature.state
 
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.PartialState
+import com.untitledkingdom.ueberapp.feature.data.BleData
 import com.untitledkingdom.ueberapp.feature.data.BleDevice
 
 sealed interface MyPartialState : PartialState<MyState> {
@@ -37,9 +38,9 @@ sealed interface MyPartialState : PartialState<MyState> {
             oldState.copy(selectedAdvertisement = advertisement)
     }
 
-    data class AddValue(val value: String) : MyPartialState {
+    data class AddValue(val values: List<BleData>) : MyPartialState {
         override fun reduce(oldState: MyState): MyState =
-            oldState.copy(readValues = oldState.readValues + value)
+            oldState.copy(readValues = oldState.readValues + values)
     }
 
     data class SetIsClickable(val isClickable: Boolean) : MyPartialState {

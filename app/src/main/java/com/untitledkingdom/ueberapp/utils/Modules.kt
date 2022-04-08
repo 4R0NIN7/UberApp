@@ -1,11 +1,19 @@
 package com.untitledkingdom.ueberapp.utils
 
+import android.app.Application
+import androidx.room.Room
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.KableServiceImpl
+import com.untitledkingdom.ueberapp.database.Database
+import com.untitledkingdom.ueberapp.database.DatabaseConstants
+import com.untitledkingdom.ueberapp.feature.Repository
+import com.untitledkingdom.ueberapp.feature.RepositoryImpl
+import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -43,6 +51,15 @@ object Modules {
             .addInterceptor(httpLoggingInterceptor)
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideDataBase(context: Application): Database =
+        Room.databaseBuilder(
+            context,
+            Database::class.java,
+            DatabaseConstants.DATABASE_NAME
+        ).fallbackToDestructiveMigration().build()
 }
 
 @Module
@@ -50,4 +67,12 @@ object Modules {
 interface BindModules {
     @Binds
     fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
+
+    @Binds
+    fun bindRepository(repositoryImpl: RepositoryImpl): Repository
+
+    @Binds
+    fun bindTimeManager(
+        timeManagerImpl: TimeManagerImpl,
+    ): TimeManager
 }
