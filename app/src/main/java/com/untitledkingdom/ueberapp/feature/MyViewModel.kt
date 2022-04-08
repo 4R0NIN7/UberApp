@@ -32,7 +32,8 @@ typealias MyProcessor = Processor<MyEvent, MyState, MyEffect>
 @ExperimentalCoroutinesApi
 @HiltViewModel
 class MyViewModel @Inject constructor(
-    private val kableService: KableService
+    private val kableService: KableService,
+    private val repository: Repository
 ) : ViewModel() {
     private val scope = viewModelScope.childScope()
 
@@ -114,6 +115,7 @@ class MyViewModel @Inject constructor(
             is BleDeviceStatus.Success -> {
                 Timber.d("Data is ${status.data}")
                 Timber.d("Values are ${processor.state.value.readValues}")
+                repository.saveToDataBase(status.data)
                 MyPartialState.AddValue(status.data)
             }
             is BleDeviceStatus.Error -> effects.send(MyEffect.ShowError(status.message))
