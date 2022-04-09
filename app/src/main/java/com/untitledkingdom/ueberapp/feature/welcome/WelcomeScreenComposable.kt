@@ -23,19 +23,18 @@ import androidx.compose.ui.unit.sp
 import com.tomcz.ellipse.common.collectAsState
 import com.tomcz.ellipse.common.previewProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.MyProcessor
-import com.untitledkingdom.ueberapp.feature.state.MyEvent
-import com.untitledkingdom.ueberapp.feature.state.MyState
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
-import com.untitledkingdom.ueberapp.utils.toScannedDevice
+import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 
 @Composable
-fun WelcomeScreen(processor: MyProcessor) {
+fun WelcomeScreen(processor: WelcomeProcessor) {
     Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -50,7 +49,7 @@ fun WelcomeScreen(processor: MyProcessor) {
 }
 
 @Composable
-fun AppInfo(processor: MyProcessor) {
+fun AppInfo(processor: WelcomeProcessor) {
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -79,13 +78,16 @@ fun AppInfo(processor: MyProcessor) {
         if (!isScanning) {
             Button(
                 onClick = {
-                    processor.sendEvent(MyEvent.RemoveScannedDevices, MyEvent.StartScanning)
+                    processor.sendEvent(
+                        WelcomeEvent.RemoveScannedDevices,
+                        WelcomeEvent.StartScanning
+                    )
                 }
             ) {
                 Text(text = "Start Scan")
             }
         } else {
-            Button(onClick = { processor.sendEvent(MyEvent.StopScanning) }) {
+            Button(onClick = { processor.sendEvent(WelcomeEvent.StopScanning) }) {
                 Text(text = "Stop Scan")
             }
         }
@@ -93,8 +95,9 @@ fun AppInfo(processor: MyProcessor) {
 }
 
 @Composable
-fun Devices(processor: MyProcessor) {
+fun Devices(processor: WelcomeProcessor) {
     val advertisements by processor.collectAsState { it.advertisements }
+    val isScanning by processor.collectAsState { it.isScanning }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -103,12 +106,13 @@ fun Devices(processor: MyProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = advertisements.sortedByDescending { it.name }) {
+        items(items = advertisements.sortedBy { it.name }) {
             DeviceItem(
                 scannedDevice = it.toScannedDevice(),
-                processor = processor,
-                advertisement = it,
-                canDisconnect = false
+                action = {
+                    if (isScanning) processor.sendEvent(WelcomeEvent.StopScanning)
+                    processor.sendEvent(WelcomeEvent.StartConnectingToDevice(it))
+                }
             )
         }
     }
@@ -117,5 +121,5 @@ fun Devices(processor: MyProcessor) {
 @Composable
 @Preview(showBackground = true)
 fun Preview() {
-    WelcomeScreen(processor = previewProcessor(MyState()))
+    WelcomeScreen(processor = previewProcessor(WelcomeState()))
 }

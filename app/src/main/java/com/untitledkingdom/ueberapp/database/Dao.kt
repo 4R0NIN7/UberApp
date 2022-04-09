@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy.REPLACE
 import androidx.room.Query
-import com.untitledkingdom.ueberapp.feature.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.BleData
 
 @Dao
 interface Dao {

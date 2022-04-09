@@ -3,7 +3,7 @@ package com.untitledkingdom.ueberapp.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.untitledkingdom.ueberapp.feature.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.BleData
 
 @Database(
     entities = [BleData::class],

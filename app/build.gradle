@@ -69,6 +69,12 @@ dependencies {
     // Kable
     implementation"com.juul.kable:core:$kable_version"
 
+    // WorkManager
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-multiprocess:$work_version"
+    implementation 'androidx.work:work-runtime-ktx:2.8.0-alpha02'
+
+
     // Timber
     implementation "com.jakewharton.timber:timber:$timber_version"
 
@@ -83,10 +89,19 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-moshi:$moshi_converter_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
 
+    // Preferences
+    implementation "androidx.datastore:datastore:$data_store_version"
+    implementation "androidx.datastore:datastore-rxjava2:$data_store_version"
+    implementation "androidx.datastore:datastore-rxjava3:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences-rxjava2:$data_store_version"
+    implementation "androidx.datastore:datastore-preferences-rxjava3:$data_store_version"
+
 
     // Hilt & Dagger2
     implementation "com.google.dagger:hilt-android:$hilt_dagger_version"
     implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_lifecycle_viewModel_version"
+    implementation "androidx.hilt:hilt-work:1.0.0"
     testImplementation 'org.junit.jupiter:junit-jupiter'
     kapt "com.google.dagger:hilt-android-compiler:$hilt_dagger_version"
 
@@ -137,6 +152,7 @@ dependencies {
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     androidTestImplementation "androidx.navigation:navigation-testing:$navigation_version"
+    androidTestImplementation "androidx.work:work-testing:$work_version"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
     androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
 

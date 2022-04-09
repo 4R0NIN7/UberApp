@@ -1,6 +1,10 @@
 package com.untitledkingdom.ueberapp.utils
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -10,8 +14,11 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.KableServiceImpl
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConstants
-import com.untitledkingdom.ueberapp.feature.Repository
-import com.untitledkingdom.ueberapp.feature.RepositoryImpl
+import com.untitledkingdom.ueberapp.datastore.DataStorage
+import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
+import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
@@ -19,6 +26,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -28,6 +39,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object Modules {
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+        name = DataStorageConstants.DATA_STORE_NAME
+    )
+
     @Provides
     @Singleton
     fun provideMockRestApiClient(): ApiService {
@@ -60,6 +75,24 @@ object Modules {
             Database::class.java,
             DatabaseConstants.DATABASE_NAME
         ).fallbackToDestructiveMigration().build()
+
+    @ExperimentalCoroutinesApi
+    @Provides
+    fun provideScope(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage {
+        return dataStorageImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataStore(context: Application): DataStore<Preferences> {
+        return context.dataStore
+    }
 }
 
 @Module
@@ -69,7 +102,7 @@ interface BindModules {
     fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
 
     @Binds
-    fun bindRepository(repositoryImpl: RepositoryImpl): Repository
+    fun bindRepository(repositoryImpl: MainRepositoryImpl): MainRepository
 
     @Binds
     fun bindTimeManager(

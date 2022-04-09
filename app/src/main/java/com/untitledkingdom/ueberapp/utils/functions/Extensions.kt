@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.utils
+package com.untitledkingdom.ueberapp.utils.functions
 
 import com.juul.kable.Advertisement
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice

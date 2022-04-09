@@ -41,9 +41,8 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.juul.kable.DiscoveredService
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.MyProcessor
-import com.untitledkingdom.ueberapp.feature.data.BleData
-import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
@@ -60,12 +59,12 @@ import com.untitledkingdom.ueberapp.ui.values.padding2
 import com.untitledkingdom.ueberapp.ui.values.padding24
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
-import com.untitledkingdom.ueberapp.utils.toScannedDevice
+import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 import java.time.format.DateTimeFormatter
 
 @ExperimentalPagerApi
 @Composable
-fun MainScreenCompose(processor: MyProcessor) {
+fun MainScreenCompose(processor: MainProcessor) {
     Scaffold(
         backgroundColor = AppBackground,
         topBar = {
@@ -78,7 +77,7 @@ fun MainScreenCompose(processor: MyProcessor) {
 
 @ExperimentalPagerApi
 @Composable
-fun Tabs(processor: MyProcessor) {
+fun Tabs(processor: MainProcessor) {
     val tabIndex by processor.collectAsState { it.tabIndex }
     val tabs = listOf(
         stringResource(R.string.main_main_screen),
@@ -128,7 +127,7 @@ fun Tabs(processor: MyProcessor) {
                             modifier = Modifier.wrapContentWidth(Alignment.Start),
                             selected = tabIndex == index,
                             onClick = {
-                                processor.sendEvent(MyEvent.TabChanged(index))
+                                processor.sendEvent(MainEvent.TabChanged(index))
                             },
                             text = {
                                 TabTitle(title = title)
@@ -154,15 +153,15 @@ fun Tabs(processor: MyProcessor) {
         ) {
             when (tabIndex) {
                 0 -> {
-                    processor.sendEvent(MyEvent.TabChanged(0))
+                    processor.sendEvent(MainEvent.TabChanged(0))
                     MainScreen(processor)
                 }
                 1 -> {
-                    processor.sendEvent(MyEvent.TabChanged(1))
+                    processor.sendEvent(MainEvent.TabChanged(1))
                     HistoryScreen(processor)
                 }
                 2 -> {
-                    processor.sendEvent(MyEvent.TabChanged(2))
+                    processor.sendEvent(MainEvent.TabChanged(2))
                     SettingsScreen(processor)
                 }
             }
@@ -171,16 +170,16 @@ fun Tabs(processor: MyProcessor) {
 }
 
 @Composable
-fun MainScreen(processor: MyProcessor) {
+fun MainScreen(processor: MainProcessor) {
     DeviceInfo(processor = processor)
 }
 
 @Composable
-fun HistoryScreen(processor: MyProcessor) {
+fun HistoryScreen(processor: MainProcessor) {
 }
 
 @Composable
-fun SettingsScreen(processor: MyProcessor) {
+fun SettingsScreen(processor: MainProcessor) {
 }
 
 @Composable
@@ -198,7 +197,7 @@ private fun TabTitle(title: String) {
 }
 
 @Composable
-fun DeviceInfo(processor: MyProcessor) {
+fun DeviceInfo(processor: MainProcessor) {
     Column(
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -218,10 +217,10 @@ fun DeviceInfo(processor: MyProcessor) {
                 .padding(padding8),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Button(onClick = { processor.sendEvent(MyEvent.ReadCharacteristic) }) {
+            Button(onClick = { processor.sendEvent(MainEvent.ReadCharacteristic) }) {
                 Text("Start Reading")
             }
-            Button(onClick = { processor.sendEvent(MyEvent.StopReadingCharacteristic) }) {
+            Button(onClick = { processor.sendEvent(MainEvent.StopReadingCharacteristic) }) {
                 Text("Stop Reading")
             }
         }
@@ -229,7 +228,7 @@ fun DeviceInfo(processor: MyProcessor) {
 }
 
 @Composable
-fun Values(processor: MyProcessor) {
+fun Values(processor: MainProcessor) {
     val readValues by processor.collectAsState { it.readValues }
     LazyColumn(
         modifier = Modifier
@@ -271,7 +270,7 @@ fun Value(value: BleData) {
 }
 
 @Composable
-fun Service(service: DiscoveredService, processor: MyProcessor) {
+fun Service(service: DiscoveredService, processor: MainProcessor) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,7 +279,7 @@ fun Service(service: DiscoveredService, processor: MyProcessor) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    processor.sendEvent(MyEvent.ReadCharacteristic)
+                    processor.sendEvent(MainEvent.ReadCharacteristic)
                 },
             shape = shape8,
             border = null,
@@ -312,10 +311,9 @@ fun DividerGray(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ConnectedDevice(processor: MyProcessor) {
-    val device by processor.collectAsState { it.device }
-    val selectedAdvertisement by processor.collectAsState { it.selectedAdvertisement }
-    if (device != null && selectedAdvertisement != null) {
+fun ConnectedDevice(processor: MainProcessor) {
+    val selectedAdvertisement by processor.collectAsState { it.advertisement }
+    if (selectedAdvertisement != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
@@ -330,11 +328,18 @@ fun ConnectedDevice(processor: MyProcessor) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                val isScanning by processor.collectAsState { it.isScanning }
                 DeviceItem(
-                    advertisement = selectedAdvertisement!!,
-                    processor = processor,
                     scannedDevice = selectedAdvertisement!!.toScannedDevice(),
-                    canDisconnect = true
+                    action = {
+                        if (isScanning) {
+                            processor.sendEvent(MainEvent.StopScanning)
+                        }
+                        processor.sendEvent(
+                            MainEvent.StopReadingCharacteristic,
+                            MainEvent.EndConnectingToDevice
+                        )
+                    }
                 )
             }
         }

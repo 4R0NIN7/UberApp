@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,11 +17,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import com.juul.kable.Advertisement
-import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.MyProcessor
-import com.untitledkingdom.ueberapp.feature.state.MyEvent
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
@@ -36,13 +31,8 @@ import com.untitledkingdom.ueberapp.ui.values.shape8
 @Composable
 fun DeviceItem(
     scannedDevice: ScannedDevice,
-    processor: MyProcessor,
-    advertisement: Advertisement,
-    canDisconnect: Boolean
+    action: () -> Unit
 ) {
-    val device by processor.collectAsState { it.device }
-    val isClickable by processor.collectAsState { it.isClickable }
-    val isScanning by processor.collectAsState { it.isScanning }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -50,22 +40,7 @@ fun DeviceItem(
         Card(
             modifier = Modifier
                 .clickable {
-                    if (isClickable) {
-                        if (canDisconnect) {
-                            processor.sendEvent(
-                                MyEvent.SetIsClickable(false),
-                                MyEvent.EndConnectingToDevice(device!!)
-                            )
-                        } else {
-                            if (isScanning) {
-                                processor.sendEvent(MyEvent.StopScanning)
-                            }
-                            processor.sendEvent(
-                                MyEvent.StartConnectingToDevice(advertisement = advertisement),
-                                MyEvent.SetIsClickable(false)
-                            )
-                        }
-                    }
+                    action()
                 }
                 .fillMaxWidth(),
             shape = shape8,
