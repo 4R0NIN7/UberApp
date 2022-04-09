@@ -3,7 +3,7 @@ package com.untitledkingdom.ueberapp.database
 import androidx.room.TypeConverter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.untitledkingdom.ueberapp.feature.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.BleData
 import java.time.LocalDateTime
 
 class Converters {

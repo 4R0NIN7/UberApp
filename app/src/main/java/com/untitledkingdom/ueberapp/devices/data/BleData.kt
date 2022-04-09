@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.feature.data
+package com.untitledkingdom.ueberapp.devices.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

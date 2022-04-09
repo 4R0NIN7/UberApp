@@ -12,9 +12,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.feature.MyViewModel
-import com.untitledkingdom.ueberapp.feature.state.MyEffect
-import com.untitledkingdom.ueberapp.feature.state.MyEvent
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 @FlowPreview
 @AndroidEntryPoint
 class WelcomeFragment : Fragment() {
-    private val myViewModel: MyViewModel by viewModels(ownerProducer = { requireActivity() })
+    private val welcomeViewModel: WelcomeViewModel by viewModels(ownerProducer = { requireActivity() })
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,7 +33,7 @@ class WelcomeFragment : Fragment() {
     ): View {
         onProcessor(
             lifecycleState = Lifecycle.State.RESUMED,
-            processor = myViewModel::processor,
+            processor = welcomeViewModel::processor,
             onEffect = ::trigger,
             viewEvents = ::viewEvents
 
@@ -43,19 +42,22 @@ class WelcomeFragment : Fragment() {
             requireContext()
         ).apply {
             setContent {
-                WelcomeScreen(myViewModel.processor)
+                WelcomeScreen(welcomeViewModel.processor)
             }
         }
     }
 
     private fun viewEvents() = listOf(
-        flowOf(MyEvent.SetIsClickable(true))
+        flowOf(WelcomeEvent.SetIsClickable(true))
     )
 
-    private fun trigger(effect: MyEffect) {
+    private fun trigger(effect: WelcomeEffect) {
         when (effect) {
-            MyEffect.GoToMain -> goToMainFragment()
-            is MyEffect.ShowError -> toastMessage(message = effect.message, context = requireContext())
+            WelcomeEffect.GoToMain -> goToMainFragment()
+            is WelcomeEffect.ShowError -> toastMessage(
+                message = effect.message,
+                context = requireContext()
+            )
             else -> {}
         }
     }

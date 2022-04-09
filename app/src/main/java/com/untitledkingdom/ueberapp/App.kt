@@ -5,9 +5,7 @@ import android.content.Context
 import androidx.work.Configuration
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.untitledkingdom.ueberapp.database.Database
-import com.untitledkingdom.ueberapp.feature.data.BleDevice
-import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.workManager.ReadingWorker
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -31,9 +29,7 @@ class App : Application(), Configuration.Provider {
 }
 
 class MyWorkerFactory @Inject constructor(
-    private val bleDevice: BleDevice,
-    private val timeManager: TimeManager,
-    private val database: Database
+    private val repository: MainRepository
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -41,9 +37,7 @@ class MyWorkerFactory @Inject constructor(
         workerParameters: WorkerParameters
     ): ReadingWorker =
         ReadingWorker(
-            bleDevice = bleDevice,
-            database = database,
-            timeManager = timeManager,
+            repository = repository,
             context = appContext,
             workerParameters
         )

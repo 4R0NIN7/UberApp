@@ -57,7 +57,7 @@ class KableServiceImpl @Inject constructor() : KableService {
         isScanning = true
     }
 
-    override fun refreshDeviceData(selectedAdvertisement: Advertisement): Flow<ScanStatus> = flow {
+    override fun refreshDeviceData(macAddress: String): Flow<ScanStatus> = flow {
         scanner
             .advertisements
             .catch { cause ->
@@ -68,7 +68,7 @@ class KableServiceImpl @Inject constructor() : KableService {
                 )
             }
             .collect { advertisement ->
-                if (advertisement.address == selectedAdvertisement.address) {
+                if (advertisement.address == macAddress) {
                     emit(
                         ScanStatus.Found(
                             advertisement = advertisement
