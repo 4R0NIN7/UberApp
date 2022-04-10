@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
+import java.time.LocalDateTime
+import java.time.Month
 import javax.inject.Inject
 
 class MainRepositoryImpl @Inject constructor(
@@ -53,7 +55,23 @@ class MainRepositoryImpl @Inject constructor(
         .getAllData()
         .filter { it.serviceUUID == serviceUUID && it.characteristicUUID == characteristicUUID }
 
-    override suspend fun wipeData() = database.getDao().wipeData()
+    override suspend fun wipeData() {
+        database.getDao().wipeData()
+    }
+
+    private suspend fun prepareMockData() {
+        for (i in 1..30) {
+            val bleData = BleData(
+                data = generateRandomString(),
+                localDateTime = LocalDateTime.of(
+                    2022, Month.MARCH, i, i, i, i
+                ),
+                serviceUUID = "00001813-0000-1000-8000-00805f9b34fb",
+                characteristicUUID = "00002a31-0000-1000-8000-00805f9b34fb"
+            )
+            database.getDao().saveData(data = bleData)
+        }
+    }
 
     override fun sendData() {
         Timber.d("sendData - There's 20 records!")
@@ -93,7 +111,6 @@ class MainRepositoryImpl @Inject constructor(
         isReading = true
     }.catch { cause ->
         Timber.d(cause)
-        isReading = false
     }
 
     override fun stopReadingDataFromDevice() {

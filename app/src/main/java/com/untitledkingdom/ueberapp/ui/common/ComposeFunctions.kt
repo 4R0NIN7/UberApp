@@ -102,7 +102,7 @@ private fun colorRssi(rssi: Int): Color {
 }
 
 @Composable
-private fun RowText(
+internal fun RowText(
     key: String,
     value: String,
     colorValue: Color,

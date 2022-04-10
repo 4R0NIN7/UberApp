@@ -53,6 +53,7 @@ class MainViewModel @Inject constructor(
                     kableService.stopScan()
                     effects.send(MainEffect.GoToWelcome)
                 }
+                MainEvent.WipeData -> repository.wipeData().toNoAction()
             }
         }
     )

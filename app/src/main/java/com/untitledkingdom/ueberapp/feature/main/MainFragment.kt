@@ -60,6 +60,7 @@ class MainFragment : Fragment() {
     }
 
     private fun viewEvents() = listOf(
+        // flowOf(MainEvent.WipeData),
         flowOf(MainEvent.ReadCharacteristic),
         flowOf(MainEvent.RefreshDeviceData)
     )
