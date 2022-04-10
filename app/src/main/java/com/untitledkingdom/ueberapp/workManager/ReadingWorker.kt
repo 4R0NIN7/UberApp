@@ -22,6 +22,7 @@ class ReadingWorker @AssistedInject constructor(
             repository.readOnceFromDevice()
             Result.success()
         } catch (e: Exception) {
+            Timber.d(e)
             Result.failure()
         }
     }

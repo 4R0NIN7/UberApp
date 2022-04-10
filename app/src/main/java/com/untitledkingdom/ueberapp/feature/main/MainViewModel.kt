@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
@@ -35,7 +36,11 @@ class MainViewModel @Inject constructor(
     val processor: MainProcessor = processor(
         initialState = MainState(),
         prepare = {
-            flowOf(MainPartialState.SetMacAddress(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)))
+            flowOf(
+                MainPartialState.SetMacAddress(
+                    dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
+                )
+            )
         },
         onEvent = { event ->
             when (event) {
@@ -54,6 +59,8 @@ class MainViewModel @Inject constructor(
                     effects.send(MainEffect.GoToWelcome)
                 }
                 MainEvent.WipeData -> repository.wipeData().toNoAction()
+                is MainEvent.OpenDetailsForDay -> effects.send(MainEffect.OpenDetailsForDay(event.date))
+                    .toNoAction()
             }
         }
     )
@@ -82,10 +89,11 @@ class MainViewModel @Inject constructor(
     ): Flow<PartialState<MainState>> = repository.startReadingDataFromDevice().map { status ->
         when (status) {
             is RepositoryStatus.Success -> {
-                MainPartialState.AddValue(status.data)
+                MainPartialState.SetValues(status.data)
             }
             RepositoryStatus.Error -> effects.send(MainEffect.ShowError("Unable to read data"))
                 .let { NoAction() }
+            is RepositoryStatus.Loading -> MainPartialState.SetValues(status.data)
         }
     }
 

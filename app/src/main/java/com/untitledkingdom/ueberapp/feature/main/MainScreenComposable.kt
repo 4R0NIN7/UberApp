@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -40,16 +41,20 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.BleDataConst
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
+import com.untitledkingdom.ueberapp.ui.values.Blue
 import com.untitledkingdom.ueberapp.ui.values.DevicesTabsColorBlack
 import com.untitledkingdom.ueberapp.ui.values.Gray
 import com.untitledkingdom.ueberapp.ui.values.SectionDividerLight
+import com.untitledkingdom.ueberapp.ui.values.SplashPurple
 import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.fontSize18
@@ -61,8 +66,9 @@ import com.untitledkingdom.ueberapp.ui.values.padding72
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
-import com.untitledkingdom.ueberapp.utils.date.DateFormatter.convertToHHMMSS
+import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
+import java.time.temporal.ChronoUnit
 
 @ExperimentalPagerApi
 @Composable
@@ -182,7 +188,8 @@ fun HistoryScreen(processor: MainProcessor) {
         it.readValues.groupBy { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
     }
     val dates by processor.collectAsState {
-        it.readValues.map { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
+        it.readValues
+            .map { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
             .distinct()
     }
     Column(
@@ -193,26 +200,44 @@ fun HistoryScreen(processor: MainProcessor) {
             .padding(top = padding24)
             .padding(horizontal = padding12)
     ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(padding8),
-            modifier = Modifier.padding(end = padding24),
-            contentPadding = PaddingValues(bottom = padding72)
-        ) {
-            dates.forEach { date ->
-                item {
-                    DateDisplay(date = date.toString())
-                }
-                val values = valuesGroupedByDate[date]
-                if (values != null) {
-                    items(items = values) {
-                        ValueItem(bleData = it)
+        if (dates.isNotEmpty()) {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(padding8),
+                modifier = Modifier.padding(end = padding24),
+                contentPadding = PaddingValues(bottom = padding72)
+            ) {
+                items(items = dates) { date ->
+                    val values = valuesGroupedByDate[date]
+                    if (values != null) {
+                        DayDisplay(
+                            date = date,
+                            processor = processor,
+                            temperature = getReadingsForDay(values, DeviceConst.TEMPERATURE),
+                            humidity = getReadingsForDay(values, DeviceConst.HUMIDITY)
+                        )
                     }
                 }
-                item {
-                    DividerGray(modifier = Modifier.padding(top = padding8))
-                }
             }
+        } else {
+            Text("History is empty!")
         }
+    }
+}
+
+private fun getReadingsForDay(
+    deviceData: List<BleData>,
+    whichReading: String
+): Map<String, Double?> {
+    return if (whichReading == DeviceConst.TEMPERATURE) {
+        val min = deviceData.map { it.data.temperature }.toList().minOrNull()
+        val avg = deviceData.map { it.data.temperature }.toList().average()
+        val max = deviceData.map { it.data.temperature }.toList().maxOrNull()
+        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
+    } else {
+        val min = deviceData.map { it.data.humidity }.toList().minOrNull()
+        val avg = deviceData.map { it.data.humidity }.toList().average()
+        val max = deviceData.map { it.data.humidity }.toList().maxOrNull()
+        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
     }
 }
 
@@ -235,8 +260,18 @@ fun ValueItem(bleData: BleData) {
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
                 RowText(
-                    key = "Actual value from device",
-                    value = convertToHHMMSS(bleData.localDateTime.toString()),
+                    key = "Readings at",
+                    value = "${bleData.localDateTime.truncatedTo(ChronoUnit.SECONDS)}",
+                    colorValue = Black
+                )
+                RowText(
+                    key = "Temperature ",
+                    value = bleData.data.temperature.toString(),
+                    colorValue = Gray
+                )
+                RowText(
+                    key = "Humidity ",
+                    value = bleData.data.humidity.toString(),
                     colorValue = Gray
                 )
             }
@@ -245,21 +280,78 @@ fun ValueItem(bleData: BleData) {
 }
 
 @Composable
-fun DateDisplay(date: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun DayDisplay(
+    date: String,
+    processor: MainProcessor,
+    temperature: Map<String, Double?>,
+    humidity: Map<String, Double?>
+) {
+    val temperatureString = "Min: ${temperature[BleDataConst.MIN]}\n" +
+        "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
+        "Max: ${temperature[BleDataConst.MAX]}"
+    val humidityString = "Min: ${humidity[BleDataConst.MIN]}\n" +
+        "Avg: ${decimalFormat.format(humidity[BleDataConst.AVG])}\n" +
+        "Max: ${humidity[BleDataConst.MAX]}"
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.padding(vertical = padding8),
+        Card(
+            modifier = Modifier
+                .clickable {
+                    processor.sendEvent(MainEvent.OpenDetailsForDay(date))
+                }
+                .fillMaxWidth(),
+            shape = shape8,
+            border = null,
+            backgroundColor = AppBackground
         ) {
-            Text(
-                text = date,
-                style = Typography.body1,
-                color = Gray
-            )
+            Column(
+                verticalArrangement = Arrangement.SpaceAround,
+            ) {
+                RowText(key = "Date", value = date, colorValue = Black)
+                ReadingsRow(
+                    key = "Temperature",
+                    value = temperatureString,
+                    colorValue = SplashPurple
+                )
+                ReadingsRow(
+                    key = "Humidity",
+                    value = humidityString,
+                    colorValue = Blue
+                )
+            }
         }
+    }
+}
+
+@Composable
+fun ReadingsRow(
+    key: String,
+    value: String,
+    colorValue: Color
+) = Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween,
+    modifier = Modifier
+        .padding(padding8)
+        .fillMaxWidth()
+) {
+    Text(
+        text = key,
+        style = Typography.body1,
+        fontWeight = FontWeight.Bold,
+        fontSize = fontSize18,
+        color = Black
+    )
+    Row(horizontalArrangement = Arrangement.Center) {
+        Text(
+            text = value,
+            style = Typography.body1,
+            fontWeight = FontWeight.Normal,
+            fontSize = fontSize18,
+            color = colorValue
+        )
     }
 }
 

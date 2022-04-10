@@ -7,6 +7,7 @@ sealed interface MainEvent {
     object ReadCharacteristic : MainEvent
     object StopReadingCharacteristic : MainEvent
     object RefreshDeviceData : MainEvent
-    data class TabChanged(val newTabIndex: Int) : MainEvent
     object EndConnectingToDevice : MainEvent
+    data class TabChanged(val newTabIndex: Int) : MainEvent
+    data class OpenDetailsForDay(val date: String) : MainEvent
 }

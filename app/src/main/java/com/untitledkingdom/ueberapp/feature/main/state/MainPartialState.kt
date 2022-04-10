@@ -24,7 +24,7 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(macAddress = macAddress)
     }
 
-    data class AddValue(val values: List<BleData>) : MainPartialState {
+    data class SetValues(val values: List<BleData>) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
             oldState.copy(readValues = values)
     }

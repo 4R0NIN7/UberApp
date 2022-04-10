@@ -1,6 +1,7 @@
 package com.untitledkingdom.ueberapp.feature.main
 
 import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import kotlinx.coroutines.flow.Flow
 
 interface MainRepository {
@@ -9,9 +10,5 @@ interface MainRepository {
     fun startReadingDataFromDevice(): Flow<RepositoryStatus>
     fun stopReadingDataFromDevice()
     suspend fun readOnceFromDevice()
-}
-
-sealed class RepositoryStatus {
-    data class Success(val data: List<BleData>) : RepositoryStatus()
-    object Error : RepositoryStatus()
+    suspend fun getDataFromDatabase(serviceUUID: String): List<BleData>
 }

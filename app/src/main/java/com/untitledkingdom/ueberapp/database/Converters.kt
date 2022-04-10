@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.Readings
 import java.time.LocalDateTime
 
 class Converters {
@@ -30,6 +31,18 @@ class Converters {
     @TypeConverter
     fun toBleData(value: String): BleData {
         val adapter = moshi.adapter(BleData::class.java)
+        return adapter.fromJson(value)!!
+    }
+
+    @TypeConverter
+    fun fromReadings(value: Readings): String {
+        val adapter = moshi.adapter(Readings::class.java)
+        return adapter.toJson(value)
+    }
+
+    @TypeConverter
+    fun toReadings(value: String): Readings {
+        val adapter = moshi.adapter(Readings::class.java)
         return adapter.fromJson(value)!!
     }
 }
