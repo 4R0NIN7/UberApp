@@ -75,8 +75,12 @@ class MainFragment : Fragment() {
                 message = effect.message,
                 context = requireContext()
             )
-            else -> {}
+            MainEffect.OpenDetailsForDay -> openDetails()
         }
+    }
+
+    private fun openDetails() {
+        findNavController().navigate(R.id.detailsFragment)
     }
 
     override fun onDestroyView() {

@@ -47,6 +47,7 @@ import com.untitledkingdom.ueberapp.devices.data.BleDataConst
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
+import com.untitledkingdom.ueberapp.ui.common.ValueItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
@@ -68,7 +69,7 @@ import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
-import java.time.temporal.ChronoUnit
+import timber.log.Timber
 
 @ExperimentalPagerApi
 @Composable
@@ -185,10 +186,10 @@ fun MainScreen(processor: MainProcessor) {
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
     val valuesGroupedByDate by processor.collectAsState {
-        it.readValues.groupBy { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
+        it.values.groupBy { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
     }
     val dates by processor.collectAsState {
-        it.readValues
+        it.values
             .map { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
             .distinct()
     }
@@ -242,44 +243,6 @@ private fun getReadingsForDay(
 }
 
 @Composable
-fun ValueItem(bleData: BleData) {
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Card(
-            modifier = Modifier
-                .clickable {
-                }
-                .fillMaxWidth(),
-            shape = shape8,
-            border = null,
-            backgroundColor = AppBackground
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceAround,
-            ) {
-                RowText(
-                    key = "Readings at",
-                    value = "${bleData.localDateTime.truncatedTo(ChronoUnit.SECONDS)}",
-                    colorValue = Black
-                )
-                RowText(
-                    key = "Temperature ",
-                    value = bleData.data.temperature.toString(),
-                    colorValue = Gray
-                )
-                RowText(
-                    key = "Humidity ",
-                    value = bleData.data.humidity.toString(),
-                    colorValue = Gray
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun DayDisplay(
     date: String,
     processor: MainProcessor,
@@ -299,7 +262,8 @@ fun DayDisplay(
         Card(
             modifier = Modifier
                 .clickable {
-                    processor.sendEvent(MainEvent.OpenDetailsForDay(date))
+                    Timber.d("date in history $date")
+                    processor.sendEvent(MainEvent.SetSelectedDate(date), MainEvent.GoToDetails)
                 }
                 .fillMaxWidth(),
             shape = shape8,
@@ -386,7 +350,7 @@ fun DeviceInfo(processor: MainProcessor) {
         Column {
             ConnectedDevice(processor = processor)
         }
-        val values by processor.collectAsState { it.readValues }
+        val values by processor.collectAsState { it.values }
         if (values.isNotEmpty()) {
             ValueItem(bleData = values.last())
         } else {

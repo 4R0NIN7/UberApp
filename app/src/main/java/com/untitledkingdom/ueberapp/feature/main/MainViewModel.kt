@@ -59,8 +59,8 @@ class MainViewModel @Inject constructor(
                     effects.send(MainEffect.GoToWelcome)
                 }
                 MainEvent.WipeData -> repository.wipeData().toNoAction()
-                is MainEvent.OpenDetailsForDay -> effects.send(MainEffect.OpenDetailsForDay(event.date))
-                    .toNoAction()
+                is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
+                MainEvent.GoToDetails -> effects.send(MainEffect.OpenDetailsForDay).toNoAction()
             }
         }
     )

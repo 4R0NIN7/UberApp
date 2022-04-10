@@ -26,7 +26,12 @@ interface MainPartialState : PartialState<MainState> {
 
     data class SetValues(val values: List<BleData>) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(readValues = values)
+            oldState.copy(values = values)
+    }
+
+    data class SetSelectedDate(val selectedDate: String) : MainPartialState {
+        override fun reduce(oldState: MainState): MainState =
+            oldState.copy(selectedDate = selectedDate)
     }
 
     data class SetIsScanning(val isScanning: Boolean) : MainPartialState {

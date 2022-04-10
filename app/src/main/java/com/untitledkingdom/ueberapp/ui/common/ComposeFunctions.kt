@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
@@ -27,6 +28,7 @@ import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.fontSize18
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun DeviceItem(
@@ -127,4 +129,42 @@ internal fun RowText(
         fontSize = fontSize18,
         color = colorValue
     )
+}
+
+@Composable
+fun ValueItem(bleData: BleData) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Card(
+            modifier = Modifier
+                .clickable {
+                }
+                .fillMaxWidth(),
+            shape = shape8,
+            border = null,
+            backgroundColor = AppBackground
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceAround,
+            ) {
+                RowText(
+                    key = "Readings at",
+                    value = "${bleData.localDateTime.truncatedTo(ChronoUnit.SECONDS)}",
+                    colorValue = Black
+                )
+                RowText(
+                    key = "Temperature ",
+                    value = bleData.data.temperature.toString(),
+                    colorValue = Gray
+                )
+                RowText(
+                    key = "Humidity ",
+                    value = bleData.data.humidity.toString(),
+                    colorValue = Gray
+                )
+            }
+        }
+    }
 }

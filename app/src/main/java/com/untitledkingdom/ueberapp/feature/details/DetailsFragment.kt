@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.feature.main.MainViewModel
@@ -33,6 +35,10 @@ class DetailsFragment : BottomSheetDialogFragment() {
         ).apply {
             setContent {
                 DetailsScreen(viewModel.processor)
+                (dialog as? BottomSheetDialog)?.behavior?.apply {
+                    isFitToContents = false
+                    state = BottomSheetBehavior.STATE_EXPANDED
+                }
             }
         }
     }
