@@ -13,6 +13,7 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomePartialState
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.util.*
 import javax.inject.Inject
 
 typealias WelcomeProcessor = Processor<WelcomeEvent, WelcomeState, WelcomeEffect>
@@ -73,6 +75,17 @@ class WelcomeViewModel @Inject constructor(
                 scope = scope
             )
             peripheral.connect()
+            val services = peripheral.services
+            services?.forEach {
+                if (it.serviceUuid == UUID.fromString(DeviceConst.SERVICE_DATA_SERVICE)) {
+                    Timber.d("There is a service ${DeviceConst.SERVICE_DATA_SERVICE}")
+                    it.characteristics.forEach { char ->
+                        if (char.characteristicUuid == UUID.fromString(DeviceConst.READINGS_CHARACTERISTIC)) {
+                            Timber.d("There is a characteristic $DeviceConst.READINGS_CHARACTERISTIC")
+                        }
+                    }
+                }
+            }
             dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, advertisement.address)
             effects.send(WelcomeEffect.GoToMain)
         } catch (e: Exception) {

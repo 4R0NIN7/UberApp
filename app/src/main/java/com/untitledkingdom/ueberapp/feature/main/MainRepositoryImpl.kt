@@ -1,24 +1,18 @@
 package com.untitledkingdom.ueberapp.feature.main
 
+import ReadingsOuterClass
+import com.juul.kable.characteristicOf
 import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.BleData
-import com.untitledkingdom.ueberapp.devices.data.Readings
-import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.uByteArray
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -32,12 +26,12 @@ class MainRepositoryImpl @Inject constructor(
 ) : MainRepository {
     private var isReading = true
     private suspend fun saveToDataBase(
-        value: Readings,
+        value: DeviceReading,
         serviceUUID: String
     ) {
         val now = timeManager.provideCurrentLocalDateTime()
         val bleData = BleData(
-            data = value,
+            deviceReading = value,
             localDateTime = now,
             serviceUUID = serviceUUID,
         )
@@ -64,33 +58,22 @@ class MainRepositoryImpl @Inject constructor(
         Timber.d("sendData - There's 20 records!")
     }
 
-    override fun startReadingDataFromDevice(
+    override suspend fun startReadingDataFromDevice(
         characteristic: String,
         serviceUUID: String
-    ): Flow<RepositoryStatus> = flow {
+    ) {
         Timber.d("Starting reading in Repository")
         val peripheral =
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
-        val device = Device(device = peripheral)
-        emit(RepositoryStatus.Loading(getDataFromDatabase(serviceUUID)))
-        try {
-            device.observationOnCharacteristic(
-                service = serviceUUID,
-                characteristic = characteristic
-            ).map { data ->
-                emit(RepositoryStatus.SuccessString(data = data))
+        peripheral.connect()
+        peripheral
+            .observe(characteristic = characteristicOf(serviceUUID, characteristic))
+            .collect { data ->
+                val reading = ReadingsOuterClass.Readings.parseFrom(data)
+                Timber.d("Reading is temperature = ${reading.temperature}, humidity = ${reading.hummidity}")
+                saveToDataBase(DeviceReading(reading.temperature, reading.hummidity), serviceUUID)
             }
-        } catch (e: Exception) {
-            throw e
-        }
-    }.onStart {
-        isReading = true
-    }.takeWhile {
-        isReading
-    }.onCompletion {
-        isReading = true
-    }.catch { cause ->
-        Timber.d(cause)
+        peripheral.disconnect()
     }
 
     override fun stopReadingDataFromDevice() {
@@ -98,14 +81,12 @@ class MainRepositoryImpl @Inject constructor(
         isReading = false
     }
 
-    override suspend fun readOnceFromDevice(fromService: String, fromCharacteristic: String) {
+    override suspend fun readOnceFromDevice(service: String, characteristic: String) {
         val peripheral =
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
         val device = Device(device = peripheral)
         try {
-            val readings =
-                device.read(fromService = fromService, fromCharacteristic = fromCharacteristic)
-            Timber.d("Readings are $readings")
+            val data = device.read(fromService = service, fromCharacteristic = characteristic)
         } catch (e: Exception) {
             throw e
         }
@@ -134,7 +115,7 @@ class MainRepositoryImpl @Inject constructor(
                 device.write(currentDate.uByteArray(), service, characteristic)
             }
         } catch (e: Exception) {
-            Timber.d("Unable to write data")
+            Timber.d("Unable to write deviceReading")
         }
     }
 

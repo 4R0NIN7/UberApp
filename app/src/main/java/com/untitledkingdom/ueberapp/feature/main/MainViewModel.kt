@@ -13,7 +13,6 @@ import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
@@ -23,7 +22,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import timber.log.Timber
 import javax.inject.Inject
 
 typealias MainProcessor = Processor<MainEvent, MainState, MainEffect>
@@ -50,7 +48,12 @@ class MainViewModel @Inject constructor(
                     service = DeviceConst.SERVICE_TIME_SETTINGS,
                     characteristic = DeviceConst.TIME_CHARACTERISTIC
                 ).toNoAction()
-                MainEvent.ReadCharacteristic -> readDataInLoop(effects)
+                MainEvent.ReadCharacteristic -> flow {
+                    repository.startReadingDataFromDevice(
+                        characteristic = DeviceConst.READINGS_CHARACTERISTIC,
+                        serviceUUID = DeviceConst.SERVICE_DATA_SERVICE
+                    )
+                }
                 MainEvent.RefreshDeviceData -> refreshDeviceData(
                     macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS),
                     effects = effects
@@ -89,30 +92,6 @@ class MainViewModel @Inject constructor(
     private fun setAdvertisementPartial(advertisement: Advertisement): MainPartialState {
         return MainPartialState.SetAdvertisement(advertisement)
     }
-
-    private fun readDataInLoop(
-        effects: EffectsCollector<MainEffect>
-    ): Flow<PartialState<MainState>> =
-        repository.startReadingDataFromDevice(
-            serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
-            characteristic = DeviceConst.READINGS_CHARACTERISTIC
-        ).map { status ->
-            when (status) {
-                is RepositoryStatus.SuccessBleData -> {
-                    MainPartialState.SetValues(status.data)
-                }
-                RepositoryStatus.Error -> effects.send(MainEffect.ShowError("Unable to read data"))
-                    .let { NoAction() }
-                is RepositoryStatus.Loading -> MainPartialState.SetValues(status.data)
-                is RepositoryStatus.SuccessString -> {
-                    Timber.d("Data from device observation is ${status.data}")
-                        .let { NoAction() }
-                }
-                else -> {
-                    NoAction()
-                }
-            }
-        }
 
     private fun setIsScanningPartial(isScanning: Boolean): MainPartialState {
         return MainPartialState.SetIsScanning(isScanning)

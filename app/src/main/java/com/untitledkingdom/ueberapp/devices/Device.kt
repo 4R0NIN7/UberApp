@@ -1,11 +1,14 @@
 package com.untitledkingdom.ueberapp.devices
 
-import android.content.res.Resources
+import ReadingsOuterClass
 import com.juul.kable.Peripheral
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
@@ -30,13 +33,10 @@ class Device @Inject constructor(private val device: Peripheral) {
                     )
                 }
             }
-            throw Resources.NotFoundException()
-        } catch (e: Resources.NotFoundException) {
-            Timber.d("deviceRead There are no characteristics!")
             return byteArrayOf()
         } catch (e: Exception) {
             Timber.d("Exception in read! + $e")
-            throw e
+            return byteArrayOf()
         } finally {
             device.disconnect()
         }
@@ -66,19 +66,26 @@ class Device @Inject constructor(private val device: Peripheral) {
         }
     }
 
-    suspend fun observationOnCharacteristic(service: String, characteristic: String): Flow<String> =
+    suspend fun observationOnCharacteristic(): Flow<DeviceReading> =
         flow {
             try {
                 device.observe(
                     characteristic = characteristicOf(
-                        service = service,
-                        characteristic = characteristic
+                        service = DeviceConst.SERVICE_DATA_SERVICE,
+                        characteristic = DeviceConst.READINGS_CHARACTERISTIC
                     )
-                ).collect {
-                    emit(String(it))
+                ).collect { data ->
+                    val reading = ReadingsOuterClass.Readings.parseFrom(data)
+                    Timber.d("Reading is temperature = ${reading.temperature}, humidity = ${reading.hummidity}")
+                    emit(
+                        DeviceReading(
+                            temperature = reading.temperature,
+                            humidity = reading.hummidity
+                        )
+                    )
                 }
             } catch (e: Exception) {
                 Timber.d(e)
             }
-        }
+        }.onStart { device.connect() }.onCompletion { device.disconnect() }
 }

@@ -65,10 +65,10 @@ fun Chart(processor: MainProcessor) {
         }.distinct()
     }
     val temperaturePoints = readings.map {
-        DataPoint(it.id.toFloat(), it.data.temperature.toFloat())
+        DataPoint(it.id.toFloat(), it.deviceReading.temperature.toFloat())
     }
     val humidityPoints = readings.map {
-        DataPoint(it.id.toFloat(), it.data.humidity.toFloat())
+        DataPoint(it.id.toFloat(), it.deviceReading.humidity.toFloat())
     }
     Column(verticalArrangement = Arrangement.SpaceBetween) {
         LineGraphWithText(
