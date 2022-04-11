@@ -1,5 +1,7 @@
 package com.untitledkingdom.ueberapp.utils.functions
 
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import com.juul.kable.Advertisement
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import kotlinx.coroutines.CoroutineScope
@@ -22,3 +24,5 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
     name = name ?: "Unknown name",
     rssi = rssi
 )
+
+fun Dp.toPx(density: Density) = value * density.density

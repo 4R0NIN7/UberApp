@@ -8,6 +8,7 @@ import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.ScanParameters
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.Readings
+import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.generateRandomHumidity
@@ -30,7 +31,6 @@ class MainRepositoryImpl @Inject constructor(
     private val dataStorage: DataStorage
 ) : MainRepository {
     private var isReading = true
-    private val delay: Long = 10000
     private suspend fun saveToDataBase(
         value: Readings,
         serviceUUID: String
@@ -74,7 +74,7 @@ class MainRepositoryImpl @Inject constructor(
             while (true) {
                 device.write(value = generateRandomTemperature(), DeviceConst.TEMPERATURE)
                 device.write(value = generateRandomHumidity(), DeviceConst.HUMIDITY)
-                delay(delay)
+                delay(MainRepositoryConst.DELAY)
                 val temperature = device.read(DeviceConst.TEMPERATURE).replace(',', '.')
                 val humidity = device.read(DeviceConst.HUMIDITY).replace(',', '.')
                 val newReading = Readings(

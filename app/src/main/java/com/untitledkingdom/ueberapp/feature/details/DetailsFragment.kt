@@ -5,11 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.feature.main.MainViewModel
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
@@ -17,7 +16,7 @@ import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import kotlinx.coroutines.FlowPreview
 
 @FlowPreview
-class DetailsFragment : BottomSheetDialogFragment() {
+class DetailsFragment : Fragment() {
     private val viewModel: MainViewModel by viewModels(ownerProducer = { requireActivity() })
 
     override fun onCreateView(
@@ -35,10 +34,6 @@ class DetailsFragment : BottomSheetDialogFragment() {
         ).apply {
             setContent {
                 DetailsScreen(viewModel.processor)
-                (dialog as? BottomSheetDialog)?.behavior?.apply {
-                    isFitToContents = false
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                }
             }
         }
     }
@@ -53,6 +48,7 @@ class DetailsFragment : BottomSheetDialogFragment() {
                 message = effect.message,
                 context = requireContext()
             )
+            MainEffect.GoBack -> findNavController().popBackStack()
             else -> {}
         }
     }

@@ -76,6 +76,7 @@ class MainFragment : Fragment() {
                 context = requireContext()
             )
             MainEffect.OpenDetailsForDay -> openDetails()
+            else -> {}
         }
     }
 

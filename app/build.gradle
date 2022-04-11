@@ -70,7 +70,7 @@ dependencies {
     implementation "com.juul.kable:core:$kable_version"
 
     // ChartLibrary
-    implementation "io.github.bytebeats:compose-charts:0.1.1"
+    implementation 'com.github.madrapps:plot:0.1.1'
 
     // WorkManager
     implementation "androidx.work:work-runtime-ktx:$work_version"

@@ -26,9 +26,9 @@
             app:destination="@id/welcomeFragment" />
     </fragment>
 
-    <dialog
+    <fragment
         android:id="@+id/detailsFragment"
         android:name="com.untitledkingdom.ueberapp.feature.details.DetailsFragment"
         android:label="Details Fragment">
-    </dialog>
+    </fragment>
 </navigation>
