@@ -7,6 +7,7 @@ import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
+import java.time.LocalDateTime
 import kotlin.coroutines.cancellation.CancellationException
 
 fun CoroutineScope.childScope() =
@@ -26,3 +27,21 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
 )
 
 fun Dp.toPx(density: Density) = value * density.density
+@ExperimentalUnsignedTypes
+fun LocalDateTime.uByteArray(): ByteArray {
+    val yearFirst: Int = year / 100
+    val yearSecond: Int = year % 100
+    return arrayOf(
+        dayOfMonth.toUByte(),
+        monthValue.toUByte(),
+        yearFirst.toUByte(),
+        yearSecond.toUByte()
+    ).toUByteArray().toByteArray()
+}
+fun toDateString(byteArray: ByteArray): String {
+    var string = ""
+    byteArray.forEach {
+        string += it.toUByte()
+    }
+    return string
+}

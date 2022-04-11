@@ -4,26 +4,26 @@ import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
-import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.devices.ScanParameters
+import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.Readings
-import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.generateRandomHumidity
-import com.untitledkingdom.ueberapp.utils.functions.generateRandomTemperature
+import com.untitledkingdom.ueberapp.utils.functions.toDateString
+import com.untitledkingdom.ueberapp.utils.functions.uByteArray
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
+import java.time.LocalDateTime
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
 class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
@@ -64,28 +64,21 @@ class MainRepositoryImpl @Inject constructor(
         Timber.d("sendData - There's 20 records!")
     }
 
-    override fun startReadingDataFromDevice(): Flow<RepositoryStatus> = flow {
+    override fun startReadingDataFromDevice(
+        characteristic: String,
+        serviceUUID: String
+    ): Flow<RepositoryStatus> = flow {
         Timber.d("Starting reading in Repository")
         val peripheral =
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
-        val device = ScanParameters(device = peripheral)
-        emit(RepositoryStatus.Loading(getDataFromDatabase(device.serviceUUID)))
+        val device = Device(device = peripheral)
+        emit(RepositoryStatus.Loading(getDataFromDatabase(serviceUUID)))
         try {
-            while (true) {
-                device.write(value = generateRandomTemperature(), DeviceConst.TEMPERATURE)
-                device.write(value = generateRandomHumidity(), DeviceConst.HUMIDITY)
-                delay(MainRepositoryConst.DELAY)
-                val temperature = device.read(DeviceConst.TEMPERATURE).replace(',', '.')
-                val humidity = device.read(DeviceConst.HUMIDITY).replace(',', '.')
-                val newReading = Readings(
-                    temperature = temperature.toDouble(),
-                    humidity = humidity.toDouble()
-                )
-                saveToDataBase(value = newReading, serviceUUID = device.serviceUUID)
-                val dataFromDataBase = getDataFromDatabase(
-                    serviceUUID = device.serviceUUID
-                )
-                emit(RepositoryStatus.Success(dataFromDataBase))
+            device.observationOnCharacteristic(
+                service = serviceUUID,
+                characteristic = characteristic
+            ).map { data ->
+                emit(RepositoryStatus.SuccessString(data = data))
             }
         } catch (e: Exception) {
             throw e
@@ -105,23 +98,48 @@ class MainRepositoryImpl @Inject constructor(
         isReading = false
     }
 
-    override suspend fun readOnceFromDevice() {
+    override suspend fun readOnceFromDevice(fromService: String, fromCharacteristic: String) {
         val peripheral =
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
-        val device = ScanParameters(device = peripheral)
+        val device = Device(device = peripheral)
         try {
-            device.write(value = generateRandomTemperature(), DeviceConst.TEMPERATURE)
-            device.write(value = generateRandomHumidity(), DeviceConst.HUMIDITY)
-            val temperature = device.read(DeviceConst.TEMPERATURE).replace(',', '.')
-            val humidity = device.read(DeviceConst.HUMIDITY).replace(',', '.')
-            val newReading = Readings(
-                temperature = temperature.toDouble(),
-                humidity = humidity.toDouble()
-            )
-            saveToDataBase(value = newReading, serviceUUID = device.serviceUUID)
-            getDataFromDatabase(serviceUUID = device.serviceUUID)
+            val readings =
+                device.read(fromService = fromService, fromCharacteristic = fromCharacteristic)
+            Timber.d("Readings are $readings")
         } catch (e: Exception) {
             throw e
         }
+    }
+
+    override suspend fun writeDateToDevice(
+        service: String,
+        characteristic: String,
+    ) {
+        val peripheral =
+            scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
+        val device = Device(device = peripheral)
+        try {
+            val currentDate = timeManager.provideCurrentLocalDateTime()
+            val data = device.read(
+                fromCharacteristic = characteristic,
+                fromService = service
+            )
+            val dateFromDevice = toDateString(data)
+            if (!checkIfDateIsTheSame(
+                    date = currentDate,
+                    dateFromDevice = dateFromDevice
+                )
+            ) {
+                Timber.d("writeDateToDevice Saving date")
+                device.write(currentDate.uByteArray(), service, characteristic)
+            }
+        } catch (e: Exception) {
+            Timber.d("Unable to write data")
+        }
+    }
+
+    private fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
+        val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
+        return dateFromDevice == dateFromLocalDateTime
     }
 }

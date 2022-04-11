@@ -38,7 +38,7 @@ fun DetailsScreen(processor: MainProcessor) {
     Scaffold(topBar = {
         Toolbar(
             title = stringResource(R.string.main_close),
-            action = { processor.sendEvent(MainEvent.GoBack) }
+            action = { processor.sendEvent(MainEvent.CloseDetails) }
         )
     }) {
         Column(
@@ -62,7 +62,7 @@ fun Chart(processor: MainProcessor) {
     val readings by processor.collectAsState {
         it.values.filter { bleData ->
             bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }
+        }.distinct()
     }
     val temperaturePoints = readings.map {
         DataPoint(it.id.toFloat(), it.data.temperature.toFloat())
@@ -84,7 +84,7 @@ fun Values(processor: MainProcessor) {
     val valuesFilteredBySelectedDate by processor.collectAsState {
         it.values.filter { bleData ->
             bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }
+        }.distinct()
     }
     Timber.d("selectedDate $selectedDate")
     LazyColumn(

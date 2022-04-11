@@ -7,8 +7,12 @@ import kotlinx.coroutines.flow.Flow
 interface MainRepository {
     suspend fun wipeData()
     fun sendData()
-    fun startReadingDataFromDevice(): Flow<RepositoryStatus>
+    fun startReadingDataFromDevice(
+        characteristic: String,
+        serviceUUID: String
+    ): Flow<RepositoryStatus>
     fun stopReadingDataFromDevice()
-    suspend fun readOnceFromDevice()
+    suspend fun readOnceFromDevice(fromService: String, fromCharacteristic: String)
+    suspend fun writeDateToDevice(service: String, characteristic: String)
     suspend fun getDataFromDatabase(serviceUUID: String): List<BleData>
 }

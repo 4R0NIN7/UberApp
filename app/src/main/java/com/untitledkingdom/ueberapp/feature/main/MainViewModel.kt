@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 import javax.inject.Inject
 
 typealias MainProcessor = Processor<MainEvent, MainState, MainEffect>
@@ -44,6 +46,10 @@ class MainViewModel @Inject constructor(
         },
         onEvent = { event ->
             when (event) {
+                MainEvent.SetCurrentDateToDevice -> repository.writeDateToDevice(
+                    service = DeviceConst.SERVICE_TIME_SETTINGS,
+                    characteristic = DeviceConst.TIME_CHARACTERISTIC
+                ).toNoAction()
                 MainEvent.ReadCharacteristic -> readDataInLoop(effects)
                 MainEvent.RefreshDeviceData -> refreshDeviceData(
                     macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS),
@@ -61,7 +67,7 @@ class MainViewModel @Inject constructor(
                 MainEvent.WipeData -> repository.wipeData().toNoAction()
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
                 MainEvent.GoToDetails -> effects.send(MainEffect.OpenDetailsForDay).toNoAction()
-                MainEvent.GoBack -> effects.send(MainEffect.GoBack).toNoAction()
+                MainEvent.CloseDetails -> effects.send(MainEffect.GoBack).toNoAction()
             }
         }
     )
@@ -87,16 +93,27 @@ class MainViewModel @Inject constructor(
 
     private fun readDataInLoop(
         effects: EffectsCollector<MainEffect>
-    ): Flow<PartialState<MainState>> = repository.startReadingDataFromDevice().map { status ->
-        when (status) {
-            is RepositoryStatus.Success -> {
-                MainPartialState.SetValues(status.data)
+    ): Flow<PartialState<MainState>> =
+        repository.startReadingDataFromDevice(
+            serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
+            characteristic = DeviceConst.READINGS_CHARACTERISTIC
+        ).map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessBleData -> {
+                    MainPartialState.SetValues(status.data)
+                }
+                RepositoryStatus.Error -> effects.send(MainEffect.ShowError("Unable to read data"))
+                    .let { NoAction() }
+                is RepositoryStatus.Loading -> MainPartialState.SetValues(status.data)
+                is RepositoryStatus.SuccessString -> {
+                    Timber.d("Data from device observation is ${status.data}")
+                        .let { NoAction() }
+                }
+                else -> {
+                    NoAction()
+                }
             }
-            RepositoryStatus.Error -> effects.send(MainEffect.ShowError("Unable to read data"))
-                .let { NoAction() }
-            is RepositoryStatus.Loading -> MainPartialState.SetValues(status.data)
         }
-    }
 
     private fun setIsScanningPartial(isScanning: Boolean): MainPartialState {
         return MainPartialState.SetIsScanning(isScanning)
