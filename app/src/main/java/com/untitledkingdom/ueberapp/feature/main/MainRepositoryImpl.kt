@@ -4,15 +4,19 @@ import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.ScanParameters
 import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.Readings
+import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
+import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.generateRandomString
+import com.untitledkingdom.ueberapp.utils.functions.generateRandomHumidity
+import com.untitledkingdom.ueberapp.utils.functions.generateRandomTemperature
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
@@ -26,12 +30,9 @@ class MainRepositoryImpl @Inject constructor(
     private val scope: CoroutineScope,
     private val dataStorage: DataStorage
 ) : MainRepository {
-
     private var isReading = true
-    private val delay: Long = 5000
     private suspend fun saveToDataBase(
-        value: String,
-        characteristicUUID: String,
+        value: Readings,
         serviceUUID: String
     ) {
         val now = timeManager.provideCurrentLocalDateTime()
@@ -39,21 +40,25 @@ class MainRepositoryImpl @Inject constructor(
             data = value,
             localDateTime = now,
             serviceUUID = serviceUUID,
-            characteristicUUID = characteristicUUID
         )
         database.getDao().saveData(data = bleData)
         Timber.d("Saved to dataBase")
     }
 
-    private suspend fun getDataFromDataBase(
-        serviceUUID: String,
-        characteristicUUID: String
-    ): List<BleData> = database
-        .getDao()
-        .getAllData()
-        .filter { it.serviceUUID == serviceUUID && it.characteristicUUID == characteristicUUID }
+    override suspend fun getDataFromDatabase(serviceUUID: String): List<BleData> {
+        val values = database
+            .getDao()
+            .getAllData()
+            .filter { it.serviceUUID == serviceUUID }
+        if (values.size % 20 == 0) {
+            sendData()
+        }
+        return values
+    }
 
-    override suspend fun wipeData() = database.getDao().wipeData()
+    override suspend fun wipeData() {
+        database.getDao().wipeData()
+    }
 
     override fun sendData() {
         Timber.d("sendData - There's 20 records!")
@@ -64,22 +69,22 @@ class MainRepositoryImpl @Inject constructor(
         val peripheral =
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
         val device = ScanParameters(device = peripheral)
+        emit(RepositoryStatus.Loading(getDataFromDatabase(device.serviceUUID)))
         try {
             while (true) {
-                device.write(generateRandomString())
-                delay(delay)
-                saveToDataBase(
-                    value = device.read().first(),
-                    characteristicUUID = device.characteristicUUID,
+                device.write(value = generateRandomTemperature(), DeviceConst.TEMPERATURE)
+                device.write(value = generateRandomHumidity(), DeviceConst.HUMIDITY)
+                delay(MainRepositoryConst.DELAY)
+                val temperature = device.read(DeviceConst.TEMPERATURE).replace(',', '.')
+                val humidity = device.read(DeviceConst.HUMIDITY).replace(',', '.')
+                val newReading = Readings(
+                    temperature = temperature.toDouble(),
+                    humidity = humidity.toDouble()
+                )
+                saveToDataBase(value = newReading, serviceUUID = device.serviceUUID)
+                val dataFromDataBase = getDataFromDatabase(
                     serviceUUID = device.serviceUUID
                 )
-                val dataFromDataBase = getDataFromDataBase(
-                    serviceUUID = device.serviceUUID,
-                    characteristicUUID = device.characteristicUUID
-                )
-                if (dataFromDataBase.size % 20 == 0) {
-                    sendData()
-                }
                 emit(RepositoryStatus.Success(dataFromDataBase))
             }
         } catch (e: Exception) {
@@ -93,7 +98,6 @@ class MainRepositoryImpl @Inject constructor(
         isReading = true
     }.catch { cause ->
         Timber.d(cause)
-        isReading = false
     }
 
     override fun stopReadingDataFromDevice() {
@@ -106,12 +110,16 @@ class MainRepositoryImpl @Inject constructor(
             scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
         val device = ScanParameters(device = peripheral)
         try {
-            device.write(generateRandomString())
-            delay(delay)
-            saveToDataBase(device.read().first(), device.characteristicUUID, device.serviceUUID)
-            if (getDataFromDataBase(device.characteristicUUID, device.serviceUUID).size % 20 == 0) {
-                sendData()
-            }
+            device.write(value = generateRandomTemperature(), DeviceConst.TEMPERATURE)
+            device.write(value = generateRandomHumidity(), DeviceConst.HUMIDITY)
+            val temperature = device.read(DeviceConst.TEMPERATURE).replace(',', '.')
+            val humidity = device.read(DeviceConst.HUMIDITY).replace(',', '.')
+            val newReading = Readings(
+                temperature = temperature.toDouble(),
+                humidity = humidity.toDouble()
+            )
+            saveToDataBase(value = newReading, serviceUUID = device.serviceUUID)
+            getDataFromDatabase(serviceUUID = device.serviceUUID)
         } catch (e: Exception) {
             throw e
         }

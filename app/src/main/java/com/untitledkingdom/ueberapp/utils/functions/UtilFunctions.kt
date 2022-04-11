@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
 import timber.log.Timber
+import java.math.RoundingMode
+import java.text.DecimalFormat
 import kotlin.random.Random
 
 object RequestCodes {
@@ -64,10 +66,13 @@ fun toastMessage(message: String, context: Context) {
     Timber.d(message = message)
 }
 
-fun generateRandomString(): String {
-    val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-    return (1..15)
-        .map { i -> Random.nextInt(0, charPool.size) }
-        .map(charPool::get)
-        .joinToString("")
+val decimalFormat = DecimalFormat("#.##")
+fun generateRandomHumidity(): String {
+    decimalFormat.roundingMode = RoundingMode.DOWN
+    return decimalFormat.format(Random.nextDouble(from = 0.0, until = 100.0))
+}
+
+fun generateRandomTemperature(): String {
+    decimalFormat.roundingMode = RoundingMode.DOWN
+    return decimalFormat.format(Random.nextDouble(from = -50.0, until = 50.1))
 }

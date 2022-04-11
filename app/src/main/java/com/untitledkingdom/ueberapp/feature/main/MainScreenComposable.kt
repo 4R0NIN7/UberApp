@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -38,18 +39,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.pager.ExperimentalPagerApi
-import com.juul.kable.DiscoveredService
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.BleDataConst
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
+import com.untitledkingdom.ueberapp.ui.common.RowText
+import com.untitledkingdom.ueberapp.ui.common.ValueItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
+import com.untitledkingdom.ueberapp.ui.values.Blue
 import com.untitledkingdom.ueberapp.ui.values.DevicesTabsColorBlack
 import com.untitledkingdom.ueberapp.ui.values.Gray
 import com.untitledkingdom.ueberapp.ui.values.SectionDividerLight
+import com.untitledkingdom.ueberapp.ui.values.SplashPurple
 import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.fontSize18
@@ -57,10 +63,13 @@ import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding2
 import com.untitledkingdom.ueberapp.ui.values.padding24
+import com.untitledkingdom.ueberapp.ui.values.padding72
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
+import com.untitledkingdom.ueberapp.utils.date.DateFormatter
+import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
-import java.time.format.DateTimeFormatter
+import timber.log.Timber
 
 @ExperimentalPagerApi
 @Composable
@@ -176,6 +185,138 @@ fun MainScreen(processor: MainProcessor) {
 
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
+    val valuesGroupedByDate by processor.collectAsState {
+        it.values.groupBy { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
+    }
+    val dates by processor.collectAsState {
+        it.values
+            .map { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
+            .distinct()
+    }
+    Column(
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = padding24)
+            .padding(horizontal = padding12)
+    ) {
+        if (dates.isNotEmpty()) {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(padding8),
+                modifier = Modifier.padding(end = padding24),
+                contentPadding = PaddingValues(bottom = padding72)
+            ) {
+                items(items = dates) { date ->
+                    val values = valuesGroupedByDate[date]
+                    if (values != null) {
+                        DayDisplay(
+                            date = date,
+                            processor = processor,
+                            temperature = getReadingsForDay(values, DeviceConst.TEMPERATURE),
+                            humidity = getReadingsForDay(values, DeviceConst.HUMIDITY)
+                        )
+                    }
+                }
+            }
+        } else {
+            Text("History is empty!")
+        }
+    }
+}
+
+private fun getReadingsForDay(
+    deviceData: List<BleData>,
+    whichReading: String
+): Map<String, Double?> {
+    return if (whichReading == DeviceConst.TEMPERATURE) {
+        val min = deviceData.map { it.data.temperature }.toList().minOrNull()
+        val avg = deviceData.map { it.data.temperature }.toList().average()
+        val max = deviceData.map { it.data.temperature }.toList().maxOrNull()
+        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
+    } else {
+        val min = deviceData.map { it.data.humidity }.toList().minOrNull()
+        val avg = deviceData.map { it.data.humidity }.toList().average()
+        val max = deviceData.map { it.data.humidity }.toList().maxOrNull()
+        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
+    }
+}
+
+@Composable
+fun DayDisplay(
+    date: String,
+    processor: MainProcessor,
+    temperature: Map<String, Double?>,
+    humidity: Map<String, Double?>
+) {
+    val temperatureString = "Min: ${temperature[BleDataConst.MIN]}\n" +
+        "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
+        "Max: ${temperature[BleDataConst.MAX]}"
+    val humidityString = "Min: ${humidity[BleDataConst.MIN]}\n" +
+        "Avg: ${decimalFormat.format(humidity[BleDataConst.AVG])}\n" +
+        "Max: ${humidity[BleDataConst.MAX]}"
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Card(
+            modifier = Modifier
+                .clickable {
+                    Timber.d("date in history $date")
+                    processor.sendEvent(MainEvent.SetSelectedDate(date), MainEvent.GoToDetails)
+                }
+                .fillMaxWidth(),
+            shape = shape8,
+            border = null,
+            backgroundColor = AppBackground
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceAround,
+            ) {
+                RowText(key = "Date", value = date, colorValue = Black)
+                ReadingsRow(
+                    key = "Temperature",
+                    value = temperatureString,
+                    colorValue = SplashPurple
+                )
+                ReadingsRow(
+                    key = "Humidity",
+                    value = humidityString,
+                    colorValue = Blue
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ReadingsRow(
+    key: String,
+    value: String,
+    colorValue: Color
+) = Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween,
+    modifier = Modifier
+        .padding(padding8)
+        .fillMaxWidth()
+) {
+    Text(
+        text = key,
+        style = Typography.body1,
+        fontWeight = FontWeight.Bold,
+        fontSize = fontSize18,
+        color = Black
+    )
+    Row(horizontalArrangement = Arrangement.Center) {
+        Text(
+            text = value,
+            style = Typography.body1,
+            fontWeight = FontWeight.Normal,
+            fontSize = fontSize18,
+            color = colorValue
+        )
+    }
 }
 
 @Composable
@@ -209,7 +350,18 @@ fun DeviceInfo(processor: MainProcessor) {
         Column {
             ConnectedDevice(processor = processor)
         }
-        Values(processor = processor)
+        val values by processor.collectAsState { it.values }
+        if (values.isNotEmpty()) {
+            ValueItem(bleData = values.last())
+        } else {
+            Text(
+                text = "Data is empty!",
+                style = Typography.body1,
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize18,
+                color = Black
+            )
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -222,80 +374,6 @@ fun DeviceInfo(processor: MainProcessor) {
             }
             Button(onClick = { processor.sendEvent(MainEvent.StopReadingCharacteristic) }) {
                 Text("Stop Reading")
-            }
-        }
-    }
-}
-
-@Composable
-fun Values(processor: MainProcessor) {
-    val readValues by processor.collectAsState { it.readValues }
-    LazyColumn(
-        modifier = Modifier
-            .height(300.dp)
-            .padding(horizontal = padding16)
-            .padding(top = padding16),
-        verticalArrangement = Arrangement.spacedBy(padding8),
-        contentPadding = PaddingValues(bottom = padding16)
-    ) {
-        items(items = readValues) { value ->
-            Value(
-                value = value
-            )
-        }
-    }
-}
-
-@Composable
-fun Value(value: BleData) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = value.localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-            style = Typography.body1,
-            fontWeight = FontWeight.SemiBold,
-            color = BlackSelectedDay,
-            softWrap = true
-        )
-        Text(
-            text = " ${value.data}",
-            style = Typography.body1,
-            fontWeight = FontWeight.Normal,
-            color = Gray,
-        )
-    }
-}
-
-@Composable
-fun Service(service: DiscoveredService, processor: MainProcessor) {
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    processor.sendEvent(MainEvent.ReadCharacteristic)
-                },
-            shape = shape8,
-            border = null,
-            backgroundColor = AppBackground
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceAround,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = service.serviceUuid.toString(),
-                    style = Typography.body1,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = fontSize18,
-                    color = Black
-                )
             }
         }
     }

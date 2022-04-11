@@ -1,51 +1,57 @@
 package com.untitledkingdom.ueberapp.devices
 
+import android.content.res.Resources
 import com.juul.kable.Peripheral
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
 class ScanParameters @Inject constructor(private val device: Peripheral) {
     val serviceUUID = "00001813-0000-1000-8000-00805f9b34fb"
-    val characteristicUUID = "00002a31-0000-1000-8000-00805f9b34fb"
-    fun read(): Flow<String> = flow {
+    suspend fun read(fromCharacteristic: String): String {
         try {
+            device.connect()
             device.services?.first {
                 it.serviceUuid == UUID.fromString(serviceUUID)
-            }?.characteristics?.forEach {
-                if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
+            }?.characteristics?.forEach { discoveredCharacteristic ->
+                if (discoveredCharacteristic.characteristicUuid == UUID.fromString(
+                        fromCharacteristic
+                    )
+                ) {
                     val data = device.read(
                         characteristicOf(
                             service = serviceUUID,
-                            characteristic = characteristicUUID
+                            characteristic = fromCharacteristic
                         )
                     )
-                    emit(String(data))
+                    return String(data)
                 }
             }
+            throw Resources.NotFoundException()
+        } catch (e: Resources.NotFoundException) {
+            Timber.d("deviceRead There are no characteristics!")
+            return ""
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
             throw e
+        } finally {
+            device.disconnect()
         }
-    }.onStart { device.connect() }.onCompletion { device.disconnect() }
+    }
 
-    suspend fun write(value: String) {
+    suspend fun write(value: String, toCharacteristic: String) {
         try {
             device.connect()
             device.services?.first {
                 it.serviceUuid == UUID.fromString(serviceUUID)
             }?.characteristics?.forEach {
-                if (it.characteristicUuid == UUID.fromString(characteristicUUID)) {
+                if (it.characteristicUuid == UUID.fromString(toCharacteristic)) {
                     device.write(
                         characteristicOf(
                             service = serviceUUID,
-                            characteristic = characteristicUUID
+                            characteristic = toCharacteristic
                         ),
                         value.toByteArray(),
                         writeType = WriteType.WithResponse
@@ -59,9 +65,4 @@ class ScanParameters @Inject constructor(private val device: Peripheral) {
             device.disconnect()
         }
     }
-}
-
-sealed class BleDeviceStatus {
-    data class Success(val data: String) : BleDeviceStatus()
-    data class Error(val message: String) : BleDeviceStatus()
 }

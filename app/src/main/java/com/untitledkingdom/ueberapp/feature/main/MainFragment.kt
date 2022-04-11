@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class MainFragment : Fragment() {
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels(ownerProducer = { requireActivity() })
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -75,7 +75,13 @@ class MainFragment : Fragment() {
                 message = effect.message,
                 context = requireContext()
             )
+            MainEffect.OpenDetailsForDay -> openDetails()
+            else -> {}
         }
+    }
+
+    private fun openDetails() {
+        findNavController().navigate(R.id.detailsFragment)
     }
 
     override fun onDestroyView() {
