@@ -9,7 +9,6 @@ interface MainRepository {
         characteristic: String,
         serviceUUID: String
     )
-
     fun stopReadingDataFromDevice()
     suspend fun readOnceFromDevice(service: String, characteristic: String)
     suspend fun writeDateToDevice(service: String, characteristic: String)

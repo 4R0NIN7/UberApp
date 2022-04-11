@@ -10,6 +10,7 @@ sealed interface MainEvent {
     object RefreshDeviceData : MainEvent
     object EndConnectingToDevice : MainEvent
     object GoToDetails : MainEvent
+    object LoadData : MainEvent
     data class TabChanged(val newTabIndex: Int) : MainEvent
     data class SetSelectedDate(val date: String) : MainEvent
 }

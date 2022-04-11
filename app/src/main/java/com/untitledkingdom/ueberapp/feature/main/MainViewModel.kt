@@ -70,9 +70,20 @@ class MainViewModel @Inject constructor(
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
                 MainEvent.GoToDetails -> effects.send(MainEffect.OpenDetailsForDay).toNoAction()
                 MainEvent.CloseDetails -> effects.send(MainEffect.GoBack).toNoAction()
+                MainEvent.LoadData -> loadData()
             }
         }
     )
+
+    private fun loadData() = flow {
+        while (true) {
+            emit(
+                MainPartialState.SetValues(
+                    repository.getDataFromDatabase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
+                )
+            )
+        }
+    }
 
     private fun refreshDeviceData(
         macAddress: String,

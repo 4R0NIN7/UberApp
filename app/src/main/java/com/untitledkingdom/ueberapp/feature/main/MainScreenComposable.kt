@@ -248,12 +248,12 @@ fun DayDisplay(
     temperature: Map<String, Double?>,
     humidity: Map<String, Double?>
 ) {
-    val temperatureString = "Min: ${temperature[BleDataConst.MIN]}\n" +
+    val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
-        "Max: ${temperature[BleDataConst.MAX]}"
-    val humidityString = "Min: ${humidity[BleDataConst.MIN]}\n" +
+        "Max: ${decimalFormat.format(temperature[BleDataConst.MAX])}"
+    val humidityString = "Min: ${decimalFormat.format(humidity[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(humidity[BleDataConst.AVG])}\n" +
-        "Max: ${humidity[BleDataConst.MAX]}"
+        "Max: ${decimalFormat.format(humidity[BleDataConst.MAX])}"
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
