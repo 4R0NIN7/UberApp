@@ -55,7 +55,6 @@ class MainViewModel @Inject constructor(
                     macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS),
                     effects = effects
                 ).toNoAction()
-                MainEvent.StartScanning -> readDataInLoop(effects)
                 MainEvent.StopReadingCharacteristic -> repository.stopReadingDataFromDevice()
                     .toNoAction()
                 MainEvent.StopScanning -> kableService.stopScan().toNoAction()

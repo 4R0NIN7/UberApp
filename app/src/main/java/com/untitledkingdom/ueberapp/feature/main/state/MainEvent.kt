@@ -4,7 +4,6 @@ sealed interface MainEvent {
     object SetCurrentDateToDevice : MainEvent
     object CloseDetails : MainEvent
     object WipeData : MainEvent
-    object StartScanning : MainEvent
     object StopScanning : MainEvent
     object ReadCharacteristic : MainEvent
     object StopReadingCharacteristic : MainEvent
