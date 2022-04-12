@@ -26,7 +26,7 @@ import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
 import com.untitledkingdom.ueberapp.feature.main.state.MainState
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
-import com.untitledkingdom.ueberapp.utils.functions.uByteArray
+import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -170,7 +170,7 @@ class MainViewModel @Inject constructor(
         )
         if (!checkIfTheSame) {
             Timber.d("writeDateToDevice Saving date")
-            device.write(currentDate.uByteArray(), service, characteristic)
+            device.write(currentDate.toUByteArray(), service, characteristic)
         }
     }
 

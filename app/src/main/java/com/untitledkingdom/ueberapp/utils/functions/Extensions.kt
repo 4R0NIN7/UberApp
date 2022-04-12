@@ -32,7 +32,7 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
 fun Dp.toPx(density: Density) = value * density.density
 
 @ExperimentalUnsignedTypes
-fun LocalDateTime.uByteArray(): ByteArray {
+fun LocalDateTime.toUByteArray(): ByteArray {
     val yearBytes = yearToByteArray(year = year)
     return arrayOf(
         dayOfMonth.toUByte(),
