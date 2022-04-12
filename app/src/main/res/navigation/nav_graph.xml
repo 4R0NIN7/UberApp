@@ -25,10 +25,4 @@
             app:popUpToInclusive="true"
             app:destination="@id/welcomeFragment" />
     </fragment>
-
-    <fragment
-        android:id="@+id/detailsFragment"
-        android:name="com.untitledkingdom.ueberapp.feature.details.DetailsFragment"
-        android:label="Details Fragment">
-    </fragment>
 </navigation>

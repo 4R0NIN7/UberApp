@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
@@ -69,6 +70,7 @@ import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 import timber.log.Timber
 
+@ExperimentalMaterialApi
 @ExperimentalPagerApi
 @Composable
 fun MainScreenCompose(processor: MainProcessor) {
@@ -82,6 +84,7 @@ fun MainScreenCompose(processor: MainProcessor) {
     )
 }
 
+@ExperimentalMaterialApi
 @ExperimentalPagerApi
 @Composable
 fun Tabs(processor: MainProcessor) {
@@ -89,7 +92,6 @@ fun Tabs(processor: MainProcessor) {
     val tabs = listOf(
         stringResource(R.string.main_main_screen),
         stringResource(R.string.main_history),
-        stringResource(R.string.main_settings)
     )
     Column(
         modifier = Modifier.background(
@@ -167,10 +169,6 @@ fun Tabs(processor: MainProcessor) {
                     processor.sendEvent(MainEvent.TabChanged(1))
                     HistoryScreen(processor)
                 }
-                2 -> {
-                    processor.sendEvent(MainEvent.TabChanged(2))
-                    SettingsScreen(processor)
-                }
             }
         }
     }
@@ -181,6 +179,7 @@ fun MainScreen(processor: MainProcessor) {
     DeviceInfo(processor = processor)
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
     val valuesGroupedByDate by processor.collectAsState {
@@ -210,7 +209,6 @@ fun HistoryScreen(processor: MainProcessor) {
                     if (values != null) {
                         DayDisplay(
                             date = date,
-                            processor = processor,
                             temperature = getReadingsForDay(values, isTemperature = true),
                             humidity = getReadingsForDay(values, isTemperature = false)
                         )
@@ -240,10 +238,10 @@ private fun getReadingsForDay(
     }
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun DayDisplay(
     date: String,
-    processor: MainProcessor,
     temperature: Map<String, Double?>,
     humidity: Map<String, Double?>
 ) {
@@ -261,7 +259,6 @@ fun DayDisplay(
             modifier = Modifier
                 .clickable {
                     Timber.d("date in history $date")
-                    processor.sendEvent(MainEvent.SetSelectedDate(date), MainEvent.GoToDetails)
                 }
                 .fillMaxWidth(),
             shape = shape8,
@@ -318,10 +315,6 @@ fun ReadingsRow(
 }
 
 @Composable
-fun SettingsScreen(processor: MainProcessor) {
-}
-
-@Composable
 private fun TabTitle(title: String) {
     Text(
         text = title,
@@ -338,7 +331,7 @@ private fun TabTitle(title: String) {
 @Composable
 fun DeviceInfo(processor: MainProcessor) {
     Column(
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(padding24),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
@@ -378,7 +371,7 @@ fun ConnectedDevice(processor: MainProcessor) {
     if (selectedAdvertisement != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.spacedBy(padding24)
         ) {
             Text(
                 text = "Selected device",
@@ -390,13 +383,9 @@ fun ConnectedDevice(processor: MainProcessor) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val isScanning by processor.collectAsState { it.isScanning }
                 DeviceItem(
                     scannedDevice = selectedAdvertisement!!.toScannedDevice(),
                     action = {
-                        if (isScanning) {
-                            processor.sendEvent(MainEvent.StopScanning)
-                        }
                         processor.sendEvent(
                             MainEvent.EndConnectingToDevice
                         )

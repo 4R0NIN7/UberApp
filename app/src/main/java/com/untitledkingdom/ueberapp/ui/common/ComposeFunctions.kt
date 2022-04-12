@@ -37,7 +37,7 @@ import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.fontSize18
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
-import java.time.temporal.ChronoUnit
+import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 
 @Composable
 fun DeviceItem(
@@ -160,7 +160,7 @@ fun ValueItem(bleData: BleData) {
             ) {
                 RowText(
                     key = "DeviceReading at",
-                    value = "${bleData.localDateTime.truncatedTo(ChronoUnit.SECONDS)}",
+                    value = bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYYHHMMSS),
                     colorValue = Black
                 )
                 RowText(

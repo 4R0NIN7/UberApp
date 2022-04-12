@@ -1,11 +1,12 @@
 package com.untitledkingdom.ueberapp.feature.main
 
-import ReadingsOuterClass
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import com.juul.kable.Advertisement
-import com.juul.kable.characteristicOf
-import com.juul.kable.peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.PartialState
 import com.tomcz.ellipse.Processor
@@ -19,27 +20,28 @@ import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceStatus
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
 import com.untitledkingdom.ueberapp.feature.main.state.MainState
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
+import com.untitledkingdom.ueberapp.workManager.ReadingWorker
+import com.untitledkingdom.ueberapp.workManager.WorkManagerConst
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.merge
 import timber.log.Timber
-import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 typealias MainProcessor = Processor<MainEvent, MainState, MainEffect>
@@ -52,49 +54,71 @@ class MainViewModel @Inject constructor(
     private val repository: MainRepository,
     private val dataStorage: DataStorage,
     private val kableService: KableService,
-    private val timeManager: TimeManager
+    private val timeManager: TimeManager,
+    private val context: Application
 ) : ViewModel() {
     private val device: Device = Device(dataStorage = dataStorage)
     val processor: MainProcessor = processor(
         initialState = MainState(),
         prepare = {
-            flowOf(
-                MainPartialState.SetMacAddress(
-                    dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-                )
+            merge(
+                writeDateToDevice(
+                    service = DeviceConst.SERVICE_TIME_SETTINGS,
+                    characteristic = DeviceConst.TIME_CHARACTERISTIC
+                ).toNoAction(),
+                setWorkManager().toNoAction(),
+                startObservingData().toNoAction(),
             )
         },
         onEvent = { event ->
             when (event) {
-                MainEvent.SetCurrentDateToDevice -> writeDateToDevice(
-                    service = DeviceConst.SERVICE_TIME_SETTINGS,
-                    characteristic = DeviceConst.TIME_CHARACTERISTIC
-                ).toNoAction()
-                MainEvent.ReadCharacteristic -> device.observationOnDataCharacteristic().toNoAction()
-                MainEvent.RefreshDeviceData -> refreshDeviceData(
-                    macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS),
-                    effects = effects
-                )
-                MainEvent.StopScanning -> kableService.stopScan().toNoAction()
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> flow {
                     kableService.stopScan()
                     device.disconnectFromDevice()
                     effects.send(MainEffect.GoToWelcome)
                 }
-                MainEvent.WipeData -> repository.wipeData().toNoAction()
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
-                MainEvent.GoToDetails -> effects.send(MainEffect.OpenDetailsForDay).toNoAction()
-                MainEvent.CloseDetails -> effects.send(MainEffect.GoBack).toNoAction()
+                MainEvent.StartScanning -> refreshDeviceData(
+                    effects = effects
+                )
             }
         }
     )
 
-    private fun refreshDeviceData(
-        macAddress: String,
+    private fun startObservingData(): Flow<MainPartialState> = flow {
+        device.observationOnDataCharacteristic().collect { reading ->
+            Timber.d("Reading is temperature = ${reading.temperature}, humidity = ${reading.humidity}")
+            repository.saveData(
+                deviceReading = reading,
+                serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
+            )
+            emit(
+                MainPartialState.SetValues(
+                    repository.getData(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
+                )
+            )
+        }
+    }
+
+    private fun setValuesPartial(values: List<BleData>): Flow<MainPartialState> {
+        return flowOf(MainPartialState.SetValues(values))
+    }
+
+    private fun setWorkManager() {
+        Timber.d("Set workManager")
+        val periodicWorkRequest = PeriodicWorkRequest
+            .Builder(ReadingWorker::class.java, 15, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WorkManagerConst.WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, periodicWorkRequest
+        )
+    }
+
+    private suspend fun refreshDeviceData(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
-        kableService.refreshDeviceData(macAddress = macAddress)
+        kableService.refreshDeviceData(macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
             .map { status ->
                 when (status) {
                     is ScanStatus.Failed -> effects.send(MainEffect.ShowError(status.message as String))
@@ -111,36 +135,6 @@ class MainViewModel @Inject constructor(
 
     private fun setIsScanningPartial(isScanning: Boolean): MainPartialState {
         return MainPartialState.SetIsScanning(isScanning)
-    }
-
-    private fun startReadingDataFromDevice(): Flow<MainPartialState> = flow {
-        val peripheral =
-            viewModelScope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
-        peripheral.connect()
-        peripheral
-            .observe(
-                characteristic = characteristicOf(
-                    service = DeviceConst.SERVICE_DATA_SERVICE,
-                    characteristic = DeviceConst.READINGS_CHARACTERISTIC
-                )
-            )
-            .collect { data ->
-                withContext(Dispatchers.IO) {
-                    val reading = ReadingsOuterClass.Readings.parseFrom(data)
-                    Timber.d("Reading is temperature = ${reading.temperature}, humidity = ${reading.hummidity}")
-                    repository.saveData(
-                        deviceReading = DeviceReading(
-                            reading.temperature,
-                            reading.hummidity
-                        ),
-                        serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
-                    )
-                }
-                val dataBaseData = repository.getData(DeviceConst.SERVICE_DATA_SERVICE)
-                Timber.d("DataBase last value ${dataBaseData.last()}")
-                emitAll(flowOf(MainPartialState.SetValues(dataBaseData)))
-            }
-        peripheral.disconnect()
     }
 
     private suspend fun writeDateToDevice(
@@ -175,9 +169,8 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
-        val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
-        Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
-        return dateFromDevice == dateFromLocalDateTime
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.cancel("onCleared")
     }
 }

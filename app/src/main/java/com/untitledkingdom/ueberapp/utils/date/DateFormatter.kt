@@ -7,5 +7,5 @@ object DateFormatter {
     val dateDDMMMMYYYY: DateTimeFormatter =
         DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)
     val dateDDMMMMYYYYHHMMSS: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("dd MMMM yyyy hh:mm:ss", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss", Locale.ENGLISH)
 }

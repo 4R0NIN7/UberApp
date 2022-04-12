@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,7 +24,6 @@ import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.main.DividerGray
 import com.untitledkingdom.ueberapp.feature.main.MainProcessor
-import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.LineGraphWithText
 import com.untitledkingdom.ueberapp.ui.common.Toolbar
 import com.untitledkingdom.ueberapp.ui.common.ValueItem
@@ -31,14 +32,17 @@ import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
+@ExperimentalMaterialApi
 @Composable
-fun DetailsScreen(processor: MainProcessor) {
+fun DetailsScreen(processor: MainProcessor, scope: CoroutineScope, state: ModalBottomSheetState) {
     Scaffold(topBar = {
         Toolbar(
             title = stringResource(R.string.main_close),
-            action = { processor.sendEvent(MainEvent.CloseDetails) }
+            action = { scope.launch { state.hide() } }
         )
     }) {
         Column(
@@ -65,7 +69,7 @@ fun Chart(processor: MainProcessor) {
         }.distinct()
     }
     val temperaturePoints = readings.map {
-        DataPoint(it.id.toFloat(), it.deviceReading.temperature.toFloat())
+        DataPoint(it.id.toFloat(), it.deviceReading.temperature)
     }
     val humidityPoints = readings.map {
         DataPoint(it.id.toFloat(), it.deviceReading.humidity.toFloat())

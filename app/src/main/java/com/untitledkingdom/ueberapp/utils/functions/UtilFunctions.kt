@@ -8,9 +8,8 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
 import timber.log.Timber
-import java.math.RoundingMode
 import java.text.DecimalFormat
-import kotlin.random.Random
+import java.time.LocalDateTime
 
 object RequestCodes {
     const val PERMISSION_CODE = 1337
@@ -67,15 +66,6 @@ fun toastMessage(message: String, context: Context) {
 }
 
 val decimalFormat = DecimalFormat("#.##")
-fun generateRandomHumidity(): String {
-    decimalFormat.roundingMode = RoundingMode.DOWN
-    return decimalFormat.format(Random.nextDouble(from = 0.0, until = 100.0))
-}
-
-fun generateRandomTemperature(): String {
-    decimalFormat.roundingMode = RoundingMode.DOWN
-    return decimalFormat.format(Random.nextDouble(from = -50.0, until = 50.1))
-}
 
 fun toDateString(byteArray: ByteArray): String {
     val day = byteArray[0].toUByte()
@@ -86,4 +76,10 @@ fun toDateString(byteArray: ByteArray): String {
 
 private fun uBytesToYear(high: Byte, low: Byte): Int {
     return (0xFF and high.toInt()) * 256 + (0xFF and low.toInt())
+}
+
+fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
+    val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
+    Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
+    return dateFromDevice == dateFromLocalDateTime
 }
