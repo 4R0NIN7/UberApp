@@ -65,7 +65,6 @@ class MainFragment : Fragment() {
     private fun viewEvents() = listOf(
         flowOf(MainEvent.RefreshDeviceData),
         flowOf(MainEvent.SetCurrentDateToDevice),
-        flowOf(MainEvent.ReadCharacteristic),
     )
 
     private fun trigger(effect: MainEffect) {

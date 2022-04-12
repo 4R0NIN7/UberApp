@@ -8,6 +8,7 @@ import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.utils.functions.enableAutoReconnect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,13 +28,17 @@ import javax.inject.Inject
 class Device @Inject constructor(
     private val dataStorage: DataStorage
 ) {
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private var device: Peripheral? = null
     private suspend fun getDevice(): Peripheral {
         return device
             ?: scope.peripheral(
                 dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-            ).also { device = it }
+            ).also {
+                device = it
+                scope.enableAutoReconnect(it)
+            }
     }
 
     suspend fun read(fromService: String, fromCharacteristic: String): DeviceStatus {
@@ -122,8 +127,10 @@ class Device @Inject constructor(
     }
 
     fun observationOnDataCharacteristic(): Flow<ByteArray> = flow {
+        Timber.d("emitGetDevices")
         emit(getDevice())
     }.flatMapConcat { peripheral ->
+        Timber.d("flatMapConcat")
         peripheral.observe(
             characteristicOf(
                 service = DeviceConst.SERVICE_DATA_SERVICE,
@@ -132,7 +139,7 @@ class Device @Inject constructor(
         )
     }
 
-    fun disconnect() {
+    fun disconnectFromDevice() {
         scope.cancel("Device disconnected!")
     }
 }

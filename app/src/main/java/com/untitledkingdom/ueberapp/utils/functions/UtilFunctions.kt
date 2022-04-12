@@ -85,5 +85,5 @@ fun toDateString(byteArray: ByteArray): String {
 }
 
 private fun uBytesToYear(high: Byte, low: Byte): Int {
-    return (high.toInt()) shl 8 + (low.toInt())
+    return (0xFF and high.toInt()) * 256 + (0xFF and low.toInt())
 }

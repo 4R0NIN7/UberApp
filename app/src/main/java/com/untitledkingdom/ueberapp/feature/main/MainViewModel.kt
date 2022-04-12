@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.LocalDateTime
@@ -69,7 +70,7 @@ class MainViewModel @Inject constructor(
                     service = DeviceConst.SERVICE_TIME_SETTINGS,
                     characteristic = DeviceConst.TIME_CHARACTERISTIC
                 ).toNoAction()
-                MainEvent.ReadCharacteristic -> startReadingDataFromDevice()
+                MainEvent.ReadCharacteristic -> device.observationOnDataCharacteristic().toNoAction()
                 MainEvent.RefreshDeviceData -> refreshDeviceData(
                     macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS),
                     effects = effects
@@ -77,8 +78,8 @@ class MainViewModel @Inject constructor(
                 MainEvent.StopScanning -> kableService.stopScan().toNoAction()
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> flow {
-                    device.disconnect()
                     kableService.stopScan()
+                    device.disconnectFromDevice()
                     effects.send(MainEffect.GoToWelcome)
                 }
                 MainEvent.WipeData -> repository.wipeData().toNoAction()
