@@ -16,7 +16,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -126,17 +125,17 @@ class Device @Inject constructor(
         }
     }
 
-    fun observationOnDataCharacteristic(): Flow<ByteArray> = flow {
+    fun observationOnDataCharacteristic(): Flow<DeviceReading> = flow {
         Timber.d("emitGetDevices")
-        emit(getDevice())
-    }.flatMapConcat { peripheral ->
-        Timber.d("flatMapConcat")
-        peripheral.observe(
+        getDevice().observe(
             characteristicOf(
                 service = DeviceConst.SERVICE_DATA_SERVICE,
                 characteristic = DeviceConst.READINGS_CHARACTERISTIC
             )
-        )
+        ).collect { data ->
+            val reading = ReadingsOuterClass.Readings.parseFrom(data)
+            emit(DeviceReading(reading.temperature, reading.hummidity))
+        }
     }
 
     fun disconnectFromDevice() {

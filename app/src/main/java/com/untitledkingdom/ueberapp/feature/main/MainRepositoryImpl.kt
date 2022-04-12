@@ -4,8 +4,11 @@ import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
+import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -45,4 +48,16 @@ class MainRepositoryImpl @Inject constructor(
         database.getDao().saveData(data = bleData)
         Timber.d("Saved to dataBase")
     }
+
+    override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
+        flow {
+            val data = database
+                .getDao()
+                .getAllData()
+                .filter { it.serviceUUID == serviceUUID }
+            if (data.size % 20 == 0) {
+                sendData()
+            }
+            emit(RepositoryStatus.SuccessBleData(data))
+        }
 }

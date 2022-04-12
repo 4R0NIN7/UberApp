@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
@@ -42,6 +43,7 @@ import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.BleDataConst
+import com.untitledkingdom.ueberapp.feature.details.DetailsScreen
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
@@ -69,19 +71,26 @@ import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 import timber.log.Timber
 
+@ExperimentalMaterialApi
 @ExperimentalPagerApi
 @Composable
 fun MainScreenCompose(processor: MainProcessor) {
     Scaffold(
         backgroundColor = AppBackground,
         topBar = {
-            Tabs(processor = processor)
+            val selectedDate by processor.collectAsState { it.selectedDate }
+            if (selectedDate != "") {
+                DetailsScreen(processor = processor)
+            } else {
+                Tabs(processor = processor)
+            }
         },
         content = {
         }
     )
 }
 
+@ExperimentalMaterialApi
 @ExperimentalPagerApi
 @Composable
 fun Tabs(processor: MainProcessor) {
@@ -89,7 +98,6 @@ fun Tabs(processor: MainProcessor) {
     val tabs = listOf(
         stringResource(R.string.main_main_screen),
         stringResource(R.string.main_history),
-        stringResource(R.string.main_settings)
     )
     Column(
         modifier = Modifier.background(
@@ -167,10 +175,6 @@ fun Tabs(processor: MainProcessor) {
                     processor.sendEvent(MainEvent.TabChanged(1))
                     HistoryScreen(processor)
                 }
-                2 -> {
-                    processor.sendEvent(MainEvent.TabChanged(2))
-                    SettingsScreen(processor)
-                }
             }
         }
     }
@@ -181,6 +185,7 @@ fun MainScreen(processor: MainProcessor) {
     DeviceInfo(processor = processor)
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
     val valuesGroupedByDate by processor.collectAsState {
@@ -240,12 +245,13 @@ private fun getReadingsForDay(
     }
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun DayDisplay(
     date: String,
-    processor: MainProcessor,
     temperature: Map<String, Double?>,
-    humidity: Map<String, Double?>
+    humidity: Map<String, Double?>,
+    processor: MainProcessor
 ) {
     val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
@@ -261,7 +267,7 @@ fun DayDisplay(
             modifier = Modifier
                 .clickable {
                     Timber.d("date in history $date")
-                    processor.sendEvent(MainEvent.SetSelectedDate(date), MainEvent.GoToDetails)
+                    processor.sendEvent(MainEvent.SetSelectedDate(date = date))
                 }
                 .fillMaxWidth(),
             shape = shape8,
@@ -318,10 +324,6 @@ fun ReadingsRow(
 }
 
 @Composable
-fun SettingsScreen(processor: MainProcessor) {
-}
-
-@Composable
 private fun TabTitle(title: String) {
     Text(
         text = title,
@@ -338,7 +340,7 @@ private fun TabTitle(title: String) {
 @Composable
 fun DeviceInfo(processor: MainProcessor) {
     Column(
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(padding24),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
@@ -378,7 +380,7 @@ fun ConnectedDevice(processor: MainProcessor) {
     if (selectedAdvertisement != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.spacedBy(padding24)
         ) {
             Text(
                 text = "Selected device",
@@ -390,13 +392,9 @@ fun ConnectedDevice(processor: MainProcessor) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val isScanning by processor.collectAsState { it.isScanning }
                 DeviceItem(
                     scannedDevice = selectedAdvertisement!!.toScannedDevice(),
                     action = {
-                        if (isScanning) {
-                            processor.sendEvent(MainEvent.StopScanning)
-                        }
                         processor.sendEvent(
                             MainEvent.EndConnectingToDevice
                         )
