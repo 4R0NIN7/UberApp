@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.Scaffold
@@ -361,20 +360,6 @@ fun DeviceInfo(processor: MainProcessor) {
                 color = Black
             )
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(padding8),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Button(onClick = { processor.sendEvent(MainEvent.ReadCharacteristic) }) {
-                Text("Start Reading")
-            }
-            Button(onClick = { processor.sendEvent(MainEvent.StopReadingCharacteristic) }) {
-                Text("Stop Reading")
-            }
-        }
     }
 }
 
@@ -413,7 +398,6 @@ fun ConnectedDevice(processor: MainProcessor) {
                             processor.sendEvent(MainEvent.StopScanning)
                         }
                         processor.sendEvent(
-                            MainEvent.StopReadingCharacteristic,
                             MainEvent.EndConnectingToDevice
                         )
                     }

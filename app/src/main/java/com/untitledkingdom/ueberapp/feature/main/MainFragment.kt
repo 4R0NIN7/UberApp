@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.fragment.findNavController
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -21,10 +22,12 @@ import com.untitledkingdom.ueberapp.workManager.ReadingWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flowOf
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
+@ExperimentalUnsignedTypes
 @ExperimentalPagerApi
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -63,7 +66,6 @@ class MainFragment : Fragment() {
         flowOf(MainEvent.RefreshDeviceData),
         flowOf(MainEvent.SetCurrentDateToDevice),
         flowOf(MainEvent.ReadCharacteristic),
-        flowOf(MainEvent.LoadData),
     )
 
     private fun trigger(effect: MainEffect) {
@@ -90,6 +92,7 @@ class MainFragment : Fragment() {
         super.onDestroyView()
         Timber.d("WorkManager cancelled")
         WorkManager.getInstance(requireContext()).cancelAllWork()
+        viewModel.viewModelScope.cancel("Canceling viewModelScope")
     }
 
     private fun goToWelcome() {

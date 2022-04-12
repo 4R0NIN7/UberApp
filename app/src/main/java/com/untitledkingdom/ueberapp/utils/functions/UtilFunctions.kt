@@ -76,3 +76,14 @@ fun generateRandomTemperature(): String {
     decimalFormat.roundingMode = RoundingMode.DOWN
     return decimalFormat.format(Random.nextDouble(from = -50.0, until = 50.1))
 }
+
+fun toDateString(byteArray: ByteArray): String {
+    val day = byteArray[0].toUByte()
+    val month = byteArray[1].toUByte()
+    val year = uBytesToYear(byteArray[3], byteArray[2])
+    return "$day$month$year"
+}
+
+private fun uBytesToYear(high: Byte, low: Byte): Int {
+    return (0xFF and high.toInt()) * 256 + (0xFF and low.toInt())
+}
