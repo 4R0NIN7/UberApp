@@ -37,6 +37,7 @@ buildscript {
         kable_version = '0.16.0'
         work_version = "2.7.1"
         pager_version = '0.21.2-beta'
+        protobuf_Version = '0.8.3'
     }
     repositories {
         google()

@@ -9,12 +9,12 @@ import java.time.LocalDateTime
 data class BleData(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val data: Readings,
+    val deviceReading: DeviceReading,
     val localDateTime: LocalDateTime,
     val serviceUUID: String,
 )
 
-data class Readings(
-    val temperature: Double,
-    val humidity: Double
+data class DeviceReading(
+    val temperature: Float,
+    val humidity: Int
 )

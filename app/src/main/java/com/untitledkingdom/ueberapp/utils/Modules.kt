@@ -28,7 +28,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -76,12 +75,6 @@ object Modules {
             DatabaseConstants.DATABASE_NAME
         ).fallbackToDestructiveMigration().build()
 
-    @ExperimentalCoroutinesApi
-    @Provides
-    fun provideScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    }
-
     @Provides
     @Singleton
     fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage {
@@ -93,6 +86,12 @@ object Modules {
     fun provideDataStore(context: Application): DataStore<Preferences> {
         return context.dataStore
     }
+
+    @Provides
+    @Singleton
+    fun provideCoroutine(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
 }
 
 @Module
@@ -102,7 +101,7 @@ interface BindModules {
     fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
 
     @Binds
-    fun bindRepository(repositoryImpl: MainRepositoryImpl): MainRepository
+    fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
 
     @Binds
     fun bindTimeManager(

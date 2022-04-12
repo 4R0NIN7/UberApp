@@ -7,6 +7,9 @@ import androidx.work.WorkerParameters
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import timber.log.Timber
 
 @HiltWorker
@@ -15,11 +18,10 @@ class ReadingWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters
 ) : CoroutineWorker(context, params) {
-
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override suspend fun doWork(): Result {
         return try {
-            Timber.d("doWork")
-            repository.readOnceFromDevice()
+            Timber.d("WorkManager doWork")
             Result.success()
         } catch (e: Exception) {
             Timber.d(e)

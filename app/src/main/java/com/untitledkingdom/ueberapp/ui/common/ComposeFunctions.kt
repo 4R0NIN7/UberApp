@@ -159,18 +159,18 @@ fun ValueItem(bleData: BleData) {
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
                 RowText(
-                    key = "Readings at",
+                    key = "DeviceReading at",
                     value = "${bleData.localDateTime.truncatedTo(ChronoUnit.SECONDS)}",
                     colorValue = Black
                 )
                 RowText(
                     key = "Temperature ",
-                    value = bleData.data.temperature.toString(),
+                    value = bleData.deviceReading.temperature.toString(),
                     colorValue = Gray
                 )
                 RowText(
                     key = "Humidity ",
-                    value = bleData.data.humidity.toString(),
+                    value = bleData.deviceReading.humidity.toString(),
                     colorValue = Gray
                 )
             }

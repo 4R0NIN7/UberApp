@@ -3,10 +3,21 @@ package com.untitledkingdom.ueberapp.utils.functions
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import com.juul.kable.Advertisement
+import com.juul.kable.Peripheral
+import com.juul.kable.State
+import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import okhttp3.internal.and
+import timber.log.Timber
+import java.nio.ByteBuffer
+import java.time.LocalDateTime
 import kotlin.coroutines.cancellation.CancellationException
 
 fun CoroutineScope.childScope() =
@@ -26,3 +37,55 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
 )
 
 fun Dp.toPx(density: Density) = value * density.density
+
+@ExperimentalUnsignedTypes
+fun LocalDateTime.toUByteArray(): ByteArray {
+    val yearBytes = yearToByteArray(year = year)
+    return arrayOf(
+        dayOfMonth.toUByte(),
+        monthValue.toUByte(),
+        yearBytes[3].toUByte(),
+        yearBytes[2].toUByte()
+    ).toUByteArray().toByteArray()
+}
+
+private fun yearToUBytesStringVersion(year: Int): List<UByte> {
+    val yearBinaryString = Integer.toBinaryString(year)
+    val resultWithPadZero = String.format("%32s", yearBinaryString).replace(" ", "0")
+    val chunked = resultWithPadZero.chunked(8)
+    return try {
+        val bytes = chunked.map {
+            it.toUByte(2)
+        }
+        Timber.d("yearToUBytes Bytes are $bytes")
+        val zero: UByte = Integer.valueOf("0").toUByte()
+        bytes.filter {
+            it > zero
+        }
+    } catch (e: Exception) {
+        Timber.d("exception $e")
+        listOf()
+    }
+}
+
+fun CoroutineScope.enableAutoReconnect(peripheral: Peripheral) {
+    peripheral.state
+        .filter { it is State.Disconnected }
+        .onEach {
+            val timeMillis = MainRepositoryConst.DELAY_API
+            delay(timeMillis)
+            peripheral.connect()
+        }
+        .launchIn(this)
+}
+
+private fun uBytesToYearStringVersion(byte1: Byte, byte2: Byte): Int {
+    val byte1ToBits = String.format("%8s", Integer.toBinaryString(byte1 and 0xFF)).replace(' ', '0')
+    val byte2ToBits = String.format("%8s", Integer.toBinaryString(byte2 and 0xFF)).replace(' ', '0')
+    val concat = byte2ToBits.plus(byte1ToBits)
+    return Integer.parseInt(concat, 2)
+}
+
+private fun yearToByteArray(year: Int): ByteArray {
+    return ByteBuffer.allocate(4).putInt(year).array()
+}

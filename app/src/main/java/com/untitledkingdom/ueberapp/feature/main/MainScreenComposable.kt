@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.Scaffold
@@ -41,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.BleDataConst
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -213,8 +211,8 @@ fun HistoryScreen(processor: MainProcessor) {
                         DayDisplay(
                             date = date,
                             processor = processor,
-                            temperature = getReadingsForDay(values, DeviceConst.TEMPERATURE),
-                            humidity = getReadingsForDay(values, DeviceConst.HUMIDITY)
+                            temperature = getReadingsForDay(values, isTemperature = true),
+                            humidity = getReadingsForDay(values, isTemperature = false)
                         )
                     }
                 }
@@ -227,17 +225,17 @@ fun HistoryScreen(processor: MainProcessor) {
 
 private fun getReadingsForDay(
     deviceData: List<BleData>,
-    whichReading: String
+    isTemperature: Boolean
 ): Map<String, Double?> {
-    return if (whichReading == DeviceConst.TEMPERATURE) {
-        val min = deviceData.map { it.data.temperature }.toList().minOrNull()
-        val avg = deviceData.map { it.data.temperature }.toList().average()
-        val max = deviceData.map { it.data.temperature }.toList().maxOrNull()
+    return if (isTemperature) {
+        val min = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().minOrNull()
+        val avg = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().average()
+        val max = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().maxOrNull()
         mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
     } else {
-        val min = deviceData.map { it.data.humidity }.toList().minOrNull()
-        val avg = deviceData.map { it.data.humidity }.toList().average()
-        val max = deviceData.map { it.data.humidity }.toList().maxOrNull()
+        val min = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().minOrNull()
+        val avg = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().average()
+        val max = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().maxOrNull()
         mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
     }
 }
@@ -249,12 +247,12 @@ fun DayDisplay(
     temperature: Map<String, Double?>,
     humidity: Map<String, Double?>
 ) {
-    val temperatureString = "Min: ${temperature[BleDataConst.MIN]}\n" +
+    val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
-        "Max: ${temperature[BleDataConst.MAX]}"
-    val humidityString = "Min: ${humidity[BleDataConst.MIN]}\n" +
+        "Max: ${decimalFormat.format(temperature[BleDataConst.MAX])}"
+    val humidityString = "Min: ${decimalFormat.format(humidity[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(humidity[BleDataConst.AVG])}\n" +
-        "Max: ${humidity[BleDataConst.MAX]}"
+        "Max: ${decimalFormat.format(humidity[BleDataConst.MAX])}"
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -355,26 +353,12 @@ fun DeviceInfo(processor: MainProcessor) {
             ValueItem(bleData = values.last())
         } else {
             Text(
-                text = "Data is empty!",
+                text = "DeviceReading is empty!",
                 style = Typography.body1,
                 fontWeight = FontWeight.Bold,
                 fontSize = fontSize18,
                 color = Black
             )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(padding8),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Button(onClick = { processor.sendEvent(MainEvent.ReadCharacteristic) }) {
-                Text("Start Reading")
-            }
-            Button(onClick = { processor.sendEvent(MainEvent.StopReadingCharacteristic) }) {
-                Text("Stop Reading")
-            }
         }
     }
 }
@@ -414,7 +398,6 @@ fun ConnectedDevice(processor: MainProcessor) {
                             processor.sendEvent(MainEvent.StopScanning)
                         }
                         processor.sendEvent(
-                            MainEvent.StopReadingCharacteristic,
                             MainEvent.EndConnectingToDevice
                         )
                     }
