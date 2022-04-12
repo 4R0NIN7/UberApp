@@ -43,6 +43,7 @@ import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.BleDataConst
+import com.untitledkingdom.ueberapp.feature.details.DetailsScreen
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
@@ -77,7 +78,12 @@ fun MainScreenCompose(processor: MainProcessor) {
     Scaffold(
         backgroundColor = AppBackground,
         topBar = {
-            Tabs(processor = processor)
+            val selectedDate by processor.collectAsState { it.selectedDate }
+            if (selectedDate != "") {
+                DetailsScreen(processor = processor)
+            } else {
+                Tabs(processor = processor)
+            }
         },
         content = {
         }
@@ -209,6 +215,7 @@ fun HistoryScreen(processor: MainProcessor) {
                     if (values != null) {
                         DayDisplay(
                             date = date,
+                            processor = processor,
                             temperature = getReadingsForDay(values, isTemperature = true),
                             humidity = getReadingsForDay(values, isTemperature = false)
                         )
@@ -243,7 +250,8 @@ private fun getReadingsForDay(
 fun DayDisplay(
     date: String,
     temperature: Map<String, Double?>,
-    humidity: Map<String, Double?>
+    humidity: Map<String, Double?>,
+    processor: MainProcessor
 ) {
     val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
@@ -259,6 +267,7 @@ fun DayDisplay(
             modifier = Modifier
                 .clickable {
                     Timber.d("date in history $date")
+                    processor.sendEvent(MainEvent.SetSelectedDate(date = date))
                 }
                 .fillMaxWidth(),
             shape = shape8,

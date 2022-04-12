@@ -31,8 +31,12 @@ import com.madrapps.plot.line.LineGraph
 import com.madrapps.plot.line.LinePlot
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
+import com.untitledkingdom.ueberapp.ui.values.GrayOsVersion
 import com.untitledkingdom.ueberapp.ui.values.RoomName1Color
 import com.untitledkingdom.ueberapp.ui.values.RoomName2Color
+import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
+import com.untitledkingdom.ueberapp.ui.values.RoomName5Color
+import com.untitledkingdom.ueberapp.ui.values.RoomName7Color
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.utils.functions.toPx
@@ -73,7 +77,7 @@ internal fun LineGraphWithText(lines: List<List<DataPoint>>, modifier: Modifier)
                             val x = DecimalFormat("#.#").format(value[0].x)
                             Text(
                                 modifier = Modifier.padding(vertical = 8.dp),
-                                text = "Score at $x:00 hrs",
+                                text = "Score at pos $x",
                                 style = MaterialTheme.typography.subtitle1,
                                 color = Black
                             )
@@ -94,7 +98,7 @@ internal fun LineGraphWithText(lines: List<List<DataPoint>>, modifier: Modifier)
                         LinePlot.Line(
                             humidity,
                             LinePlot.Connection(RoomName2Color, 2.dp),
-                            LinePlot.Intersection(),
+                            LinePlot.Intersection(color = RoomName3Color),
                             LinePlot.Highlight { center ->
                                 val color = RoomName2Color
                                 drawCircle(color, 9.dp.toPx(), center, alpha = 0.3f)
@@ -104,21 +108,21 @@ internal fun LineGraphWithText(lines: List<List<DataPoint>>, modifier: Modifier)
                         ),
                         LinePlot.Line(
                             temperature,
-                            LinePlot.Connection(),
-                            LinePlot.Intersection(),
+                            LinePlot.Connection(color = RoomName5Color, 2.dp),
+                            LinePlot.Intersection(color = RoomName7Color),
                             LinePlot.Highlight { center ->
                                 val color = RoomName1Color
                                 drawCircle(color, 9.dp.toPx(), center, alpha = 0.3f)
                                 drawCircle(color, 6.dp.toPx(), center)
                                 drawCircle(Color.White, 3.dp.toPx(), center)
                             },
-                            LinePlot.AreaUnderLine()
+                            LinePlot.AreaUnderLine(color = GrayOsVersion)
                         ),
                     ),
                 ),
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(400.dp)
                     .padding(horizontal = padding),
                 onSelectionStart = { visibility.value = true },
                 onSelectionEnd = { visibility.value = false }
