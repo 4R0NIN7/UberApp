@@ -46,6 +46,7 @@ import com.untitledkingdom.ueberapp.devices.data.BleDataConst
 import com.untitledkingdom.ueberapp.feature.details.DetailsScreen
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
+import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
 import com.untitledkingdom.ueberapp.ui.common.RowText
 import com.untitledkingdom.ueberapp.ui.common.ValueItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
@@ -166,15 +167,20 @@ fun Tabs(processor: MainProcessor) {
                 AppBackground,
             )
         ) {
-            when (tabIndex) {
-                0 -> {
-                    processor.sendEvent(MainEvent.TabChanged(0))
-                    MainScreen(processor)
+            val isPreparing by processor.collectAsState { it.preparing }
+            if (!isPreparing) {
+                when (tabIndex) {
+                    0 -> {
+                        processor.sendEvent(MainEvent.TabChanged(0))
+                        MainScreen(processor)
+                    }
+                    1 -> {
+                        processor.sendEvent(MainEvent.TabChanged(1))
+                        HistoryScreen(processor)
+                    }
                 }
-                1 -> {
-                    processor.sendEvent(MainEvent.TabChanged(1))
-                    HistoryScreen(processor)
-                }
+            } else {
+                LoadingDialog()
             }
         }
     }

@@ -19,9 +19,9 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(macAddress = macAddress)
     }
 
-    data class SetValues(val values: List<BleData>) : MainPartialState {
+    data class SetValues(val values: List<BleData>, val isPreparing: Boolean) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(values = values)
+            oldState.copy(values = values, preparing = isPreparing)
     }
 
     data class SetSelectedDate(val selectedDate: String) : MainPartialState {

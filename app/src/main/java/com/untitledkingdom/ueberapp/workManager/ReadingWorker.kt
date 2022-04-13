@@ -1,9 +1,14 @@
 package com.untitledkingdom.ueberapp.workManager
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
@@ -36,6 +41,7 @@ class ReadingWorker @AssistedInject constructor(
             Timber.d("WorkManager doWork")
             handleDate()
             handleReadings()
+            makeStatusNotification(message = "WorkManager succeed", context = applicationContext)
             Result.success()
         } catch (e: Exception) {
             Timber.d(e)
@@ -96,8 +102,32 @@ class ReadingWorker @AssistedInject constructor(
             throw e
         }
     }
+
+    fun makeStatusNotification(message: String, context: Context) {
+        val name = WorkManagerConst.NOTIFICATION_CHANNEL_NAME
+        val description = WorkManagerConst.NOTIFICATION_CHANNEL_DESCRIPTION
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(WorkManagerConst.CHANNEL_ID, name, importance)
+        channel.description = description
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
+        notificationManager?.createNotificationChannel(channel)
+        val builder = NotificationCompat.Builder(context, WorkManagerConst.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(WorkManagerConst.NOTIFICATION_TITLE)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVibrate(LongArray(0))
+        NotificationManagerCompat.from(context)
+            .notify(WorkManagerConst.NOTIFICATION_ID, builder.build())
+    }
 }
 
 object WorkManagerConst {
     const val WORK_TAG = "READING_FROM_DEVICE"
+    const val NOTIFICATION_CHANNEL_NAME = "Work Manager Channel"
+    const val NOTIFICATION_CHANNEL_DESCRIPTION = "Work Manager Description"
+    const val CHANNEL_ID = "VERBOSE_NOTIFICATION"
+    const val NOTIFICATION_TITLE = "Work manager response"
+    const val NOTIFICATION_ID = 1
 }

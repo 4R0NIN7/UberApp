@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
+import okhttp3.internal.and
 import timber.log.Timber
 import java.text.DecimalFormat
 import java.time.LocalDateTime
@@ -74,8 +75,8 @@ fun toDateString(byteArray: ByteArray): String {
     return "$day$month$year"
 }
 
-private fun uBytesToYear(high: Byte, low: Byte): Int {
-    return (0xFF and high.toInt()) * 256 + (0xFF and low.toInt())
+fun uBytesToYear(high: Byte, low: Byte): Int {
+    return high and 0xff shl 8 or (low and 0xff)
 }
 
 fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
