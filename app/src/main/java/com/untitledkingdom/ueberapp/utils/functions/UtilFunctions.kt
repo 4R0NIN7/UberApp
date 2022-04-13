@@ -3,10 +3,14 @@ package com.untitledkingdom.ueberapp.utils.functions
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.service.BackgroundReading
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import okhttp3.internal.and
 import timber.log.Timber
 import java.text.DecimalFormat
@@ -84,3 +88,11 @@ fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
     Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
     return dateFromDevice == dateFromLocalDateTime
 }
+
+@FlowPreview
+@ExperimentalCoroutinesApi
+fun controlOverService(actionStartOrResumeService: String, context: Context) =
+    Intent(context, BackgroundReading::class.java).also {
+        it.action = actionStartOrResumeService
+        context.startService(it)
+    }

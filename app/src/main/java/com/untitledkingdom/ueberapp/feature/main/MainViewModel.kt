@@ -66,7 +66,6 @@ class MainViewModel @Inject constructor(
                     service = DeviceConst.SERVICE_TIME_SETTINGS,
                     characteristic = DeviceConst.TIME_CHARACTERISTIC
                 ).toNoAction(),
-                setWorkManager().toNoAction(),
                 startObservingData(),
                 refreshDeviceData(effects),
                 startCollectingData(effects)

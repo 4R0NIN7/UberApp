@@ -13,6 +13,8 @@ import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
+import com.untitledkingdom.ueberapp.service.BackgroundReading
+import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,6 +59,7 @@ class WelcomeFragment : Fragment() {
     private fun goToMainFragment() {
         Toast.makeText(requireContext(), "Successfully connected to device!", Toast.LENGTH_SHORT)
             .show()
+        controlOverService(BackgroundReading.ACTION_STOP_SERVICE, requireContext())
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }
 }

@@ -17,8 +17,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
+import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,8 +42,9 @@ class MainActivity : AppCompatActivity() {
 
     private val locationBroadcastReceiver = LocationBroadcastReceiver()
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        navigateToMainFragment(intent)
         if (intent.extras != null) {
             if (intent.extras?.getBoolean(ActivityConst.ENABLE_BLUETOOTH) == true) {
                 enableBluetooth()
@@ -51,7 +54,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             listOf(
@@ -85,7 +87,7 @@ class MainActivity : AppCompatActivity() {
             gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
             registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
             registerReceiver(locationBroadcastReceiver, gpsFilter)
-            BackgroundReading.startService(this)
+            controlOverService(BackgroundReading.ACTION_START_OR_RESUME_SERVICE, this)
         }
     }
 
@@ -141,6 +143,20 @@ class MainActivity : AppCompatActivity() {
         finish()
         startActivity(intent)
     }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        navigateToMainFragment(intent)
+    }
+
+    private fun navigateToMainFragment(intent: Intent?) {
+        if (intent?.action == BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT) {
+            val navHostFragment =
+                supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+            val navController = navHostFragment.navController
+            navController.navigate(R.id.action_global_mainFragment)
+        }
+    }
 }
 
 @ExperimentalCoroutinesApi
@@ -175,6 +191,7 @@ class BluetoothBroadcastReceiver : BroadcastReceiver() {
         }
     }
 }
+
 @ExperimentalCoroutinesApi
 @FlowPreview
 class LocationBroadcastReceiver : BroadcastReceiver() {
