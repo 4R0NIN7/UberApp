@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface MainRepository {
     suspend fun wipeData()
-    fun sendData()
     suspend fun saveData(serviceUUID: String, deviceReading: DeviceReading)
     suspend fun getData(serviceUUID: String): List<BleData>
     fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus>

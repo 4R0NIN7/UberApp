@@ -9,6 +9,7 @@ import androidx.room.Room
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.BuildConfig
+import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.KableServiceImpl
@@ -33,6 +34,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -63,6 +65,9 @@ object Modules {
         }
         return OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
+            .connectTimeout(ApiConst.CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(ApiConst.CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(ApiConst.CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
     }
 

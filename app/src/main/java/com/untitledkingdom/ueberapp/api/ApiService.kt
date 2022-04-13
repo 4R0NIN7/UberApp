@@ -1,3 +1,11 @@
 package com.untitledkingdom.ueberapp.api
 
-interface ApiService
+import com.untitledkingdom.ueberapp.devices.data.BleData
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.POST
+
+interface ApiService {
+    @POST(ApiConst.URL_POST_BLE_DATA)
+    suspend fun sendDataToService(@Body bleData: List<BleData>): Response<Unit>
+}

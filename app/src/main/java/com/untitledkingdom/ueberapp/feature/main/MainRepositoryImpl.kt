@@ -1,5 +1,7 @@
 package com.untitledkingdom.ueberapp.feature.main
 
+import com.untitledkingdom.ueberapp.api.ApiConst
+import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
@@ -15,12 +17,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.Response
 import timber.log.Timber
 import javax.inject.Inject
 
 class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
+    private val apiService: ApiService
 ) : MainRepository {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override suspend fun getData(serviceUUID: String): List<BleData> {
@@ -29,7 +36,7 @@ class MainRepositoryImpl @Inject constructor(
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
         if (data.size % 20 == 0) {
-            sendData()
+            sendData(data)
         }
         return data
     }
@@ -38,11 +45,25 @@ class MainRepositoryImpl @Inject constructor(
         database.getDao().wipeData()
     }
 
-    override fun sendData() {
+    private fun sendData(data: List<BleData>) {
         scope.launch {
             Timber.d("Sending data...")
-            delay(MainRepositoryConst.DELAY_API)
-            Timber.d("Data sent!")
+            try {
+                val response = Response.success<ResponseBody>(
+                    ApiConst.HTTP_OK,
+                    "".toResponseBody("".toMediaTypeOrNull())
+                )
+                /* If there were a server then */
+                // val response = apiService.sendDataToService(bleData = data)
+                delay(MainRepositoryConst.DELAY_API)
+                if (response.isSuccessful) {
+                    Timber.d("Data sent!")
+                } else {
+                    throw Exception()
+                }
+            } catch (e: Exception) {
+                Timber.d("Unable to send data!")
+            }
         }
     }
 
@@ -62,7 +83,7 @@ class MainRepositoryImpl @Inject constructor(
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
                 Timber.d("dataFromDataBase")
                 if (data.size % 20 == 0) {
-                    sendData()
+                    sendData(data)
                     Timber.d("I am not blocked!")
                 }
                 Timber.d("I am not blocked! beforce emit")
