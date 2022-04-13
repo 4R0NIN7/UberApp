@@ -3,22 +3,16 @@ package com.untitledkingdom.ueberapp.utils.functions
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import com.juul.kable.Advertisement
-import com.juul.kable.Peripheral
-import com.juul.kable.State
-import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import okhttp3.internal.and
 import timber.log.Timber
 import java.nio.ByteBuffer
 import java.time.LocalDateTime
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.pow
 
 fun CoroutineScope.childScope() =
     CoroutineScope(coroutineContext + Job(coroutineContext[Job]))
@@ -68,16 +62,11 @@ private fun yearToUBytesStringVersion(year: Int): List<UByte> {
     }
 }
 
-fun CoroutineScope.enableAutoReconnect(peripheral: Peripheral) {
-    peripheral.state
-        .filter { it is State.Disconnected }
-        .onEach {
-            val timeMillis = MainRepositoryConst.DELAY_API
-            delay(timeMillis)
-            peripheral.connect()
-        }
-        .launchIn(this)
-}
+fun backoff(
+    base: Long,
+    multiplier: Float,
+    retry: Int,
+): Long = (base * multiplier.pow(retry - 1)).toLong()
 
 private fun uBytesToYearStringVersion(byte1: Byte, byte2: Byte): Int {
     val byte1ToBits = String.format("%8s", Integer.toBinaryString(byte1 and 0xFF)).replace(' ', '0')

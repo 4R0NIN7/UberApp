@@ -36,6 +36,7 @@ class WelcomeFragment : Fragment() {
             processor = welcomeViewModel::processor,
             onEffect = ::trigger,
         )
+        controlOverService(BackgroundReading.ACTION_START_OR_RESUME_SERVICE, requireContext())
         return ComposeView(
             requireContext()
         ).apply {

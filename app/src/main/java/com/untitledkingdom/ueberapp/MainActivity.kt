@@ -20,7 +20,6 @@ import androidx.core.app.ActivityCompat
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
-import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -87,7 +86,6 @@ class MainActivity : AppCompatActivity() {
             gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
             registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
             registerReceiver(locationBroadcastReceiver, gpsFilter)
-            controlOverService(BackgroundReading.ACTION_START_OR_RESUME_SERVICE, this)
         }
     }
 
@@ -126,6 +124,8 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 Timber.d("Bluetooth enabled")
+            } else {
+                restart()
             }
         }
 
