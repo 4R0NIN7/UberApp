@@ -50,6 +50,7 @@ class Device @Inject constructor(
                         fromCharacteristic
                     )
                 ) {
+                    var readings: ReadingsOuterClass.Readings? = null
                     withContext(Dispatchers.IO) {
                         val dataBytes = getDevice().read(
                             characteristicOf(
@@ -57,9 +58,11 @@ class Device @Inject constructor(
                                 characteristic = fromCharacteristic
                             )
                         )
-                        val readings = ReadingsOuterClass.Readings.parseFrom(dataBytes)
-                        return@withContext DeviceStatus.SuccessDeviceReading(
-                            DeviceReading(readings.temperature, readings.hummidity)
+                        readings = ReadingsOuterClass.Readings.parseFrom(dataBytes)
+                    }
+                    if (readings != null) {
+                        return DeviceStatus.SuccessDeviceReading(
+                            DeviceReading(readings!!.temperature, readings!!.hummidity)
                         )
                     }
                 }

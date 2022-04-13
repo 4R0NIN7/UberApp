@@ -6,9 +6,15 @@ import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -16,7 +22,7 @@ class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
 ) : MainRepository {
-
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override suspend fun getData(serviceUUID: String): List<BleData> {
         val data = database
             .getDao()
@@ -32,10 +38,12 @@ class MainRepositoryImpl @Inject constructor(
         database.getDao().wipeData()
     }
 
-    override suspend fun sendData() {
-        Timber.d("Sending data...")
-        delay(MainRepositoryConst.DELAY_API)
-        Timber.d("Data sent!")
+    override fun sendData() {
+        scope.launch {
+            Timber.d("Sending data...")
+            delay(MainRepositoryConst.DELAY_API)
+            Timber.d("Data sent!")
+        }
     }
 
     override suspend fun saveData(serviceUUID: String, deviceReading: DeviceReading) {
@@ -51,13 +59,18 @@ class MainRepositoryImpl @Inject constructor(
 
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
-            val data = database
-                .getDao()
-                .getAllData()
-                .filter { it.serviceUUID == serviceUUID }
-            if (data.size % 20 == 0) {
-                sendData()
+            database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
+                Timber.d("dataFromDataBase")
+                if (data.size % 20 == 0) {
+                    sendData()
+                    Timber.d("I am not blocked!")
+                }
+                Timber.d("I am not blocked! beforce emit")
+                emit(RepositoryStatus.SuccessBleData(data))
             }
-            emit(RepositoryStatus.SuccessBleData(data))
         }
+
+    override fun clear() {
+        scope.cancel()
+    }
 }

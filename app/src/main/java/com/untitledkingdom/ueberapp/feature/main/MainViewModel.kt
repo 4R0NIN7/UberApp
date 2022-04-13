@@ -20,7 +20,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceStatus
-import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
@@ -67,7 +67,9 @@ class MainViewModel @Inject constructor(
                     characteristic = DeviceConst.TIME_CHARACTERISTIC
                 ).toNoAction(),
                 setWorkManager().toNoAction(),
-                startObservingData().toNoAction(),
+                startObservingData(),
+                refreshDeviceData(effects),
+                startCollectingData(effects)
             )
         },
         onEvent = { event ->
@@ -75,6 +77,7 @@ class MainViewModel @Inject constructor(
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> flow {
                     kableService.stopScan()
+                    repository.clear()
                     device.disconnectFromDevice()
                     effects.send(MainEffect.GoToWelcome)
                 }
@@ -86,23 +89,49 @@ class MainViewModel @Inject constructor(
         }
     )
 
+    private fun readOnce(effects: EffectsCollector<MainEffect>): Flow<MainPartialState> = flow {
+        val data = device.read(
+            DeviceConst.SERVICE_DATA_SERVICE,
+            fromCharacteristic = DeviceConst.READINGS_CHARACTERISTIC
+        )
+        when (data) {
+            DeviceStatus.Error -> effects.send(MainEffect.ShowError("Error"))
+            is DeviceStatus.SuccessDeviceReading -> {
+                repository.saveData(
+                    deviceReading = data.reading,
+                    serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
+                )
+                emit(
+                    MainPartialState.SetValues(
+                        repository.getData(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE), false
+                    )
+                )
+            }
+            else -> {}
+        }
+    }
+
+    private fun startCollectingData(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
+        repository.getDataFromDataBaseAsFlow(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
+            .map { status ->
+                when (status) {
+                    RepositoryStatus.Error ->
+                        effects
+                            .send(MainEffect.ShowError("Error during collecting data from DB"))
+                            .let { NoAction() }
+                    is RepositoryStatus.SuccessBleData -> {
+                        MainPartialState.SetValues(status.data, false)
+                    }
+                }
+            }
+
     private fun startObservingData(): Flow<MainPartialState> = flow {
         device.observationOnDataCharacteristic().collect { reading ->
-            Timber.d("Reading is temperature = ${reading.temperature}, humidity = ${reading.humidity}")
             repository.saveData(
                 deviceReading = reading,
                 serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
             )
-            emit(
-                MainPartialState.SetValues(
-                    repository.getData(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
-                )
-            )
         }
-    }
-
-    private fun setValuesPartial(values: List<BleData>): Flow<MainPartialState> {
-        return flowOf(MainPartialState.SetValues(values))
     }
 
     private fun setWorkManager() {

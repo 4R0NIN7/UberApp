@@ -14,12 +14,10 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
-import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.flowOf
 
 @ExperimentalMaterialApi
 @ExperimentalUnsignedTypes
@@ -39,7 +37,6 @@ class MainFragment : Fragment() {
             lifecycleState = Lifecycle.State.RESUMED,
             processor = viewModel::processor,
             onEffect = ::trigger,
-            viewEvents = ::viewEvents
         )
         return ComposeView(
             requireContext()
@@ -49,9 +46,6 @@ class MainFragment : Fragment() {
             }
         }
     }
-
-    private fun viewEvents() =
-        listOf(flowOf(MainEvent.StartScanning))
 
     private fun trigger(effect: MainEffect) {
         when (effect) {
