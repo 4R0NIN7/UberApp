@@ -142,6 +142,7 @@ class MainViewModel @Inject constructor(
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WorkManagerConst.WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, periodicWorkRequest
         )
+        // WorkManager.getInstance(context).enqueue(OneTimeWorkRequest.from(ReadingWorker::class.java))
     }
 
     private suspend fun refreshDeviceData(
