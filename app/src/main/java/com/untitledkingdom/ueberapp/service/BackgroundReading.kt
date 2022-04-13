@@ -2,9 +2,11 @@ package com.untitledkingdom.ueberapp.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.NotificationManager.IMPORTANCE_LOW
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -34,6 +36,7 @@ class BackgroundReading @Inject constructor() : Service() {
 
     companion object {
         private const val CHANNEL_ID = "BackgroundReading"
+        private const val CHANNEL_NAME = "Background Reading"
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
         const val ACTION_PAUSE_SERVICE = "ACTION_PAUSE_SERVICE "
@@ -66,16 +69,16 @@ class BackgroundReading @Inject constructor() : Service() {
         }
     }
 
-    private fun createNotificationChannel() {
-        val serviceChannel = NotificationChannel(
-            CHANNEL_ID, "Foreground Service Channel",
-            NotificationManager.IMPORTANCE_DEFAULT
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel(notificationManager: NotificationManager) {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            IMPORTANCE_LOW
         )
-        val manager = getSystemService(NotificationManager::class.java)
-        manager!!.createNotificationChannel(serviceChannel)
+        notificationManager.createNotificationChannel(channel)
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
             when (it.action) {
@@ -90,7 +93,9 @@ class BackgroundReading @Inject constructor() : Service() {
                             }
                             val device = Device(dataStorage = dataStorage)
                             startObservingData(device)
-                            startForegroundService()
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                startForegroundService()
+                            }
                         }
                     } else {
                         Timber.d("Resuming service")
@@ -110,17 +115,16 @@ class BackgroundReading @Inject constructor() : Service() {
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun startForegroundService() {
-        createNotificationChannel()
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setContentTitle("Foreground service")
-            .setColor(0x000000)
-            .setContentText("Device is reading data....")
-            .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
-            .setContentIntent(getMainActivityPendingIntent())
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
+            as NotificationManager
+        createNotificationChannel(notificationManager)
+        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setAutoCancel(false)
             .setOngoing(true)
-            .build()
-        startForeground(1, notification)
+            .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
+            .setContentTitle("Reading in background...")
+            .setContentIntent(getMainActivityPendingIntent())
+        startForeground(1, notificationBuilder.build())
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

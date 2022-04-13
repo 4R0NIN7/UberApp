@@ -38,7 +38,6 @@ class KableServiceImpl @Inject constructor() : KableService {
                 )
             }
             .collect { advertisement ->
-                Timber.d("Mac Address ${advertisement.address}")
                 if (advertisement.name != null) {
                     emit(
                         ScanStatus.Found(
@@ -92,7 +91,6 @@ class KableServiceImpl @Inject constructor() : KableService {
     }
 
     override fun returnPeripheral(scope: CoroutineScope, advertisement: Advertisement): Peripheral {
-        Timber.d("Returning Peripheral")
         return scope.peripheral(advertisement = advertisement) {
             logging {
                 engine = SystemLogEngine

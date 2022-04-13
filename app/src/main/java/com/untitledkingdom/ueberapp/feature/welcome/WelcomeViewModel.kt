@@ -112,7 +112,6 @@ class WelcomeViewModel @Inject constructor(
     private fun setAdvertisements(
         advertisement: Advertisement,
     ): WelcomePartialState {
-        Timber.d("Advertisements in viewModel $advertisement")
         return WelcomePartialState.SetAdvertisements(
             checkIfAdvertisementAlreadyExists(advertisement)
         )
@@ -124,7 +123,6 @@ class WelcomeViewModel @Inject constructor(
         val advertisements = processor.state.value.advertisements.toMutableList()
         val indexQuery = advertisements.indexOfFirst { it.address == newAdvertisement.address }
         return if (indexQuery != -1) {
-            Timber.d("Old is existing!")
             val oldAdvertisement = advertisements[indexQuery]
             advertisements -= oldAdvertisement
             advertisements += newAdvertisement
