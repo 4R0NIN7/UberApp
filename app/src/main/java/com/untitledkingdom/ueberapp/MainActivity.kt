@@ -38,11 +38,14 @@ class MainActivity : AppCompatActivity() {
     private val locationManager: LocationManager by lazy {
         getSystemService(Context.LOCATION_SERVICE) as LocationManager
     }
-
+    private val navController by lazy {
+        (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
+    }
     private val locationBroadcastReceiver = LocationBroadcastReceiver()
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
         navigateToMainFragment(intent)
         if (intent.extras != null) {
             if (intent.extras?.getBoolean(ActivityConst.ENABLE_BLUETOOTH) == true) {
@@ -53,7 +56,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        setContentView(R.layout.activity_main)
+        checkPermission()
+        val bluetoothFilter = IntentFilter()
+        bluetoothFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        val gpsFilter = IntentFilter()
+        gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+        registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
+        registerReceiver(locationBroadcastReceiver, gpsFilter)
+    }
+
+    private fun checkPermission() {
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             listOf(
                 Manifest.permission.BLUETOOTH_ADVERTISE,
@@ -80,12 +92,6 @@ class MainActivity : AppCompatActivity() {
                 activity = this,
                 context = this
             )
-            val bluetoothFilter = IntentFilter()
-            bluetoothFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-            val gpsFilter = IntentFilter()
-            gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
-            registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
-            registerReceiver(locationBroadcastReceiver, gpsFilter)
         }
     }
 
@@ -151,9 +157,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun navigateToMainFragment(intent: Intent?) {
         if (intent?.action == BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT) {
-            val navHostFragment =
-                supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-            val navController = navHostFragment.navController
             navController.navigate(R.id.action_global_mainFragment)
         }
     }
