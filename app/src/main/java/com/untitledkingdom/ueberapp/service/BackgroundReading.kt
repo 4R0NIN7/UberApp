@@ -15,6 +15,7 @@ import com.juul.kable.ConnectionLostException
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
+import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
@@ -120,6 +121,9 @@ class BackgroundReading @Inject constructor() : Service() {
 
     private fun handleService() {
         scope.launch {
+            if (dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) == "") {
+                stop()
+            }
             try {
                 val device = Device(dataStorage)
                 writeDateToDevice(

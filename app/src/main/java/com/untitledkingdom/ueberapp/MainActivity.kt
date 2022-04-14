@@ -106,8 +106,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(BluetoothBroadcastReceiver())
-        unregisterReceiver(LocationBroadcastReceiver())
+        unregisterReceiver(bluetoothBroadcastReceiver)
+        unregisterReceiver(locationBroadcastReceiver)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(serviceReceiver)
     }
 

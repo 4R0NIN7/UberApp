@@ -67,6 +67,7 @@ class MainViewModel @Inject constructor(
                     kableService.stopScan()
                     repository.clear()
                     device.disconnectFromDevice()
+                    dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, "")
                     effects.send(MainEffect.GoToWelcome)
                 }
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))

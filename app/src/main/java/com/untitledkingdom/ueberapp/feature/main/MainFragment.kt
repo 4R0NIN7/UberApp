@@ -40,6 +40,7 @@ class MainFragment : Fragment() {
             processor = viewModel::processor,
             onEffect = ::trigger,
         )
+        controlOverService(BackgroundReading.ACTION_START_OR_RESUME_SERVICE, requireContext())
         return ComposeView(
             requireContext()
         ).apply {
@@ -47,17 +48,6 @@ class MainFragment : Fragment() {
                 MainScreenCompose(viewModel.processor)
             }
         }
-    }
-
-    private fun isServiceRunning(): Boolean {
-        try {
-            if (BackgroundReading.isPause) {
-                return true
-            }
-        } catch (e: Exception) {
-            return false
-        }
-        return false
     }
 
     private fun trigger(effect: MainEffect) {
