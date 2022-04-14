@@ -1,5 +1,6 @@
 package com.untitledkingdom.ueberapp.service
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_LOW
@@ -11,7 +12,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.annotation.RequiresApi
-import androidx.core.app.NotificationCompat
 import com.juul.kable.ConnectionLostException
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
@@ -40,6 +40,7 @@ class BackgroundReading @Inject constructor() : Service() {
     companion object {
         private const val CHANNEL_ID = "BackgroundReading"
         private const val CHANNEL_NAME = "Background Reading"
+        private const val ONGOING_NOTIFICATION_ID = 123
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
         const val ACTION_PAUSE_SERVICE = "ACTION_PAUSE_SERVICE "
@@ -94,6 +95,7 @@ class BackgroundReading @Inject constructor() : Service() {
                     if (isFirstRun) {
                         isFirstRun = false
                         handleService()
+                        startForegroundService()
                     } else {
                         Timber.d("Resuming service")
                     }
@@ -113,9 +115,6 @@ class BackgroundReading @Inject constructor() : Service() {
             try {
                 val device = Device(dataStorage)
                 startObservingData(device)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    startForegroundService()
-                }
             } catch (e: ConnectionLostException) {
                 Timber.d("Exception during creating device $e")
                 stop()
@@ -123,29 +122,50 @@ class BackgroundReading @Inject constructor() : Service() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     private fun startForegroundService() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
-        createNotificationChannel(notificationManager)
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_MIN
+        )
+        channel.enableLights(false)
+        channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
+        notificationManager.createNotificationChannel(channel)
+        val notification = Notification.Builder(this, CHANNEL_ID)
             .setAutoCancel(false)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
             .setContentTitle("Reading in background...")
             .setContentIntent(getMainActivityPendingIntent())
-        startForeground(134, notificationBuilder.build())
+            .build()
+        startForeground(ONGOING_NOTIFICATION_ID, notification)
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    private fun getMainActivityPendingIntent() = PendingIntent.getActivity(
-        this,
-        0,
-        Intent(this, MainActivity::class.java).also {
-            it.action = ACTION_SHOW_MAIN_FRAGMENT
-        },
-        FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-    )
+    private fun getMainActivityPendingIntent(): PendingIntent {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Timber.d("If sdk > S")
+            return PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, MainActivity::class.java).also {
+                    it.action = ACTION_SHOW_MAIN_FRAGMENT
+                },
+                FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
+        } else {
+            Timber.d("Sdk is < S")
+            return PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, MainActivity::class.java).also {
+                    it.action = ACTION_SHOW_MAIN_FRAGMENT
+                },
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+    }
 
     private fun stop() {
         stopForeground(true)

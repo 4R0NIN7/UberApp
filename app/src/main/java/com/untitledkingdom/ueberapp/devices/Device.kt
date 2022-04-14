@@ -49,6 +49,17 @@ class Device @Inject constructor(
             }
     }
 
+//    val viewState: Flow<ViewState> = peripheral.state.flatMapLatest { state ->
+//        when (state) {
+//            is State.Connecting -> flowOf(ViewState.Connecting)
+//            State.Connected -> combine(peripheral.remoteRssi(), sensorTag.gyro) { rssi, gyro ->
+//                ViewState.Connected(rssi, gyroState(gyro))
+//            }
+//            State.Disconnecting -> flowOf(ViewState.Disconnecting)
+//            is State.Disconnected -> flowOf(ViewState.Disconnected)
+//        }
+//    }
+
     private suspend fun CoroutineScope.enableAutoReconnect() {
         getDevice().state
             .filter { it is State.Disconnected }
