@@ -10,13 +10,19 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.juul.kable.ConnectionLostException
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
+import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
+import com.untitledkingdom.ueberapp.utils.functions.toDateString
+import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +34,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
@@ -41,8 +48,8 @@ class BackgroundReading @Inject constructor() : Service() {
         private const val ONGOING_NOTIFICATION_ID = 123
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
-        const val ACTION_PAUSE_SERVICE = "ACTION_PAUSE_SERVICE "
         const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE "
+        const val INTENT_MESSAGE_FROM_SERVICE = "INTENT_MESSAGE_FROM_SERVICE"
     }
 
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -53,6 +60,9 @@ class BackgroundReading @Inject constructor() : Service() {
     @Inject
     lateinit var repository: MainRepository
 
+    @Inject
+    lateinit var timeManager: TimeManager
+
     override fun onCreate() {
         Timber.d("Service created")
         super.onCreate()
@@ -61,8 +71,9 @@ class BackgroundReading @Inject constructor() : Service() {
     private suspend fun startObservingData(device: Device) {
         try {
             Timber.d("Starting collecting data from service")
+            startForegroundService()
+            sendBroadcastToActivity()
             device.observationOnDataCharacteristic().collect { reading ->
-                startForegroundService()
                 Timber.d("Reading in service $reading")
                 repository.saveData(
                     deviceReading = reading,
@@ -74,6 +85,11 @@ class BackgroundReading @Inject constructor() : Service() {
         } catch (e: Exception) {
             Timber.d("Service error! $e")
         }
+    }
+
+    private fun sendBroadcastToActivity() {
+        val intent = Intent(INTENT_MESSAGE_FROM_SERVICE)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -102,6 +118,11 @@ class BackgroundReading @Inject constructor() : Service() {
         scope.launch {
             try {
                 val device = Device(dataStorage)
+                writeDateToDevice(
+                    service = DeviceConst.SERVICE_TIME_SETTINGS,
+                    characteristic = DeviceConst.TIME_CHARACTERISTIC,
+                    device = device
+                )
                 startObservingData(device)
             } catch (e: ConnectionLostException) {
                 Timber.d("Exception during creating device $e")
@@ -169,5 +190,48 @@ class BackgroundReading @Inject constructor() : Service() {
 
     private fun resumeService() {
         isPause = false
+    }
+
+    private suspend fun writeDateToDevice(
+        service: String,
+        characteristic: String,
+        device: Device
+    ) {
+        try {
+            val status = device.readDate(
+                fromCharacteristic = characteristic,
+                fromService = service
+            )
+            when (status) {
+                is DeviceDataStatus.SuccessDate -> checkDate(
+                    status.date,
+                    service,
+                    characteristic,
+                    device
+                )
+                DeviceDataStatus.Error -> throw Exception()
+                else -> {}
+            }
+        } catch (e: Exception) {
+            Timber.d("Unable to write deviceReading $e")
+        }
+    }
+
+    private suspend fun checkDate(
+        bytes: List<Byte>,
+        service: String,
+        characteristic: String,
+        device: Device
+    ) {
+        val dateFromDevice = toDateString(bytes.toByteArray())
+        val currentDate = timeManager.provideCurrentLocalDateTime()
+        val checkIfTheSame = checkIfDateIsTheSame(
+            date = currentDate,
+            dateFromDevice = dateFromDevice
+        )
+        if (!checkIfTheSame) {
+            Timber.d("writeDateToDevice Saving date")
+            device.write(currentDate.toUByteArray(), service, characteristic)
+        }
     }
 }

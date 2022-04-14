@@ -21,10 +21,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
@@ -38,7 +39,7 @@ class Device @Inject constructor(
 ) {
     private var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var device: Peripheral? = null
-    private val atomicInteger: AtomicInteger = AtomicInteger()
+    private val attempts: AtomicInteger = AtomicInteger()
     private suspend fun getDevice(): Peripheral {
         return device
             ?: scope.peripheral(
@@ -47,6 +48,19 @@ class Device @Inject constructor(
                 device = it
                 scope.enableAutoReconnect()
             }
+    }
+
+    suspend fun deviceStatus(): Flow<DeviceStatus> = flow {
+        getDevice().state.flatMapLatest { state ->
+            when (state) {
+                is State.Disconnected -> {
+                    flowOf(DeviceStatus.Disconnected)
+                }
+                is State.Connecting -> flowOf(DeviceStatus.Connecting)
+                State.Connected -> flowOf(DeviceStatus.Connected)
+                State.Disconnecting -> flowOf(DeviceStatus.Disconnecting)
+            }
+        }
     }
 
     private suspend fun CoroutineScope.enableAutoReconnect() {
@@ -63,40 +77,18 @@ class Device @Inject constructor(
 
     private suspend fun reconnect() {
         try {
-            Timber.d("Attempt number ${atomicInteger.get()}")
+            Timber.d("Attempt number ${attempts.get()}")
             val reconnectTime =
                 backoff(
                     base = 100,
                     multiplier = 2f,
-                    retry = atomicInteger.getAndIncrement()
+                    retry = attempts.getAndIncrement()
                 )
             delay(reconnectTime)
             getDevice().connect()
         } catch (e: Exception) {
             Timber.d("Exception in connect after delay $e")
             reconnect()
-        }
-    }
-
-    fun CoroutineScope.connect() {
-        atomicInteger.incrementAndGet()
-        launch {
-            try {
-                getDevice().connect()
-                atomicInteger.set(0)
-            } catch (e: ConnectionLostException) {
-                Timber.d("Connection lost")
-            }
-        }
-    }
-
-    private fun CoroutineScope.disconnect() {
-        launch {
-            try {
-                getDevice().disconnect()
-            } catch (e: ConnectionLostException) {
-                Timber.d("Connection lost")
-            }
         }
     }
 
@@ -135,6 +127,8 @@ class Device @Inject constructor(
 
     suspend fun readDate(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
+            getDevice().connect()
+            attempts.set(0)
             var date: ByteArray = byteArrayOf()
             getDevice().services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
@@ -152,14 +146,19 @@ class Device @Inject constructor(
                 }
             }
             return DeviceDataStatus.SuccessDate(date = date.toList())
-        } catch (e: Exception) {
+        } catch (e: ConnectionLostException) {
+            attempts.incrementAndGet()
             Timber.d("Exception in read! + $e")
             throw e
+        } finally {
+            getDevice().disconnect()
         }
     }
 
     suspend fun write(value: ByteArray, toService: String, toCharacteristic: String) {
         try {
+            getDevice().connect()
+            attempts.set(0)
             getDevice().services?.first {
                 it.serviceUuid == UUID.fromString(toService)
             }?.characteristics?.forEach { it ->
@@ -176,6 +175,9 @@ class Device @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
+            attempts.incrementAndGet()
+        } finally {
+            getDevice().disconnect()
         }
     }
 

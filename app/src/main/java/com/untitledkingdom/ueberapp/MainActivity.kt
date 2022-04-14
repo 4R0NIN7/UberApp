@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
@@ -27,6 +28,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
 
+@ExperimentalUnsignedTypes
 @FlowPreview
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
@@ -41,6 +43,14 @@ class MainActivity : AppCompatActivity() {
     }
     private val navController by lazy {
         (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
+    }
+    private val serviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == BackgroundReading.INTENT_MESSAGE_FROM_SERVICE) {
+                Timber.d("Got message from service!")
+                navigateToMainFragment(Intent(BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT))
+            }
+        }
     }
     private val locationBroadcastReceiver = LocationBroadcastReceiver()
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
@@ -100,11 +110,17 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(BluetoothBroadcastReceiver())
         unregisterReceiver(LocationBroadcastReceiver())
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(serviceReceiver)
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onResume() {
         super.onResume()
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(
+                serviceReceiver,
+                IntentFilter(BackgroundReading.INTENT_MESSAGE_FROM_SERVICE)
+            )
         if (!bluetoothAdapter.isEnabled) {
             enableBluetooth()
         } else if (!locationManager.isLocationEnabled) {
@@ -164,6 +180,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+@ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 @FlowPreview
 class BluetoothBroadcastReceiver : BroadcastReceiver() {
@@ -197,6 +214,7 @@ class BluetoothBroadcastReceiver : BroadcastReceiver() {
     }
 }
 
+@ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 @FlowPreview
 class LocationBroadcastReceiver : BroadcastReceiver() {
