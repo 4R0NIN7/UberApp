@@ -3,7 +3,6 @@ package com.untitledkingdom.ueberapp.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.NotificationManager.IMPORTANCE_LOW
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.Service
@@ -11,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import androidx.annotation.RequiresApi
 import com.juul.kable.ConnectionLostException
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
@@ -64,6 +62,7 @@ class BackgroundReading @Inject constructor() : Service() {
         try {
             Timber.d("Starting collecting data from service")
             device.observationOnDataCharacteristic().collect { reading ->
+                startForegroundService()
                 Timber.d("Reading in service $reading")
                 repository.saveData(
                     deviceReading = reading,
@@ -77,16 +76,6 @@ class BackgroundReading @Inject constructor() : Service() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createNotificationChannel(notificationManager: NotificationManager) {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            IMPORTANCE_LOW
-        )
-        notificationManager.createNotificationChannel(channel)
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
             when (it.action) {
@@ -95,7 +84,6 @@ class BackgroundReading @Inject constructor() : Service() {
                     if (isFirstRun) {
                         isFirstRun = false
                         handleService()
-                        startForegroundService()
                     } else {
                         Timber.d("Resuming service")
                     }
@@ -145,7 +133,6 @@ class BackgroundReading @Inject constructor() : Service() {
 
     private fun getMainActivityPendingIntent(): PendingIntent {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            Timber.d("If sdk > S")
             return PendingIntent.getActivity(
                 this,
                 0,
@@ -155,7 +142,6 @@ class BackgroundReading @Inject constructor() : Service() {
                 FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
         } else {
-            Timber.d("Sdk is < S")
             return PendingIntent.getActivity(
                 this,
                 0,

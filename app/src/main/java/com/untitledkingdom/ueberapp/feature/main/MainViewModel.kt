@@ -19,7 +19,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.devices.DeviceStatus
+import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -94,8 +94,8 @@ class MainViewModel @Inject constructor(
             fromCharacteristic = DeviceConst.READINGS_CHARACTERISTIC
         )
         when (data) {
-            DeviceStatus.Error -> effects.send(MainEffect.ShowError("Error"))
-            is DeviceStatus.SuccessDeviceReading -> {
+            DeviceDataStatus.Error -> effects.send(MainEffect.ShowError("Error"))
+            is DeviceDataStatus.SuccessDeviceDataReading -> {
                 repository.saveData(
                     deviceReading = data.reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
@@ -176,8 +176,8 @@ class MainViewModel @Inject constructor(
                 fromService = service
             )
             when (status) {
-                is DeviceStatus.SuccessDate -> checkDate(status.date, service, characteristic)
-                DeviceStatus.Error -> throw Exception()
+                is DeviceDataStatus.SuccessDate -> checkDate(status.date, service, characteristic)
+                DeviceDataStatus.Error -> throw Exception()
                 else -> {}
             }
         } catch (e: Exception) {

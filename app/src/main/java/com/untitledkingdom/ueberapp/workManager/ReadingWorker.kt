@@ -12,7 +12,7 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.devices.DeviceStatus
+import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
@@ -56,10 +56,10 @@ class ReadingWorker @AssistedInject constructor(
                 fromService = DeviceConst.SERVICE_TIME_SETTINGS
             )
             when (status) {
-                is DeviceStatus.SuccessDate -> checkDate(
+                is DeviceDataStatus.SuccessDate -> checkDate(
                     status.date, DeviceConst.SERVICE_TIME_SETTINGS, DeviceConst.TIME_CHARACTERISTIC
                 )
-                DeviceStatus.Error -> throw Exception()
+                DeviceDataStatus.Error -> throw Exception()
                 else -> {}
             }
         } catch (e: Exception) {
@@ -88,13 +88,13 @@ class ReadingWorker @AssistedInject constructor(
                 fromCharacteristic = DeviceConst.READINGS_CHARACTERISTIC
             )
             when (status) {
-                is DeviceStatus.SuccessDeviceReading -> {
+                is DeviceDataStatus.SuccessDeviceDataReading -> {
                     repository.saveData(
                         DeviceConst.SERVICE_DATA_SERVICE,
                         deviceReading = status.reading
                     )
                 }
-                DeviceStatus.Error -> throw Exception()
+                DeviceDataStatus.Error -> throw Exception()
                 else -> {}
             }
         } catch (e: Exception) {

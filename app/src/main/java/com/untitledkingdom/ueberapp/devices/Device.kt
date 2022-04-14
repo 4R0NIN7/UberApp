@@ -49,17 +49,6 @@ class Device @Inject constructor(
             }
     }
 
-//    val viewState: Flow<ViewState> = peripheral.state.flatMapLatest { state ->
-//        when (state) {
-//            is State.Connecting -> flowOf(ViewState.Connecting)
-//            State.Connected -> combine(peripheral.remoteRssi(), sensorTag.gyro) { rssi, gyro ->
-//                ViewState.Connected(rssi, gyroState(gyro))
-//            }
-//            State.Disconnecting -> flowOf(ViewState.Disconnecting)
-//            is State.Disconnected -> flowOf(ViewState.Disconnected)
-//        }
-//    }
-
     private suspend fun CoroutineScope.enableAutoReconnect() {
         getDevice().state
             .filter { it is State.Disconnected }
@@ -111,7 +100,7 @@ class Device @Inject constructor(
         }
     }
 
-    suspend fun read(fromService: String, fromCharacteristic: String): DeviceStatus {
+    suspend fun read(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
             getDevice().services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
@@ -131,20 +120,20 @@ class Device @Inject constructor(
                         readings = ReadingsOuterClass.Readings.parseFrom(dataBytes)
                     }
                     if (readings != null) {
-                        return DeviceStatus.SuccessDeviceReading(
+                        return DeviceDataStatus.SuccessDeviceDataReading(
                             DeviceReading(readings!!.temperature, readings!!.hummidity)
                         )
                     }
                 }
             }
-            return DeviceStatus.Error
+            return DeviceDataStatus.Error
         } catch (e: Exception) {
             Timber.d("Exception in read! + $e")
             throw e
         }
     }
 
-    suspend fun readDate(fromService: String, fromCharacteristic: String): DeviceStatus {
+    suspend fun readDate(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
             var date: ByteArray = byteArrayOf()
             getDevice().services?.first {
@@ -162,7 +151,7 @@ class Device @Inject constructor(
                     )
                 }
             }
-            return DeviceStatus.SuccessDate(date = date.toList())
+            return DeviceDataStatus.SuccessDate(date = date.toList())
         } catch (e: Exception) {
             Timber.d("Exception in read! + $e")
             throw e
@@ -212,8 +201,15 @@ class Device @Inject constructor(
     }
 }
 
+sealed class DeviceDataStatus {
+    data class SuccessDeviceDataReading(val reading: DeviceReading) : DeviceDataStatus()
+    data class SuccessDate(val date: List<Byte>) : DeviceDataStatus()
+    object Error : DeviceDataStatus()
+}
+
 sealed class DeviceStatus {
-    data class SuccessDeviceReading(val reading: DeviceReading) : DeviceStatus()
-    data class SuccessDate(val date: List<Byte>) : DeviceStatus()
-    object Error : DeviceStatus()
+    object Connecting : DeviceStatus()
+    object Connected : DeviceStatus()
+    object Disconnecting : DeviceStatus()
+    object Disconnected : DeviceStatus()
 }

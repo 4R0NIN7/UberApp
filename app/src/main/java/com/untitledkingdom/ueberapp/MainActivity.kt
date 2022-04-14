@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
+import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -157,6 +158,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun navigateToMainFragment(intent: Intent?) {
         if (intent?.action == BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT) {
+            controlOverService(BackgroundReading.ACTION_STOP_SERVICE, this)
             navController.navigate(R.id.action_global_mainFragment)
         }
     }
