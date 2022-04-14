@@ -8,17 +8,16 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import okhttp3.internal.and
 import timber.log.Timber
 import java.text.DecimalFormat
 import java.time.LocalDateTime
-
-object RequestCodes {
-    const val PERMISSION_CODE = 1337
-}
 
 fun requestPermission(
     permissionType: String,
@@ -89,6 +88,7 @@ fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
     return dateFromDevice == dateFromLocalDateTime
 }
 
+@ExperimentalUnsignedTypes
 @FlowPreview
 @ExperimentalCoroutinesApi
 fun controlOverService(actionStartOrResumeService: String, context: Context) =
@@ -96,3 +96,9 @@ fun controlOverService(actionStartOrResumeService: String, context: Context) =
         it.action = actionStartOrResumeService
         context.startService(it)
     }
+
+@ExperimentalCoroutinesApi
+@FlowPreview
+fun observeDevice(device: Device): Flow<Unit> = flow {
+    device.deviceStatus()
+}

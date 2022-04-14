@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
+@ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
@@ -60,7 +61,6 @@ class WelcomeFragment : Fragment() {
     private fun goToMainFragment() {
         Toast.makeText(requireContext(), "Successfully connected to device!", Toast.LENGTH_SHORT)
             .show()
-        controlOverService(BackgroundReading.ACTION_STOP_SERVICE, requireContext())
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }
 }

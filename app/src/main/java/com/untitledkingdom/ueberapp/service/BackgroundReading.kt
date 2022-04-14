@@ -40,7 +40,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class BackgroundReading @Inject constructor() : Service() {
     private var isFirstRun = true
-    private var isPause = false
+    private var isSendingBroadcast = true
 
     companion object {
         private const val CHANNEL_ID = "BackgroundReading"
@@ -50,6 +50,7 @@ class BackgroundReading @Inject constructor() : Service() {
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
         const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE "
         const val INTENT_MESSAGE_FROM_SERVICE = "INTENT_MESSAGE_FROM_SERVICE"
+        var isPause = false
     }
 
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -72,8 +73,8 @@ class BackgroundReading @Inject constructor() : Service() {
         try {
             Timber.d("Starting collecting data from service")
             startForegroundService()
-            sendBroadcastToActivity()
             device.observationOnDataCharacteristic().collect { reading ->
+                sendBroadcastToActivity()
                 Timber.d("Reading in service $reading")
                 repository.saveData(
                     deviceReading = reading,
@@ -88,8 +89,11 @@ class BackgroundReading @Inject constructor() : Service() {
     }
 
     private fun sendBroadcastToActivity() {
-        val intent = Intent(INTENT_MESSAGE_FROM_SERVICE)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        if (isSendingBroadcast) {
+            val intent = Intent(INTENT_MESSAGE_FROM_SERVICE)
+            isSendingBroadcast = false
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

@@ -20,8 +20,6 @@ import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.BackgroundReading
-import com.untitledkingdom.ueberapp.utils.functions.RequestCodes
-import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -99,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         permissions.forEach {
             requestPermission(
                 permissionType = it,
-                requestCode = RequestCodes.PERMISSION_CODE,
+                requestCode = ActivityConst.PERMISSION_CODE,
                 activity = this,
                 context = this
             )
@@ -174,7 +172,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun navigateToMainFragment(intent: Intent?) {
         if (intent?.action == BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT) {
-            controlOverService(BackgroundReading.ACTION_STOP_SERVICE, this)
             navController.navigate(R.id.action_global_mainFragment)
         }
     }
@@ -200,7 +197,7 @@ class BluetoothBroadcastReceiver : BroadcastReceiver() {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             requestPermission(
                                 permissionType = Manifest.permission.BLUETOOTH_CONNECT,
-                                requestCode = RequestCodes.PERMISSION_CODE,
+                                requestCode = ActivityConst.PERMISSION_CODE,
                                 activity = context.applicationContext as Activity,
                                 context = context
                             )
@@ -238,4 +235,5 @@ class LocationBroadcastReceiver : BroadcastReceiver() {
 object ActivityConst {
     const val ENABLE_BLUETOOTH = "ENABLE_BLUETOOTH"
     const val ENABLE_GPS = "ENABLE_GPS"
+    const val PERMISSION_CODE = 1337
 }

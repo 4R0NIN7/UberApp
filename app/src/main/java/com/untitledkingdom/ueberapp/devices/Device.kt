@@ -21,11 +21,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
@@ -50,15 +49,23 @@ class Device @Inject constructor(
             }
     }
 
-    suspend fun deviceStatus(): Flow<DeviceStatus> = flow {
-        getDevice().state.flatMapLatest { state ->
-            when (state) {
-                is State.Disconnected -> {
-                    flowOf(DeviceStatus.Disconnected)
+    fun deviceStatus() {
+        scope.launch {
+            getDevice().state.collect { state ->
+                when (state) {
+                    is State.Disconnected -> {
+                        Timber.d("deviceStatus $state")
+                    }
+                    is State.Connecting -> {
+                        Timber.d("deviceStatus $state")
+                    }
+                    State.Connected -> {
+                        Timber.d("deviceStatus $state")
+                    }
+                    State.Disconnecting -> {
+                        Timber.d("deviceStatus $state")
+                    }
                 }
-                is State.Connecting -> flowOf(DeviceStatus.Connecting)
-                State.Connected -> flowOf(DeviceStatus.Connected)
-                State.Disconnecting -> flowOf(DeviceStatus.Disconnecting)
             }
         }
     }
@@ -67,6 +74,7 @@ class Device @Inject constructor(
         getDevice().state
             .filter { it is State.Disconnected }
             .onEach {
+                Timber.d("Reconnect in autoReconnect")
                 reconnect()
             }
             .catch { cause ->
@@ -86,6 +94,7 @@ class Device @Inject constructor(
                 )
             delay(reconnectTime)
             getDevice().connect()
+            attempts.set(0)
         } catch (e: Exception) {
             Timber.d("Exception in connect after delay $e")
             reconnect()
@@ -189,10 +198,12 @@ class Device @Inject constructor(
                     characteristic = DeviceConst.READINGS_CHARACTERISTIC
                 )
             ).collect { data ->
-                Timber.d("emitGetDevices")
                 val reading = ReadingsOuterClass.Readings.parseFrom(data)
                 emit(DeviceReading(reading.temperature, reading.hummidity))
             }
+        } catch (e: ConnectionLostException) {
+            Timber.d("Device disconnected!")
+            reconnect()
         } catch (e: Exception) {
             Timber.d("Device disconnected!")
         }

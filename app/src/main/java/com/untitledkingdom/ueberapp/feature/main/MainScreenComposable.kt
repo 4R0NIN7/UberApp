@@ -167,7 +167,7 @@ fun Tabs(processor: MainProcessor) {
                 AppBackground,
             )
         ) {
-            val isPreparing by processor.collectAsState { it.preparing }
+            val isPreparing by processor.collectAsState { it.isPreparing }
             if (!isPreparing) {
                 when (tabIndex) {
                     0 -> {

@@ -56,9 +56,8 @@ class MainViewModel @Inject constructor(
         initialState = MainState(),
         prepare = {
             merge(
-                startObservingData(),
                 refreshDeviceData(effects),
-                startCollectingData(effects)
+                startCollectingData(effects),
             )
         },
         onEvent = { event ->
@@ -109,7 +108,7 @@ class MainViewModel @Inject constructor(
                             .send(MainEffect.ShowError("Error during collecting data from DB"))
                             .let { NoAction() }
                     is RepositoryStatus.SuccessBleData -> {
-                        MainPartialState.SetValues(status.data, false)
+                        MainPartialState.SetValues(status.data, isPreparing = false)
                     }
                 }
             }
@@ -131,7 +130,6 @@ class MainViewModel @Inject constructor(
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WorkManagerConst.WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, periodicWorkRequest
         )
-        // WorkManager.getInstance(context).enqueue(OneTimeWorkRequest.from(ReadingWorker::class.java))
     }
 
     private suspend fun refreshDeviceData(
@@ -142,14 +140,20 @@ class MainViewModel @Inject constructor(
                 when (status) {
                     is ScanStatus.Failed -> effects.send(MainEffect.ShowError(status.message as String))
                         .let { NoAction() }
-                    is ScanStatus.Found -> setAdvertisementPartial(status.advertisement)
+                    is ScanStatus.Found -> setAdvertisementPartial(
+                        status.advertisement,
+                        isPreparing = false
+                    )
                     ScanStatus.Scanning -> setIsScanningPartial(true)
                     ScanStatus.Stopped -> setIsScanningPartial(false)
                 }
             }
 
-    private fun setAdvertisementPartial(advertisement: Advertisement): MainPartialState {
-        return MainPartialState.SetAdvertisement(advertisement)
+    private fun setAdvertisementPartial(
+        advertisement: Advertisement,
+        isPreparing: Boolean
+    ): MainPartialState {
+        return MainPartialState.SetAdvertisement(advertisement, isPreparing)
     }
 
     private fun setIsScanningPartial(isScanning: Boolean): MainPartialState {
