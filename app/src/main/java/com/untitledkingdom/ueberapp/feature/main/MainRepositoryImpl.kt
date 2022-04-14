@@ -75,7 +75,6 @@ class MainRepositoryImpl @Inject constructor(
             serviceUUID = serviceUUID,
         )
         database.getDao().saveData(data = bleData)
-        Timber.d("Saved to dataBase")
     }
 
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =

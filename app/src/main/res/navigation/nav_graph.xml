@@ -4,6 +4,10 @@
     android:id="@+id/nav_graph.xml"
     app:startDestination="@id/welcomeFragment">
 
+    <action android:id="@+id/action_global_mainFragment"
+        app:destination="@id/mainFragment"
+        app:launchSingleTop="true" />
+
     <fragment
         android:id="@+id/welcomeFragment"
         android:name="com.untitledkingdom.ueberapp.feature.welcome.WelcomeFragment"
