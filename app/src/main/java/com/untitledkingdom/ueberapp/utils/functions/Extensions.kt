@@ -12,7 +12,6 @@ import timber.log.Timber
 import java.nio.ByteBuffer
 import java.time.LocalDateTime
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.pow
 
 fun CoroutineScope.childScope() =
     CoroutineScope(coroutineContext + Job(coroutineContext[Job]))
@@ -61,12 +60,6 @@ private fun yearToUBytesStringVersion(year: Int): List<UByte> {
         listOf()
     }
 }
-
-fun backoff(
-    base: Long,
-    multiplier: Float,
-    retry: Int,
-): Long = (base * multiplier.pow(retry - 1)).toLong()
 
 private fun uBytesToYearStringVersion(byte1: Byte, byte2: Byte): Int {
     val byte1ToBits = String.format("%8s", Integer.toBinaryString(byte1 and 0xFF)).replace(' ', '0')

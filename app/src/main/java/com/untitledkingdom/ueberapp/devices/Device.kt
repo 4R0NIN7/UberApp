@@ -10,7 +10,7 @@ import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.utils.functions.backoff
+import com.untitledkingdom.ueberapp.utils.functions.delayValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,7 +34,7 @@ import javax.inject.Inject
 @FlowPreview
 @ExperimentalCoroutinesApi
 class Device @Inject constructor(
-    private val dataStorage: DataStorage
+    private val dataStorage: DataStorage,
 ) {
     private var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var device: Peripheral? = null
@@ -87,7 +87,7 @@ class Device @Inject constructor(
         try {
             Timber.d("Attempt number ${attempts.get()}")
             val reconnectTime =
-                backoff(
+                delayValue(
                     base = 100,
                     multiplier = 2f,
                     retry = attempts.getAndIncrement()
