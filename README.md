@@ -6,4 +6,6 @@ Navigation component,
 Kotlin,
 Jetpack Compose,
 Kable,
-Protoc
+Room,
+Protoc,
+plot
