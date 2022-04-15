@@ -79,12 +79,9 @@ class MainRepositoryImpl @Inject constructor(
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                Timber.d("dataFromDataBase")
                 if (data.size % 20 == 0) {
                     sendData(data)
-                    Timber.d("I am not blocked!")
                 }
-                Timber.d("I am not blocked! beforce emit")
                 emit(RepositoryStatus.SuccessBleData(data))
             }
         }

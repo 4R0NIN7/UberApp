@@ -109,6 +109,6 @@ class MainViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        viewModelScope.cancel("onCleared")
+        viewModelScope.cancel()
     }
 }
