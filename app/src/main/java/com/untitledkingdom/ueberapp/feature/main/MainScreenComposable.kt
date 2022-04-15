@@ -213,7 +213,6 @@ fun HistoryScreen(processor: MainProcessor) {
         if (dates.isNotEmpty()) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(padding8),
-                modifier = Modifier.padding(end = padding24),
                 contentPadding = PaddingValues(bottom = padding72)
             ) {
                 items(items = dates) { date ->

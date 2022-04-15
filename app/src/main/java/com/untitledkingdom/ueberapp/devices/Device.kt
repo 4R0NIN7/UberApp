@@ -219,10 +219,3 @@ sealed class DeviceDataStatus {
     data class SuccessDate(val date: List<Byte>) : DeviceDataStatus()
     object Error : DeviceDataStatus()
 }
-
-sealed class DeviceStatus {
-    object Connecting : DeviceStatus()
-    object Connected : DeviceStatus()
-    object Disconnecting : DeviceStatus()
-    object Disconnected : DeviceStatus()
-}

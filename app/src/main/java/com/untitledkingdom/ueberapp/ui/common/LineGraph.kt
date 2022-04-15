@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -122,7 +123,7 @@ internal fun LineGraphWithText(lines: List<List<DataPoint>>, modifier: Modifier)
                 ),
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(400.dp)
+                    .fillMaxHeight(0.5f)
                     .padding(horizontal = padding),
                 onSelectionStart = { visibility.value = true },
                 onSelectionEnd = { visibility.value = false }
