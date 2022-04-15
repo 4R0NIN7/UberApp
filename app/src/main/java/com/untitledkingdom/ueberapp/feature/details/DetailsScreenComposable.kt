@@ -31,7 +31,6 @@ import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
-import timber.log.Timber
 
 @ExperimentalMaterialApi
 @Composable
@@ -87,7 +86,6 @@ fun Values(processor: MainProcessor) {
             bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
         }.distinct()
     }
-    Timber.d("selectedDate $selectedDate")
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()

@@ -8,16 +8,14 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.service.BackgroundReading
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import okhttp3.internal.and
 import timber.log.Timber
 import java.text.DecimalFormat
 import java.time.LocalDateTime
+import kotlin.math.pow
 
 fun requestPermission(
     permissionType: String,
@@ -97,8 +95,8 @@ fun controlOverService(actionStartOrResumeService: String, context: Context) =
         context.startService(it)
     }
 
-@ExperimentalCoroutinesApi
-@FlowPreview
-fun observeDevice(device: Device): Flow<Unit> = flow {
-    device.deviceStatus()
-}
+fun delayValue(
+    base: Long,
+    multiplier: Float,
+    retry: Int,
+): Long = (base * multiplier.pow(retry - 1)).toLong()

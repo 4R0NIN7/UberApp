@@ -5,7 +5,6 @@ import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.feature.main.data.MainRepositoryConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import kotlinx.coroutines.CoroutineScope
@@ -80,12 +79,9 @@ class MainRepositoryImpl @Inject constructor(
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                Timber.d("dataFromDataBase")
                 if (data.size % 20 == 0) {
                     sendData(data)
-                    Timber.d("I am not blocked!")
                 }
-                Timber.d("I am not blocked! beforce emit")
                 emit(RepositoryStatus.SuccessBleData(data))
             }
         }
