@@ -5,8 +5,10 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
@@ -18,6 +20,9 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
     @Test
     fun `initial state`() = processorTest(
         processor = { viewModel.processor },
+        given = {
+            coEvery { kableService.scan() } returns flowOf()
+        },
         thenStates = {
             assertLast(
                 WelcomeState()
