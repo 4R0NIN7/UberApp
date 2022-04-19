@@ -29,6 +29,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,6 +40,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @FlowPreview
@@ -102,8 +104,8 @@ object Modules {
 
     @Provides
     @Singleton
-    fun provideCoroutine(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    fun provideCoroutine(@IoDispatcher dispatcher: CoroutineDispatcher): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcher)
     }
 
     @Provides
@@ -121,6 +123,38 @@ object Modules {
             timeManager = timeManager
         )
     }
+
+    @Retention(AnnotationRetention.RUNTIME)
+    @Qualifier
+    annotation class DefaultDispatcher
+
+    @Retention(AnnotationRetention.RUNTIME)
+    @Qualifier
+    annotation class IoDispatcher
+
+    @Retention(AnnotationRetention.RUNTIME)
+    @Qualifier
+    annotation class MainDispatcher
+
+    @Retention(AnnotationRetention.BINARY)
+    @Qualifier
+    annotation class MainImmediateDispatcher
+
+    @DefaultDispatcher
+    @Provides
+    fun providesDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @IoDispatcher
+    @Provides
+    fun providesIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @MainDispatcher
+    @Provides
+    fun providesMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
+
+    @MainImmediateDispatcher
+    @Provides
+    fun providesMainImmediateDispatcher(): CoroutineDispatcher = Dispatchers.Main.immediate
 }
 
 @Module

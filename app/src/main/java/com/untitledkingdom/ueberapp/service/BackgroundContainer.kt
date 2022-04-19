@@ -11,6 +11,9 @@ import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
+import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
+import com.untitledkingdom.ueberapp.service.state.BackgroundState
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
@@ -18,7 +21,6 @@ import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -28,43 +30,45 @@ typealias BackgroundProcessor = Processor<BackgroundEvent, BackgroundState, Back
 @ExperimentalCoroutinesApi
 @FlowPreview
 class BackgroundContainer @Inject constructor(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val repository: MainRepository,
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager
 ) {
-
+    private lateinit var device: Device
     val processor: BackgroundProcessor = scope.processor(
         initialState = BackgroundState(),
         onEvent = { event ->
             when (event) {
                 BackgroundEvent.StartReading -> handleService(effects).toNoAction()
+                BackgroundEvent.StopReading -> stopReading(effects).toNoAction()
             }
         }
     )
 
-    private fun handleService(effects: EffectsCollector<BackgroundEffect>) {
-        scope.launch {
-            if (dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) == "") {
-                effects.send(BackgroundEffect.Stop)
-            }
-            try {
-                val device = Device(dataStorage)
-                writeDateToDevice(
-                    service = DeviceConst.SERVICE_TIME_SETTINGS,
-                    characteristic = DeviceConst.TIME_CHARACTERISTIC,
-                    device = device
-                )
-                startObservingData(device = device, effects = effects)
-            } catch (e: ConnectionLostException) {
-                Timber.d("Exception during creating device $e")
-                effects.send(BackgroundEffect.Stop)
-            }
+    private fun stopReading(effects: EffectsCollector<BackgroundEffect>) {
+        device.cancel()
+        effects.send(BackgroundEffect.Stop)
+    }
+
+    private suspend fun handleService(effects: EffectsCollector<BackgroundEffect>) {
+        if (dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) == "") {
+            stopReading(effects)
+        }
+        try {
+            device = Device(dataStorage)
+            writeDateToDevice(
+                service = DeviceConst.SERVICE_TIME_SETTINGS,
+                characteristic = DeviceConst.TIME_CHARACTERISTIC,
+            )
+            startObservingData(effects = effects)
+        } catch (e: ConnectionLostException) {
+            Timber.d("Exception during creating device $e")
+            stopReading(effects = effects)
         }
     }
 
     private suspend fun startObservingData(
-        device: Device,
         effects: EffectsCollector<BackgroundEffect>
     ) {
         try {
@@ -82,13 +86,13 @@ class BackgroundContainer @Inject constructor(
             Timber.d("Service cannot connect to device!")
         } catch (e: Exception) {
             Timber.d("Service error! $e")
+            throw e
         }
     }
 
     private suspend fun writeDateToDevice(
         service: String,
         characteristic: String,
-        device: Device
     ) {
         try {
             val status = device.readDate(
@@ -100,13 +104,13 @@ class BackgroundContainer @Inject constructor(
                     status.date,
                     service,
                     characteristic,
-                    device
                 )
                 DeviceDataStatus.Error -> throw Exception()
                 else -> {}
             }
         } catch (e: Exception) {
             Timber.d("Unable to write deviceReading $e")
+            throw e
         }
     }
 
@@ -114,7 +118,6 @@ class BackgroundContainer @Inject constructor(
         bytes: List<Byte>,
         service: String,
         characteristic: String,
-        device: Device
     ) {
         val dateFromDevice = toDateString(bytes.toByteArray())
         val currentDate = timeManager.provideCurrentLocalDateTime()
@@ -128,15 +131,3 @@ class BackgroundContainer @Inject constructor(
         }
     }
 }
-
-sealed interface BackgroundEvent {
-    object StartReading : BackgroundEvent
-}
-
-sealed interface BackgroundEffect {
-    object SendBroadcastToActivity : BackgroundEffect
-    object StartForegroundService : BackgroundEffect
-    object Stop : BackgroundEffect
-}
-
-data class BackgroundState(val any: Any? = null)

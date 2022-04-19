@@ -16,6 +16,8 @@ import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
+import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +43,6 @@ class BackgroundService @Inject constructor() : Service() {
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
         const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE "
         const val INTENT_MESSAGE_FROM_SERVICE = "INTENT_MESSAGE_FROM_SERVICE"
-        var isPause = false
     }
 
     @Inject
@@ -88,7 +89,6 @@ class BackgroundService @Inject constructor() : Service() {
         intent?.let {
             when (it.action) {
                 ACTION_START_OR_RESUME_SERVICE -> {
-                    resumeService()
                     if (isFirstRun) {
                         isFirstRun = false
                         backgroundContainer.processor.sendEvent(BackgroundEvent.StartReading)
@@ -98,7 +98,7 @@ class BackgroundService @Inject constructor() : Service() {
                 }
                 ACTION_STOP_SERVICE -> {
                     Timber.d("Stopping service")
-                    stop()
+                    backgroundContainer.processor.sendEvent(BackgroundEvent.StopReading)
                 }
                 else -> {}
             }
@@ -157,13 +157,5 @@ class BackgroundService @Inject constructor() : Service() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
-    }
-
-    private fun pauseService() {
-        isPause = true
-    }
-
-    private fun resumeService() {
-        isPause = false
     }
 }

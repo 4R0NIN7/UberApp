@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
@@ -47,27 +46,6 @@ class Device @Inject constructor(
                 device = it
                 scope.enableAutoReconnect()
             }
-    }
-
-    fun deviceStatus() {
-        scope.launch {
-            getDevice().state.collect { state ->
-                when (state) {
-                    is State.Disconnected -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    is State.Connecting -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    State.Connected -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    State.Disconnecting -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                }
-            }
-        }
     }
 
     private suspend fun CoroutineScope.enableAutoReconnect() {
@@ -209,8 +187,8 @@ class Device @Inject constructor(
         }
     }
 
-    fun disconnectFromDevice() {
-        scope.cancel("Device disconnected!")
+    fun cancel() {
+        scope.cancel()
     }
 }
 
