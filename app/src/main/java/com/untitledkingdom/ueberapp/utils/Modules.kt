@@ -21,6 +21,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
+import com.untitledkingdom.ueberapp.service.BackgroundContainer
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
@@ -30,6 +31,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -38,6 +41,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
+@FlowPreview
+@ExperimentalCoroutinesApi
+@ExperimentalUnsignedTypes
 @Module
 @InstallIn(SingletonComponent::class)
 object Modules {
@@ -98,6 +104,22 @@ object Modules {
     @Singleton
     fun provideCoroutine(): CoroutineScope {
         return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBackgroundContainer(
+        scope: CoroutineScope,
+        dataStorage: DataStorage,
+        repository: MainRepository,
+        timeManager: TimeManager
+    ): BackgroundContainer {
+        return BackgroundContainer(
+            dataStorage = dataStorage,
+            scope = scope,
+            repository = repository,
+            timeManager = timeManager
+        )
     }
 }
 

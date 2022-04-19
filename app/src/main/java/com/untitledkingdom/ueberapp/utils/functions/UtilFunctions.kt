@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.service.BackgroundReading
+import com.untitledkingdom.ueberapp.service.BackgroundService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import okhttp3.internal.and
@@ -90,7 +90,7 @@ fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
 @FlowPreview
 @ExperimentalCoroutinesApi
 fun controlOverService(actionStartOrResumeService: String, context: Context) =
-    Intent(context, BackgroundReading::class.java).also {
+    Intent(context, BackgroundService::class.java).also {
         it.action = actionStartOrResumeService
         context.startService(it)
     }
