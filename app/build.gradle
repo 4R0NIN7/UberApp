@@ -64,6 +64,14 @@ android {
             excludes += 'META-INF/*'
         }
     }
+    testOptions {
+        packagingOptions {
+            jniLibs {
+                useLegacyPackaging true
+            }
+        }
+    }
+
 }
 
 protobuf {
@@ -87,7 +95,7 @@ protobuf {
 
 dependencies {
     // Proto
-    implementation  "com.google.protobuf:protobuf-javalite:$protobuf_javalite_version"
+    implementation "com.google.protobuf:protobuf-javalite:$protobuf_javalite_version"
 
     // Kable
     implementation "com.juul.kable:core:$kable_version"
@@ -187,16 +195,17 @@ dependencies {
     androidTestImplementation("androidx.test:rules:$testRules_version")
 
     // Assertions
-    androidTestImplementation( "androidx.test.espresso:espresso-core:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso:espresso-contrib:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso:espresso-intents:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso:espresso-accessibility:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso:espresso-web:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso.idling:idling-concurrent:$esspresso_core_version")
-    androidTestImplementation( "androidx.test.espresso:espresso-idling-resource:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-core:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-accessibility:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-web:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso.idling:idling-concurrent:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-idling-resource:$esspresso_core_version")
 
     // Mockk
     testImplementation "io.mockk:mockk:$mockk_version"
+    androidTestImplementation "io.mockk:mockk-android:$mockk_version"
 
     // View binding delegate
     implementation "com.github.kirich1409:viewbindingpropertydelegate:$view_binding_delegate_version"

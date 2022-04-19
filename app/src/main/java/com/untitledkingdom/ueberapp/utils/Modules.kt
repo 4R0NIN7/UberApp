@@ -114,4 +114,7 @@ interface BindModules {
     fun bindTimeManager(
         timeManagerImpl: TimeManagerImpl,
     ): TimeManager
+
+    @Binds
+    fun bindDispatcher(androidDispatcherProvider: AndroidDispatchersProvider): DispatchersProvider
 }

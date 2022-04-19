@@ -26,10 +26,8 @@ import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -45,7 +43,7 @@ class BackgroundReading @Inject constructor() : Service() {
 
     companion object {
         private const val CHANNEL_ID = "BackgroundReading"
-        private const val CHANNEL_NAME = "Background Reading"
+        private const val CHANNEL_NAME = "BackgroundContainer Reading"
         private const val ONGOING_NOTIFICATION_ID = 123
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
@@ -54,7 +52,8 @@ class BackgroundReading @Inject constructor() : Service() {
         var isPause = false
     }
 
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Inject
+    lateinit var scope: CoroutineScope
 
     @Inject
     lateinit var dataStorage: DataStorage
