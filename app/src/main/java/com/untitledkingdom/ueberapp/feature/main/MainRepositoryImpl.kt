@@ -1,6 +1,5 @@
 package com.untitledkingdom.ueberapp.feature.main
 
-import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
@@ -11,15 +10,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.ResponseBody
-import okhttp3.ResponseBody.Companion.toResponseBody
-import retrofit2.Response
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -29,13 +23,17 @@ class MainRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : MainRepository {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var lastIdSent = 0
+    private var isFirstTime = true
     override suspend fun getData(serviceUUID: String): List<BleData> {
         val data = database
             .getDao()
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
-        if (data.size % 20 == 0) {
+        if (lastIdSent + 20 >= data.last().id) {
             sendData(data)
+            isFirstTime = false
+            lastIdSent = data.last().id
         }
         return data
     }
@@ -48,13 +46,7 @@ class MainRepositoryImpl @Inject constructor(
         scope.launch {
             Timber.d("Sending data...")
             try {
-                val response = Response.success<ResponseBody>(
-                    ApiConst.HTTP_OK,
-                    "".toResponseBody("".toMediaTypeOrNull())
-                )
-                /* If there were a server then */
-                // val response = apiService.sendDataToService(bleData = data)
-                delay(MainRepositoryConst.DELAY_API)
+                val response = apiService.sendDataToService(bleData = data)
                 if (response.isSuccessful) {
                     Timber.d("Data sent!")
                 } else {
@@ -79,8 +71,10 @@ class MainRepositoryImpl @Inject constructor(
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                if (data.size % 20 == 0) {
+                if (isFirstTime || lastIdSent + 20 == data.last().id) {
                     sendData(data)
+                    isFirstTime = false
+                    lastIdSent = data.last().id
                 }
                 emit(RepositoryStatus.SuccessBleData(data))
             }

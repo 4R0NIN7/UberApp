@@ -68,7 +68,7 @@ android {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.14.0"
+        artifact = "com.google.protobuf:protoc:$protoc_version"
     }
 
     // Generates the java Protobuf-lite code for the Protobufs in this project. See
@@ -111,7 +111,6 @@ dependencies {
     // Retrofit2
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$logging_version"
-    implementation "com.squareup.retrofit2:converter-gson:$gson_converter_version"
     implementation "com.squareup.retrofit2:converter-moshi:$moshi_converter_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
 
@@ -182,6 +181,19 @@ dependencies {
     androidTestImplementation "androidx.work:work-testing:$work_version"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
     androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
+
+    // AndroidJUnitRunner and JUnit Rules
+    androidTestImplementation("androidx.test:runner:$testRunner_version")
+    androidTestImplementation("androidx.test:rules:$testRules_version")
+
+    // Assertions
+    androidTestImplementation( "androidx.test.espresso:espresso-core:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso:espresso-contrib:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso:espresso-intents:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso:espresso-accessibility:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso:espresso-web:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso.idling:idling-concurrent:$esspresso_core_version")
+    androidTestImplementation( "androidx.test.espresso:espresso-idling-resource:$esspresso_core_version")
 
     // Mockk
     testImplementation "io.mockk:mockk:$mockk_version"

@@ -11,6 +11,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
+import com.untitledkingdom.ueberapp.api.FakeApi
 import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.KableServiceImpl
 import com.untitledkingdom.ueberapp.database.Database
@@ -55,7 +56,8 @@ object Modules {
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .baseUrl(BuildConfig.URL)
             .build()
-        return retrofit.create(ApiService::class.java)
+        // return retrofit.create(ApiService::class.java)
+        return FakeApi()
     }
 
     private fun getMockRetrofitClient(): OkHttpClient {

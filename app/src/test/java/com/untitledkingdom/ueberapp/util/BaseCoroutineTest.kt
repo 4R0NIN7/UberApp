@@ -1,0 +1,12 @@
+package com.untitledkingdom.ueberapp.util
+
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestCoroutineScope
+import org.junit.jupiter.api.extension.RegisterExtension
+
+@ExperimentalCoroutinesApi
+abstract class BaseCoroutineTest(
+    @RegisterExtension
+    @JvmField
+    val scopeExtension: MainCoroutineScopeExtension = MainCoroutineScopeExtension()
+) : TestCoroutineScope by scopeExtension
