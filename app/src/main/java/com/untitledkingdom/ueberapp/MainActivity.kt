@@ -19,7 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
-import com.untitledkingdom.ueberapp.service.BackgroundReading
+import com.untitledkingdom.ueberapp.service.BackgroundService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,9 +44,9 @@ class MainActivity : AppCompatActivity() {
     }
     private val serviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == BackgroundReading.INTENT_MESSAGE_FROM_SERVICE) {
+            if (intent.action == BackgroundService.INTENT_MESSAGE_FROM_SERVICE) {
                 Timber.d("Got message from service!")
-                navigateToMainFragment(Intent(BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT))
+                navigateToMainFragment(Intent(BackgroundService.ACTION_SHOW_MAIN_FRAGMENT))
             }
         }
     }
@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 serviceReceiver,
-                IntentFilter(BackgroundReading.INTENT_MESSAGE_FROM_SERVICE)
+                IntentFilter(BackgroundService.INTENT_MESSAGE_FROM_SERVICE)
             )
         if (!bluetoothAdapter.isEnabled) {
             enableBluetooth()
@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navigateToMainFragment(intent: Intent?) {
-        if (intent?.action == BackgroundReading.ACTION_SHOW_MAIN_FRAGMENT) {
+        if (intent?.action == BackgroundService.ACTION_SHOW_MAIN_FRAGMENT) {
             navController.navigate(R.id.action_global_mainFragment)
         }
     }
@@ -230,10 +230,4 @@ class LocationBroadcastReceiver : BroadcastReceiver() {
             }
         }
     }
-}
-
-object ActivityConst {
-    const val ENABLE_BLUETOOTH = "ENABLE_BLUETOOTH"
-    const val ENABLE_GPS = "ENABLE_GPS"
-    const val PERMISSION_CODE = 1337
 }

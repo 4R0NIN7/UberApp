@@ -64,11 +64,19 @@ android {
             excludes += 'META-INF/*'
         }
     }
+    testOptions {
+        packagingOptions {
+            jniLibs {
+                useLegacyPackaging true
+            }
+        }
+    }
+
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.14.0"
+        artifact = "com.google.protobuf:protoc:$protoc_version"
     }
 
     // Generates the java Protobuf-lite code for the Protobufs in this project. See
@@ -87,7 +95,7 @@ protobuf {
 
 dependencies {
     // Proto
-    implementation  "com.google.protobuf:protobuf-javalite:$protobuf_javalite_version"
+    implementation "com.google.protobuf:protobuf-javalite:$protobuf_javalite_version"
 
     // Kable
     implementation "com.juul.kable:core:$kable_version"
@@ -107,11 +115,11 @@ dependencies {
     // Ellipse
     implementation "com.github.mtomczynski.ellipse:ellipse-core:$ellipse_version"
     testImplementation "com.github.mtomczynski.ellipse:ellipse-test:$ellipse_version"
+    androidTestImplementation "com.github.mtomczynski.ellipse:ellipse-test:$ellipse_version"
 
     // Retrofit2
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$logging_version"
-    implementation "com.squareup.retrofit2:converter-gson:$gson_converter_version"
     implementation "com.squareup.retrofit2:converter-moshi:$moshi_converter_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
 
@@ -183,8 +191,22 @@ dependencies {
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
     androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
 
+    // AndroidJUnitRunner and JUnit Rules
+    androidTestImplementation("androidx.test:runner:$testRunner_version")
+    androidTestImplementation("androidx.test:rules:$testRules_version")
+
+    // Assertions
+    androidTestImplementation("androidx.test.espresso:espresso-core:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-accessibility:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-web:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso.idling:idling-concurrent:$esspresso_core_version")
+    androidTestImplementation("androidx.test.espresso:espresso-idling-resource:$esspresso_core_version")
+
     // Mockk
     testImplementation "io.mockk:mockk:$mockk_version"
+    androidTestImplementation "io.mockk:mockk-android:$mockk_version"
 
     // View binding delegate
     implementation "com.github.kirich1409:viewbindingpropertydelegate:$view_binding_delegate_version"

@@ -8,11 +8,12 @@ import com.tomcz.ellipse.PartialState
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.NoAction
 import com.tomcz.ellipse.common.processor
+import com.tomcz.ellipse.common.toNoAction
 import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
-import com.untitledkingdom.ueberapp.devices.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -23,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -44,28 +44,30 @@ class MainViewModel @Inject constructor(
         initialState = MainState(),
         prepare = {
             merge(
-                refreshDeviceData(effects),
-                startCollectingData(effects),
+                refreshDeviceInfo(effects),
+                collectDataFromDataBase(effects),
             )
         },
         onEvent = { event ->
             when (event) {
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
-                is MainEvent.EndConnectingToDevice -> flow {
-                    kableService.stopScan()
-                    repository.clear()
-                    dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, "")
-                    effects.send(MainEffect.GoToWelcome)
-                }
+                is MainEvent.EndConnectingToDevice -> disconnect(effects).toNoAction()
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
-                MainEvent.StartScanning -> refreshDeviceData(
+                MainEvent.StartScanning -> refreshDeviceInfo(
                     effects = effects
                 )
             }
         }
     )
 
-    private fun startCollectingData(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
+    private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
+        kableService.stopScan()
+        repository.clear()
+        dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, "")
+        effects.send(MainEffect.GoToWelcome)
+    }
+
+    private fun collectDataFromDataBase(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
         repository.getDataFromDataBaseAsFlow(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
             .map { status ->
                 when (status) {
@@ -79,7 +81,7 @@ class MainViewModel @Inject constructor(
                 }
             }
 
-    private suspend fun refreshDeviceData(
+    private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
         kableService.refreshDeviceData(macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))

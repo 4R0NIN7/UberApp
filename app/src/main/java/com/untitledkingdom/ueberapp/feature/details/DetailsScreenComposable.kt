@@ -48,6 +48,7 @@ fun DetailsScreen(processor: MainProcessor) {
                 .fillMaxSize()
                 .background(color = AppBackground)
                 .padding(horizontal = padding12)
+                .padding(it)
         ) {
             Chart(processor = processor)
             DividerGray()

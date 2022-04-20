@@ -9,10 +9,13 @@ import com.juul.kable.characteristicOf
 import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.functions.delayValue
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
@@ -21,57 +24,40 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
 @FlowPreview
 @ExperimentalCoroutinesApi
 class Device @Inject constructor(
     private val dataStorage: DataStorage,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
-    private var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var device: Peripheral? = null
-    private val attempts: AtomicInteger = AtomicInteger()
-    private suspend fun getDevice(): Peripheral {
-        return device
-            ?: scope.peripheral(
-                dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-            ).also {
-                device = it
-                scope.enableAutoReconnect()
-            }
-    }
-
-    fun deviceStatus() {
-        scope.launch {
-            getDevice().state.collect { state ->
-                when (state) {
-                    is State.Disconnected -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    is State.Connecting -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    State.Connected -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                    State.Disconnecting -> {
-                        Timber.d("deviceStatus $state")
-                    }
-                }
-            }
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private suspend fun getPeripheral(): Peripheral {
+        val macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
+        if (macAddress == "") {
+            cancel()
         }
+        return device
+            ?: scope.peripheral(macAddress)
+                .also {
+                    device = it
+                    scope.enableAutoReconnect()
+                }
     }
 
+    private val attempts: AtomicInteger = AtomicInteger()
     private suspend fun CoroutineScope.enableAutoReconnect() {
-        getDevice().state
+        getPeripheral().state
             .filter { it is State.Disconnected }
             .onEach {
                 Timber.d("Reconnect in autoReconnect")
@@ -93,17 +79,22 @@ class Device @Inject constructor(
                     retry = attempts.getAndIncrement()
                 )
             delay(reconnectTime)
-            getDevice().connect()
+            getPeripheral().connect()
             attempts.set(0)
-        } catch (e: Exception) {
+        } catch (e: ConnectionLostException) {
             Timber.d("Exception in connect after delay $e")
             reconnect()
+        } catch (e: Exception) {
         }
+    }
+
+    fun cancel() {
+        scope.cancel()
     }
 
     suspend fun read(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
-            getDevice().services?.first {
+            getPeripheral().services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
             }?.characteristics?.forEach { discoveredCharacteristic ->
                 if (discoveredCharacteristic.characteristicUuid == UUID.fromString(
@@ -111,8 +102,8 @@ class Device @Inject constructor(
                     )
                 ) {
                     var readings: ReadingsOuterClass.Readings?
-                    withContext(Dispatchers.IO) {
-                        val dataBytes = getDevice().read(
+                    withContext(dispatcher) {
+                        val dataBytes = getPeripheral().read(
                             characteristicOf(
                                 service = fromService,
                                 characteristic = fromCharacteristic
@@ -136,17 +127,16 @@ class Device @Inject constructor(
 
     suspend fun readDate(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
-            getDevice().connect()
-            attempts.set(0)
+            getPeripheral().connect()
             var date: ByteArray = byteArrayOf()
-            getDevice().services?.first {
+            getPeripheral().services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
             }?.characteristics?.forEach { discoveredCharacteristic ->
                 if (discoveredCharacteristic.characteristicUuid == UUID.fromString(
                         fromCharacteristic
                     )
                 ) {
-                    date = getDevice().read(
+                    date = getPeripheral().read(
                         characteristicOf(
                             service = fromService,
                             characteristic = fromCharacteristic
@@ -154,25 +144,23 @@ class Device @Inject constructor(
                     )
                 }
             }
-            return DeviceDataStatus.SuccessDate(date = date.toList())
+            return DeviceDataStatus.SuccessRetrievingDate(date = date.toList())
         } catch (e: ConnectionLostException) {
-            attempts.incrementAndGet()
             Timber.d("Exception in read! + $e")
             throw e
         } finally {
-            getDevice().disconnect()
+            getPeripheral().disconnect()
         }
     }
 
     suspend fun write(value: ByteArray, toService: String, toCharacteristic: String) {
         try {
-            getDevice().connect()
-            attempts.set(0)
-            getDevice().services?.first {
+            getPeripheral().connect()
+            getPeripheral().services?.first {
                 it.serviceUuid == UUID.fromString(toService)
             }?.characteristics?.forEach { it ->
                 if (it.characteristicUuid == UUID.fromString(toCharacteristic)) {
-                    getDevice().write(
+                    getPeripheral().write(
                         characteristicOf(
                             service = toService,
                             characteristic = toCharacteristic
@@ -184,38 +172,34 @@ class Device @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
-            attempts.incrementAndGet()
+            throw e
         } finally {
-            getDevice().disconnect()
+            getPeripheral().disconnect()
         }
     }
 
-    fun observationOnDataCharacteristic(): Flow<DeviceReading> = flow {
-        try {
-            getDevice().observe(
-                characteristicOf(
-                    service = DeviceConst.SERVICE_DATA_SERVICE,
-                    characteristic = DeviceConst.READINGS_CHARACTERISTIC
-                )
-            ).collect { data ->
+    suspend fun observationOnDataCharacteristic(): Flow<DeviceReading> =
+        getPeripheral().observe(
+            characteristicOf(
+                service = DeviceConst.SERVICE_DATA_SERVICE,
+                characteristic = DeviceConst.READINGS_CHARACTERISTIC
+            )
+        ).map { data ->
+            withContext(dispatcher) {
+                @Suppress("BlockingMethodInNonBlockingContext")
                 val reading = ReadingsOuterClass.Readings.parseFrom(data)
-                emit(DeviceReading(reading.temperature, reading.hummidity))
+                DeviceReading(reading.temperature, reading.hummidity)
             }
-        } catch (e: ConnectionLostException) {
-            Timber.d("Device disconnected!")
-            reconnect()
-        } catch (e: Exception) {
-            Timber.d("Device disconnected!")
+        }.catch { cause ->
+            when (cause) {
+                is ConnectionLostException -> {
+                    Timber.d("Device disconnected!")
+                    throw cause
+                }
+                else -> {
+                    Timber.d("Device disconnected error! +$cause")
+                    throw cause
+                }
+            }
         }
-    }
-
-    fun disconnectFromDevice() {
-        scope.cancel("Device disconnected!")
-    }
-}
-
-sealed class DeviceDataStatus {
-    data class SuccessDeviceDataReading(val reading: DeviceReading) : DeviceDataStatus()
-    data class SuccessDate(val date: List<Byte>) : DeviceDataStatus()
-    object Error : DeviceDataStatus()
 }

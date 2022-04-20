@@ -7,6 +7,8 @@ import javax.inject.Inject
 interface DispatchersProvider {
     val io: CoroutineDispatcher
     val main: CoroutineDispatcher
+    val default: CoroutineDispatcher
+    val unconfined: CoroutineDispatcher
 }
 
 class AndroidDispatchersProvider @Inject constructor() : DispatchersProvider {
@@ -14,4 +16,8 @@ class AndroidDispatchersProvider @Inject constructor() : DispatchersProvider {
         get() = Dispatchers.IO
     override val main: CoroutineDispatcher
         get() = Dispatchers.Main.immediate
+    override val default: CoroutineDispatcher
+        get() = Dispatchers.Default
+    override val unconfined: CoroutineDispatcher
+        get() = Dispatchers.Unconfined
 }

@@ -1,7 +1,7 @@
 buildscript {
     ext {
         compose_version = '1.2.0-alpha07'
-        ellipse_version = '0.9.8'
+        ellipse_version = '0.9.9'
         compose_constraint_layout = '1.0.0-beta02'
         retrofit_version = '2.9.0'
         hilt_dagger_version = '2.40.5'
@@ -26,7 +26,6 @@ buildscript {
         view_binding_delegate_version = '1.5.6'
         constraint_layout_compose_version = '1.0.0'
         timber_version = '5.0.1'
-        gson_converter_version = '2.9.0'
         coroutines_test_version = '1.5.2'
         jupiter_version = '5.8.2'
         systemuicontroller_version = '0.17.0'
@@ -42,6 +41,9 @@ buildscript {
         protobuf_javalite_version = '3.18.0'
         work_runtime_version = '2.8.0-alpha02'
         kotlinx_coroutines_version = '1.6.1'
+        protoc_version = '3.14.0'
+        testRunner_version = '1.1.4'
+        testRules_version = '1.1.4'
     }
     repositories {
         google()

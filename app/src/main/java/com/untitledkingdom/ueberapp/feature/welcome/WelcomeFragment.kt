@@ -13,12 +13,14 @@ import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
-import com.untitledkingdom.ueberapp.service.BackgroundReading
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
+import com.untitledkingdom.ueberapp.service.BackgroundService
 import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.flowOf
 
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
@@ -36,8 +38,8 @@ class WelcomeFragment : Fragment() {
             lifecycleState = Lifecycle.State.RESUMED,
             processor = welcomeViewModel::processor,
             onEffect = ::trigger,
+            viewEvents = ::events
         )
-        controlOverService(BackgroundReading.ACTION_START_OR_RESUME_SERVICE, requireContext())
         return ComposeView(
             requireContext()
         ).apply {
@@ -47,6 +49,8 @@ class WelcomeFragment : Fragment() {
         }
     }
 
+    private fun events() = listOf(flowOf(WelcomeEvent.StartService))
+
     private fun trigger(effect: WelcomeEffect) {
         when (effect) {
             WelcomeEffect.GoToMain -> goToMainFragment()
@@ -54,13 +58,21 @@ class WelcomeFragment : Fragment() {
                 message = effect.message,
                 context = requireContext()
             )
+            WelcomeEffect.StartService -> startService()
             else -> {}
         }
+    }
+
+    private fun startService() {
+        controlOverService(BackgroundService.ACTION_START_OR_RESUME_SERVICE, requireContext())
     }
 
     private fun goToMainFragment() {
         Toast.makeText(requireContext(), "Successfully connected to device!", Toast.LENGTH_SHORT)
             .show()
+        if (!BackgroundService.isRunning) {
+            startService()
+        }
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }
 }

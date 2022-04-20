@@ -1,41 +1,50 @@
 package com.untitledkingdom.ueberapp.feature.main
 
-import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.ResponseBody
-import okhttp3.ResponseBody.Companion.toResponseBody
-import retrofit2.Response
 import timber.log.Timber
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
 class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : MainRepository {
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private var lastIdSent = 0
+    private var isFirstTime = true
     override suspend fun getData(serviceUUID: String): List<BleData> {
         val data = database
             .getDao()
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
-        if (data.size % 20 == 0) {
-            sendData(data)
+        if (lastIdSent + 19 == data.last().id) {
+            sendData(
+                data.filter {
+                    it.id in lastIdSent..data.last().id
+                }
+            )
+            isFirstTime = false
+            lastIdSent = data.last().id
         }
         return data
     }
@@ -45,16 +54,11 @@ class MainRepositoryImpl @Inject constructor(
     }
 
     private fun sendData(data: List<BleData>) {
+        Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         scope.launch {
             Timber.d("Sending data...")
             try {
-                val response = Response.success<ResponseBody>(
-                    ApiConst.HTTP_OK,
-                    "".toResponseBody("".toMediaTypeOrNull())
-                )
-                /* If there were a server then */
-                // val response = apiService.sendDataToService(bleData = data)
-                delay(MainRepositoryConst.DELAY_API)
+                val response = apiService.sendDataToService(bleData = data)
                 if (response.isSuccessful) {
                     Timber.d("Data sent!")
                 } else {
@@ -79,8 +83,18 @@ class MainRepositoryImpl @Inject constructor(
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                if (data.size % 20 == 0) {
+                if (isFirstTime) {
                     sendData(data)
+                    lastIdSent = data.last().id
+                    isFirstTime = false
+                }
+                if (lastIdSent + 19 == data.last().id) {
+                    sendData(
+                        data.filter {
+                            it.id in lastIdSent..data.last().id
+                        }
+                    )
+                    lastIdSent = data.last().id
                 }
                 emit(RepositoryStatus.SuccessBleData(data))
             }
