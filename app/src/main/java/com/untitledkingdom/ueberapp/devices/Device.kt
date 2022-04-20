@@ -3,85 +3,28 @@ package com.untitledkingdom.ueberapp.devices
 import ReadingsOuterClass
 import com.juul.kable.ConnectionLostException
 import com.juul.kable.Peripheral
-import com.juul.kable.State
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
-import com.juul.kable.peripheral
-import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.utils.functions.delayValue
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 @FlowPreview
 @ExperimentalCoroutinesApi
 class Device @Inject constructor(
-    private val dataStorage: DataStorage,
+    private val device: Peripheral,
 ) {
-    private var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var device: Peripheral? = null
-    private val attempts: AtomicInteger = AtomicInteger()
-    private suspend fun getDevice(): Peripheral {
-        return device
-            ?: scope.peripheral(
-                dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-            ).also {
-                device = it
-                scope.enableAutoReconnect()
-            }
-    }
-
-    private suspend fun CoroutineScope.enableAutoReconnect() {
-        getDevice().state
-            .filter { it is State.Disconnected }
-            .onEach {
-                Timber.d("Reconnect in autoReconnect")
-                reconnect()
-            }
-            .catch { cause ->
-                Timber.d("Exception in autoReconnect $cause")
-            }
-            .launchIn(this)
-    }
-
-    private suspend fun reconnect() {
-        try {
-            Timber.d("Attempt number ${attempts.get()}")
-            val reconnectTime =
-                delayValue(
-                    base = 100,
-                    multiplier = 2f,
-                    retry = attempts.getAndIncrement()
-                )
-            delay(reconnectTime)
-            getDevice().connect()
-            attempts.set(0)
-        } catch (e: Exception) {
-            Timber.d("Exception in connect after delay $e")
-            reconnect()
-        }
-    }
 
     suspend fun read(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
-            getDevice().services?.first {
+            device.services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
             }?.characteristics?.forEach { discoveredCharacteristic ->
                 if (discoveredCharacteristic.characteristicUuid == UUID.fromString(
@@ -90,7 +33,7 @@ class Device @Inject constructor(
                 ) {
                     var readings: ReadingsOuterClass.Readings?
                     withContext(Dispatchers.IO) {
-                        val dataBytes = getDevice().read(
+                        val dataBytes = device.read(
                             characteristicOf(
                                 service = fromService,
                                 characteristic = fromCharacteristic
@@ -114,17 +57,16 @@ class Device @Inject constructor(
 
     suspend fun readDate(fromService: String, fromCharacteristic: String): DeviceDataStatus {
         try {
-            getDevice().connect()
-            attempts.set(0)
+            device.connect()
             var date: ByteArray = byteArrayOf()
-            getDevice().services?.first {
+            device.services?.first {
                 it.serviceUuid == UUID.fromString(fromService)
             }?.characteristics?.forEach { discoveredCharacteristic ->
                 if (discoveredCharacteristic.characteristicUuid == UUID.fromString(
                         fromCharacteristic
                     )
                 ) {
-                    date = getDevice().read(
+                    date = device.read(
                         characteristicOf(
                             service = fromService,
                             characteristic = fromCharacteristic
@@ -134,23 +76,21 @@ class Device @Inject constructor(
             }
             return DeviceDataStatus.SuccessDate(date = date.toList())
         } catch (e: ConnectionLostException) {
-            attempts.incrementAndGet()
             Timber.d("Exception in read! + $e")
             throw e
         } finally {
-            getDevice().disconnect()
+            device.disconnect()
         }
     }
 
     suspend fun write(value: ByteArray, toService: String, toCharacteristic: String) {
         try {
-            getDevice().connect()
-            attempts.set(0)
-            getDevice().services?.first {
+            device.connect()
+            device.services?.first {
                 it.serviceUuid == UUID.fromString(toService)
             }?.characteristics?.forEach { it ->
                 if (it.characteristicUuid == UUID.fromString(toCharacteristic)) {
-                    getDevice().write(
+                    device.write(
                         characteristicOf(
                             service = toService,
                             characteristic = toCharacteristic
@@ -162,15 +102,15 @@ class Device @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.d("Exception in writeToDevice! + $e")
-            attempts.incrementAndGet()
+            throw e
         } finally {
-            getDevice().disconnect()
+            device.disconnect()
         }
     }
 
     fun observationOnDataCharacteristic(): Flow<DeviceReading> = flow {
         try {
-            getDevice().observe(
+            device.observe(
                 characteristicOf(
                     service = DeviceConst.SERVICE_DATA_SERVICE,
                     characteristic = DeviceConst.READINGS_CHARACTERISTIC
@@ -181,15 +121,10 @@ class Device @Inject constructor(
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Device disconnected!")
-            reconnect()
+            throw e
         } catch (e: Exception) {
-            Timber.d("Device disconnected! +$e")
-            cancel()
+            Timber.d("Device disconnected error! +$e")
         }
-    }
-
-    private fun cancel() {
-        scope.cancel()
     }
 }
 

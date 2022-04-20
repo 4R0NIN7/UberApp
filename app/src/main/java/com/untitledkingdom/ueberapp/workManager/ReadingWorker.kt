@@ -8,8 +8,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
+import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
@@ -20,6 +22,7 @@ import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
@@ -29,13 +32,19 @@ import timber.log.Timber
 @FlowPreview
 @HiltWorker
 class ReadingWorker @AssistedInject constructor(
-    @Assisted dataStorage: DataStorage,
+    private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
     private val repository: MainRepository,
     @Assisted context: Context,
-    @Assisted params: WorkerParameters
+    @Assisted params: WorkerParameters,
+    private val scope: CoroutineScope
 ) : CoroutineWorker(context, params) {
-    private val device = Device(dataStorage)
+    private var device: Device? = null
+    private suspend fun getDevice(): Device {
+        return device
+            ?: Device(scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)))
+    }
+
     override suspend fun doWork(): Result {
         return try {
             Timber.d("WorkManager doWork")
@@ -51,7 +60,7 @@ class ReadingWorker @AssistedInject constructor(
 
     private suspend fun handleDate() {
         try {
-            val status = device.readDate(
+            val status = getDevice().readDate(
                 fromCharacteristic = DeviceConst.TIME_CHARACTERISTIC,
                 fromService = DeviceConst.SERVICE_TIME_SETTINGS
             )
@@ -77,13 +86,13 @@ class ReadingWorker @AssistedInject constructor(
         )
         if (!checkIfTheSame) {
             Timber.d("writeDateToDevice Saving date")
-            device.write(currentDate.toUByteArray(), service, characteristic)
+            getDevice().write(currentDate.toUByteArray(), service, characteristic)
         }
     }
 
     private suspend fun handleReadings() {
         try {
-            val status = device.read(
+            val status = getDevice().read(
                 fromService = DeviceConst.SERVICE_DATA_SERVICE,
                 fromCharacteristic = DeviceConst.READINGS_CHARACTERISTIC
             )
