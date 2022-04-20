@@ -8,21 +8,19 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
-import com.untitledkingdom.ueberapp.utils.functions.toDateString
+import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
@@ -35,14 +33,14 @@ class ReadingWorker @AssistedInject constructor(
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
     private val repository: MainRepository,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher,
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val scope: CoroutineScope
 ) : CoroutineWorker(context, params) {
     private var device: Device? = null
-    private suspend fun getDevice(): Device {
+    private fun getDevice(): Device {
         return device
-            ?: Device(scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)))
+            ?: Device(dataStorage, dispatcher)
     }
 
     override suspend fun doWork(): Result {
@@ -78,9 +76,9 @@ class ReadingWorker @AssistedInject constructor(
     }
 
     private suspend fun checkDate(bytes: List<Byte>, service: String, characteristic: String) {
-        val dateFromDevice = toDateString(bytes.toByteArray())
+        val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
         val currentDate = timeManager.provideCurrentLocalDateTime()
-        val checkIfTheSame = checkIfDateIsTheSame(
+        val checkIfTheSame = UtilFunctions.checkIfDateIsTheSame(
             date = currentDate,
             dateFromDevice = dateFromDevice
         )

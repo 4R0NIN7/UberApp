@@ -1,19 +1,19 @@
 package com.untitledkingdom.ueberapp.device
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.juul.kable.Peripheral
+import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
-import com.untitledkingdom.ueberapp.utils.functions.toDateString
+import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.spyk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,8 +45,9 @@ class DeviceTest {
     @ObsoleteCoroutinesApi
     private val mainThreadSurrogate = StandardTestDispatcher()
 
-    private val peripheral by lazy { mockk<Peripheral>() }
-    private val device = spyk(Device(peripheral))
+    private val dataStorage by lazy { mockk<DataStorage>() }
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val device = spyk(Device(dataStorage, dispatcher))
 
     private val byteList = listOf(1.toByte(), 2.toByte())
     private val deviceReading = mockk<DeviceReading>()
@@ -108,7 +109,7 @@ class DeviceTest {
     @Test
     fun readDateFromDeviceAndWriteDateToDevice(): Unit = runTest {
         val uByteArray = localDateTime.toUByteArray()
-        val dateString = toDateString(uByteArray)
+        val dateString = UtilFunctions.toDateString(uByteArray)
         coEvery {
             device.write(
                 uByteArray, DeviceConst.SERVICE_TIME_SETTINGS,
@@ -142,7 +143,12 @@ class DeviceTest {
             )
         }
         confirmVerified(device)
-        assertTrue(checkIfDateIsTheSame(dateFromDevice = dateString, date = localDateTime))
+        assertTrue(
+            UtilFunctions.checkIfDateIsTheSame(
+                dateFromDevice = dateString,
+                date = localDateTime
+            )
+        )
     }
 
     @Test

@@ -69,21 +69,23 @@ fun toastMessage(message: String, context: Context) {
 
 val decimalFormat = DecimalFormat("#.##")
 
-fun toDateString(byteArray: ByteArray): String {
-    val day = byteArray[0].toUByte()
-    val month = byteArray[1].toUByte()
-    val year = uBytesToYear(byteArray[3], byteArray[2])
-    return "$day$month$year"
-}
+object UtilFunctions {
+    fun toDateString(byteArray: ByteArray): String {
+        val day = byteArray[0].toUByte()
+        val month = byteArray[1].toUByte()
+        val year = uBytesToYear(byteArray[3], byteArray[2])
+        return "$day$month$year"
+    }
 
-fun uBytesToYear(high: Byte, low: Byte): Int {
-    return high and 0xff shl 8 or (low and 0xff)
-}
+    private fun uBytesToYear(high: Byte, low: Byte): Int {
+        return high and 0xff shl 8 or (low and 0xff)
+    }
 
-fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
-    val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
-    Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
-    return dateFromDevice == dateFromLocalDateTime
+    fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
+        val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
+        Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
+        return dateFromDevice == dateFromLocalDateTime
+    }
 }
 
 @ExperimentalUnsignedTypes

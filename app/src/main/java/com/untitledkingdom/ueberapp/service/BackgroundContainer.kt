@@ -1,15 +1,10 @@
 package com.untitledkingdom.ueberapp.service
 
 import com.juul.kable.ConnectionLostException
-import com.juul.kable.Peripheral
-import com.juul.kable.State
-import com.juul.kable.peripheral
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
-import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
@@ -17,24 +12,17 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
 import com.untitledkingdom.ueberapp.service.state.BackgroundState
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
-import com.untitledkingdom.ueberapp.utils.functions.delayValue
-import com.untitledkingdom.ueberapp.utils.functions.toDateString
+import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 typealias BackgroundProcessor = Processor<BackgroundEvent, BackgroundState, BackgroundEffect>
@@ -44,70 +32,23 @@ typealias BackgroundProcessor = Processor<BackgroundEvent, BackgroundState, Back
 @FlowPreview
 class BackgroundContainer @Inject constructor(
     private val repository: MainRepository,
-    private val dataStorage: DataStorage,
-    private val timeManager: TimeManager
+    private val timeManager: TimeManager,
+    private val device: Device,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var device: Device? = null
-    private var peripheral: Peripheral? = null
-    private suspend fun getPeripheral(): Peripheral {
-        return peripheral
-            ?: scope.peripheral(dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
-                .also {
-                    peripheral = it
-                    scope.enableAutoReconnect()
-                }
-    }
-
-    private suspend fun getDevice(): Device {
-        return device ?: Device(getPeripheral())
-    }
-
-    private val attempts: AtomicInteger = AtomicInteger()
-    private suspend fun CoroutineScope.enableAutoReconnect() {
-        getPeripheral().state
-            .filter { it is State.Disconnected }
-            .onEach {
-                Timber.d("Reconnect in autoReconnect")
-                reconnect()
-            }
-            .catch { cause ->
-                Timber.d("Exception in autoReconnect $cause")
-            }
-            .launchIn(this)
-    }
-
-    private suspend fun reconnect() {
-        try {
-            Timber.d("Attempt number ${attempts.get()}")
-            val reconnectTime =
-                delayValue(
-                    base = 100,
-                    multiplier = 2f,
-                    retry = attempts.getAndIncrement()
-                )
-            delay(reconnectTime)
-            getPeripheral().connect()
-            attempts.set(0)
-        } catch (e: ConnectionLostException) {
-            Timber.d("Exception in connect after delay $e")
-            reconnect()
-        } catch (e: Exception) {
-            processor.sendEvent(BackgroundEvent.StopReading)
-        }
-    }
-
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     val processor: BackgroundProcessor = scope.processor(
         initialState = BackgroundState(),
         onEvent = { event ->
             when (event) {
-                BackgroundEvent.StartReading -> handleService(effects).toNoAction()
+                BackgroundEvent.StartReading -> startReading(effects).toNoAction()
                 BackgroundEvent.StopReading -> stopReading(effects).toNoAction()
             }
         }
     )
 
     fun cancel() {
+        device.cancel()
         scope.cancel()
     }
 
@@ -115,14 +56,19 @@ class BackgroundContainer @Inject constructor(
         effects.send(BackgroundEffect.Stop)
     }
 
-    private suspend fun handleService(effects: EffectsCollector<BackgroundEffect>) {
+    private suspend fun startReading(effects: EffectsCollector<BackgroundEffect>) {
         try {
+            println("startReading")
             writeDateToDevice(
                 service = DeviceConst.SERVICE_TIME_SETTINGS,
                 characteristic = DeviceConst.TIME_CHARACTERISTIC,
             )
             startObservingData(effects = effects)
+            println("After startObservingData")
         } catch (e: ConnectionLostException) {
+            Timber.d("ConnectionLostException during handle $e")
+            stopReading(effects = effects)
+        } catch (e: Exception) {
             Timber.d("Exception during creating device $e")
             stopReading(effects = effects)
         }
@@ -134,19 +80,22 @@ class BackgroundContainer @Inject constructor(
         try {
             Timber.d("Starting collecting data from service")
             effects.send(BackgroundEffect.StartForegroundService)
-            getDevice().observationOnDataCharacteristic().collect { reading ->
-                effects.send(BackgroundEffect.SendBroadcastToActivity)
-                Timber.d("Reading in service $reading")
+            println("BackgroundEffect.StartForegroundService")
+            device.observationOnDataCharacteristic().collect { reading ->
+                println("BackgroundEffect.observationOnDataCharacteristic")
                 repository.saveData(
                     deviceReading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
+                println("After saving data")
+                effects.send(BackgroundEffect.SendBroadcastToActivity)
+                println("After sending effect")
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Service cannot connect to device!")
-            reconnect()
+            startReading(effects)
         } catch (e: Exception) {
-            Timber.d("Service error! $e")
+            Timber.d("startObservingData exception! $e")
         }
     }
 
@@ -155,10 +104,12 @@ class BackgroundContainer @Inject constructor(
         characteristic: String
     ) {
         try {
-            val status = getDevice().readDate(
+            println("writeDeviceData")
+            val status = device.readDate(
                 fromCharacteristic = characteristic,
                 fromService = service
             )
+            println("writeDeviceData")
             when (status) {
                 is DeviceDataStatus.SuccessDate -> checkDate(
                     status.date,
@@ -168,9 +119,9 @@ class BackgroundContainer @Inject constructor(
                 DeviceDataStatus.Error -> throw Exception()
                 else -> {}
             }
-        } catch (e: Exception) {
+        } catch (e: ConnectionLostException) {
             Timber.d("Unable to write deviceReading $e")
-            throw e
+            processor.sendEvent(BackgroundEvent.StartReading)
         }
     }
 
@@ -179,15 +130,17 @@ class BackgroundContainer @Inject constructor(
         service: String,
         characteristic: String,
     ) {
-        val dateFromDevice = toDateString(bytes.toByteArray())
+        println("checkDate")
+        val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
+        println("checkDate")
         val currentDate = timeManager.provideCurrentLocalDateTime()
-        val checkIfTheSame = checkIfDateIsTheSame(
+        val checkIfTheSame = UtilFunctions.checkIfDateIsTheSame(
             date = currentDate,
             dateFromDevice = dateFromDevice
         )
         if (!checkIfTheSame) {
             Timber.d("writeDateToDevice Saving date")
-            getDevice().write(currentDate.toUByteArray(), service, characteristic)
+            device.write(currentDate.toUByteArray(), service, characteristic)
         }
     }
 }

@@ -115,6 +115,7 @@ dependencies {
     // Ellipse
     implementation "com.github.mtomczynski.ellipse:ellipse-core:$ellipse_version"
     testImplementation "com.github.mtomczynski.ellipse:ellipse-test:$ellipse_version"
+    androidTestImplementation "com.github.mtomczynski.ellipse:ellipse-test:$ellipse_version"
 
     // Retrofit2
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"

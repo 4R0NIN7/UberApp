@@ -7,10 +7,11 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.workManager.ReadingWorker
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
@@ -43,7 +44,7 @@ class MyWorkerFactory @Inject constructor(
     private val repository: MainRepository,
     private val timeManager: TimeManager,
     private val dataStorage: DataStorage,
-    private val scope: CoroutineScope
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -56,6 +57,6 @@ class MyWorkerFactory @Inject constructor(
             dataStorage = dataStorage,
             context = appContext,
             params = workerParameters,
-            scope = scope
+            dispatcher = dispatcher
         )
 }

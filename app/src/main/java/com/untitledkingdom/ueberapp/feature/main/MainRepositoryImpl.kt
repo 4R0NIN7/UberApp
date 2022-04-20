@@ -5,9 +5,12 @@ import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
+import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
@@ -17,12 +20,16 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
 class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : MainRepository {
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private var lastIdSent = 0
     private var isFirstTime = true
     override suspend fun getData(serviceUUID: String): List<BleData> {

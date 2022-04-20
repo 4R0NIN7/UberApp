@@ -19,6 +19,7 @@ import com.untitledkingdom.ueberapp.database.DatabaseConstants
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
+import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
 import com.untitledkingdom.ueberapp.service.BackgroundContainer
@@ -110,14 +111,16 @@ object Modules {
 
     @Provides
     fun provideBackgroundContainer(
+        @IoDispatcher dispatcher: CoroutineDispatcher,
         dataStorage: DataStorage,
         repository: MainRepository,
         timeManager: TimeManager
     ): BackgroundContainer {
         return BackgroundContainer(
-            dataStorage = dataStorage,
+            device = Device(dataStorage, dispatcher = dispatcher),
             repository = repository,
-            timeManager = timeManager
+            timeManager = timeManager,
+            dispatcher = dispatcher
         )
     }
 
@@ -160,6 +163,9 @@ interface BindModules {
     @Binds
     fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
 
+    @FlowPreview
+    @ExperimentalCoroutinesApi
+    @ExperimentalUnsignedTypes
     @Binds
     fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
 
