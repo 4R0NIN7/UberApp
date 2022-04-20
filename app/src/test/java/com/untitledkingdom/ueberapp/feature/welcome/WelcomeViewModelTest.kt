@@ -1,8 +1,13 @@
 package com.untitledkingdom.ueberapp.feature.welcome
 
+import com.juul.kable.Advertisement
+import com.juul.kable.Peripheral
 import com.tomcz.ellipse.test.processorTest
 import com.untitledkingdom.ueberapp.ble.KableService
+import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
+import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import io.mockk.coEvery
@@ -16,6 +21,8 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
     private val dataStorage by lazy { mockk<DataStorage>() }
     private val kableService by lazy { mockk<KableService>() }
     private val viewModel: WelcomeViewModel by lazy { WelcomeViewModel(kableService, dataStorage) }
+    private val advertisement = mockk<Advertisement>()
+    private val peripheral = mockk<Peripheral>()
 
     @Test
     fun `initial state`() = processorTest(
@@ -27,6 +34,63 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
             assertLast(
                 WelcomeState()
             )
+        }
+    )
+
+    @Test
+    fun `start scanning get advertisements`() = processorTest(
+        processor = { viewModel.processor },
+        given = {
+            coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { advertisement.address } returns "ADDRESS"
+        },
+        whenEvent = WelcomeEvent.StartScanning,
+        thenStates = {
+            assertLast(
+                WelcomeState(advertisements = listOf(advertisement))
+            )
+        }
+    )
+
+    @Test
+    fun `start service `() = processorTest(
+        processor = { viewModel.processor },
+        given = {
+            coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
+        },
+        whenEvent = WelcomeEvent.StartService,
+        thenEffects = {
+            assertLast(WelcomeEffect.StartService)
+        }
+    )
+
+    @Test
+    fun `don't start service due to lack of address`() = processorTest(
+        processor = { viewModel.processor },
+        given = {
+            coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { dataStorage.getFromStorage(any()) } returns ""
+        },
+        whenEvent = WelcomeEvent.StartService,
+        thenEffects = {
+            assertEmpty()
+        }
+    )
+
+    @Test
+    fun `start connecting to device`() = processorTest(
+        processor = { viewModel.processor },
+        given = {
+            coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { kableService.returnPeripheral(any(), any()) } returns peripheral
+            coEvery { peripheral.connect() } returns Unit
+            coEvery { advertisement.address } returns "ADDRESS"
+            coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
+        },
+        whenEvent = WelcomeEvent.StartConnectingToDevice(advertisement),
+        thenEffects = {
+            assertLast(WelcomeEffect.GoToMain)
         }
     )
 }

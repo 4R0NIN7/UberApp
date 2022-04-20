@@ -1,11 +1,11 @@
 package com.untitledkingdom.ueberapp.device
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.juul.kable.Peripheral
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.DeviceConst
 import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
@@ -19,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -26,6 +28,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
 import java.time.LocalDateTime
@@ -38,16 +42,14 @@ import java.time.LocalDateTime
 @RunWith(AndroidJUnit4::class)
 class DeviceTest {
 
-    private lateinit var dispatcherProvider: TestDispatcherProvider
-
     @ObsoleteCoroutinesApi
     private val mainThreadSurrogate = StandardTestDispatcher()
 
-    private val dataStorage by lazy { mockk<DataStorage>() }
-    private val device = spyk(Device(dataStorage))
+    private val peripheral by lazy { mockk<Peripheral>() }
+    private val device = spyk(Device(peripheral))
 
     private val byteList = listOf(1.toByte(), 2.toByte())
-    private val macAddress = "00:11:22:33:AA:BB"
+    private val deviceReading = mockk<DeviceReading>()
 
     private val localDateTime: LocalDateTime = LocalDateTime.of(
         1970,
@@ -61,7 +63,6 @@ class DeviceTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(mainThreadSurrogate)
-        dispatcherProvider = TestDispatcherProvider(mainThreadSurrogate)
     }
 
     @After
@@ -71,7 +72,6 @@ class DeviceTest {
 
     @Test
     fun readDateFromDevice(): Unit = runTest {
-        coEvery { dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) } returns macAddress
         coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessDate(byteList)
         val deviceStatus = device.readDate(
             DeviceConst.SERVICE_TIME_SETTINGS,
@@ -89,7 +89,6 @@ class DeviceTest {
 
     @Test
     fun writeDateToDevice(): Unit = runTest {
-        coEvery { dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) } returns macAddress
         coEvery { device.write(any(), any(), any()) } returns Unit
         device.write(
             byteArrayOf(),
@@ -110,7 +109,6 @@ class DeviceTest {
     fun readDateFromDeviceAndWriteDateToDevice(): Unit = runTest {
         val uByteArray = localDateTime.toUByteArray()
         val dateString = toDateString(uByteArray)
-        coEvery { dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) } returns macAddress
         coEvery {
             device.write(
                 uByteArray, DeviceConst.SERVICE_TIME_SETTINGS,
@@ -143,6 +141,20 @@ class DeviceTest {
                 DeviceConst.TIME_CHARACTERISTIC
             )
         }
+        confirmVerified(device)
         assertTrue(checkIfDateIsTheSame(dateFromDevice = dateString, date = localDateTime))
+    }
+
+    @Test
+    fun observeDataFromDevice(): Unit = runTest {
+        coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)
+        val reading = device.observationOnDataCharacteristic()
+        coVerify {
+            device.observationOnDataCharacteristic()
+        }
+        val differentReading = flowOf(DeviceReading(1f, 2))
+        confirmVerified(device)
+        assertNotEquals(differentReading, reading)
+        assertEquals(deviceReading, reading.first())
     }
 }
