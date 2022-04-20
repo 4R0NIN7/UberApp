@@ -58,13 +58,12 @@ class BackgroundContainer @Inject constructor(
 
     private suspend fun startReading(effects: EffectsCollector<BackgroundEffect>) {
         try {
-            println("startReading")
             writeDateToDevice(
                 service = DeviceConst.SERVICE_TIME_SETTINGS,
                 characteristic = DeviceConst.TIME_CHARACTERISTIC,
+                effects = effects
             )
             startObservingData(effects = effects)
-            println("After startObservingData")
         } catch (e: ConnectionLostException) {
             Timber.d("ConnectionLostException during handle $e")
             stopReading(effects = effects)
@@ -80,16 +79,12 @@ class BackgroundContainer @Inject constructor(
         try {
             Timber.d("Starting collecting data from service")
             effects.send(BackgroundEffect.StartForegroundService)
-            println("BackgroundEffect.StartForegroundService")
             device.observationOnDataCharacteristic().collect { reading ->
-                println("BackgroundEffect.observationOnDataCharacteristic")
                 repository.saveData(
                     deviceReading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
-                println("After saving data")
                 effects.send(BackgroundEffect.SendBroadcastToActivity)
-                println("After sending effect")
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Service cannot connect to device!")
@@ -101,15 +96,14 @@ class BackgroundContainer @Inject constructor(
 
     private suspend fun writeDateToDevice(
         service: String,
-        characteristic: String
+        characteristic: String,
+        effects: EffectsCollector<BackgroundEffect>
     ) {
         try {
-            println("writeDeviceData")
             val status = device.readDate(
                 fromCharacteristic = characteristic,
                 fromService = service
             )
-            println("writeDeviceData")
             when (status) {
                 is DeviceDataStatus.SuccessDate -> checkDate(
                     status.date,
@@ -121,7 +115,7 @@ class BackgroundContainer @Inject constructor(
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Unable to write deviceReading $e")
-            processor.sendEvent(BackgroundEvent.StartReading)
+            startReading(effects)
         }
     }
 
@@ -130,16 +124,13 @@ class BackgroundContainer @Inject constructor(
         service: String,
         characteristic: String,
     ) {
-        println("checkDate")
         val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
-        println("checkDate")
         val currentDate = timeManager.provideCurrentLocalDateTime()
         val checkIfTheSame = UtilFunctions.checkIfDateIsTheSame(
             date = currentDate,
             dateFromDevice = dateFromDevice
         )
         if (!checkIfTheSame) {
-            Timber.d("writeDateToDevice Saving date")
             device.write(currentDate.toUByteArray(), service, characteristic)
         }
     }

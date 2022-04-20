@@ -37,8 +37,12 @@ class MainRepositoryImpl @Inject constructor(
             .getDao()
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
-        if (lastIdSent + 20 >= data.last().id) {
-            sendData(data)
+        if (lastIdSent + 19 == data.last().id) {
+            sendData(
+                data.filter {
+                    it.id in lastIdSent..data.last().id
+                }
+            )
             isFirstTime = false
             lastIdSent = data.last().id
         }
@@ -50,6 +54,7 @@ class MainRepositoryImpl @Inject constructor(
     }
 
     private fun sendData(data: List<BleData>) {
+        Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         scope.launch {
             Timber.d("Sending data...")
             try {
@@ -78,9 +83,17 @@ class MainRepositoryImpl @Inject constructor(
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
         flow {
             database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                if (isFirstTime || lastIdSent + 20 == data.last().id) {
+                if (isFirstTime) {
                     sendData(data)
+                    lastIdSent = data.last().id
                     isFirstTime = false
+                }
+                if (lastIdSent + 19 == data.last().id) {
+                    sendData(
+                        data.filter {
+                            it.id in lastIdSent..data.last().id
+                        }
+                    )
                     lastIdSent = data.last().id
                 }
                 emit(RepositoryStatus.SuccessBleData(data))
