@@ -13,7 +13,7 @@ import com.untitledkingdom.ueberapp.ble.KableService
 import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
-import com.untitledkingdom.ueberapp.devices.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -44,8 +44,8 @@ class MainViewModel @Inject constructor(
         initialState = MainState(),
         prepare = {
             merge(
-                refreshDeviceData(effects),
-                startCollectingData(effects),
+                refreshDeviceInfo(effects),
+                collectDataFromDataBase(effects),
             )
         },
         onEvent = { event ->
@@ -53,7 +53,7 @@ class MainViewModel @Inject constructor(
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> disconnect(effects).toNoAction()
                 is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
-                MainEvent.StartScanning -> refreshDeviceData(
+                MainEvent.StartScanning -> refreshDeviceInfo(
                     effects = effects
                 )
             }
@@ -64,11 +64,10 @@ class MainViewModel @Inject constructor(
         kableService.stopScan()
         repository.clear()
         dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, "")
-        println("Before send effect")
         effects.send(MainEffect.GoToWelcome)
     }
 
-    private fun startCollectingData(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
+    private fun collectDataFromDataBase(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
         repository.getDataFromDataBaseAsFlow(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
             .map { status ->
                 when (status) {
@@ -82,7 +81,7 @@ class MainViewModel @Inject constructor(
                 }
             }
 
-    private suspend fun refreshDeviceData(
+    private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
         kableService.refreshDeviceData(macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))

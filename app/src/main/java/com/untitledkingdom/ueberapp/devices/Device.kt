@@ -9,6 +9,8 @@ import com.juul.kable.characteristicOf
 import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.functions.delayValue
@@ -142,7 +144,7 @@ class Device @Inject constructor(
                     )
                 }
             }
-            return DeviceDataStatus.SuccessDate(date = date.toList())
+            return DeviceDataStatus.SuccessRetrievingDate(date = date.toList())
         } catch (e: ConnectionLostException) {
             Timber.d("Exception in read! + $e")
             throw e
@@ -200,10 +202,4 @@ class Device @Inject constructor(
                 }
             }
         }
-}
-
-sealed class DeviceDataStatus {
-    data class SuccessDeviceDataReading(val reading: DeviceReading) : DeviceDataStatus()
-    data class SuccessDate(val date: List<Byte>) : DeviceDataStatus()
-    object Error : DeviceDataStatus()
 }

@@ -3,8 +3,8 @@ package com.untitledkingdom.ueberapp.device
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
-import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
@@ -73,7 +73,7 @@ class DeviceTest {
 
     @Test
     fun readDateFromDevice(): Unit = runTest {
-        coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessDate(byteList)
+        coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessRetrievingDate(byteList)
         val deviceStatus = device.readDate(
             DeviceConst.SERVICE_TIME_SETTINGS,
             DeviceConst.TIME_CHARACTERISTIC
@@ -85,7 +85,7 @@ class DeviceTest {
             )
         }
         confirmVerified(device)
-        assertTrue(deviceStatus == DeviceDataStatus.SuccessDate(byteList))
+        assertTrue(deviceStatus == DeviceDataStatus.SuccessRetrievingDate(byteList))
     }
 
     @Test
@@ -121,7 +121,7 @@ class DeviceTest {
                 DeviceConst.SERVICE_TIME_SETTINGS,
                 DeviceConst.TIME_CHARACTERISTIC
             )
-        } returns DeviceDataStatus.SuccessDate(uByteArray.toList())
+        } returns DeviceDataStatus.SuccessRetrievingDate(uByteArray.toList())
         device.readDate(
             DeviceConst.SERVICE_TIME_SETTINGS,
             DeviceConst.TIME_CHARACTERISTIC

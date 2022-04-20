@@ -3,7 +3,7 @@ package com.untitledkingdom.ueberapp.feature.background
 import com.tomcz.ellipse.test.processorTest
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
-import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
+import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.BackgroundContainer
@@ -81,7 +81,7 @@ class BackgroundContainerTest : BaseCoroutineTest() {
             mockkObject(utilFunctions)
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
             coEvery { timeManager.provideCurrentLocalDateTime() } returns localDateTime
-            coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessDate(byteList)
+            coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessRetrievingDate(byteList)
             coEvery { device.write(any(), any(), any()) } returns Unit
             every { utilFunctions.toDateString(any()) } returns "111970"
             coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)

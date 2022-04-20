@@ -20,7 +20,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import timber.log.Timber
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
@@ -49,7 +48,6 @@ class BackgroundService @Inject constructor() : Service() {
     lateinit var backgroundContainer: BackgroundContainer
 
     override fun onCreate() {
-        Timber.d("Service created")
         super.onCreate()
         scope.onProcessor(
             processor = backgroundContainer::processor,
@@ -81,12 +79,9 @@ class BackgroundService @Inject constructor() : Service() {
                         isFirstRun = false
                         isRunning = true
                         backgroundContainer.processor.sendEvent(BackgroundEvent.StartReading)
-                    } else {
-                        Timber.d("Resuming service")
                     }
                 }
                 ACTION_STOP_SERVICE -> {
-                    Timber.d("Stopping service")
                     isFirstRun = true
                     isRunning = false
                     backgroundContainer.processor.sendEvent(BackgroundEvent.StopReading)

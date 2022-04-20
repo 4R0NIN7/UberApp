@@ -6,8 +6,8 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
 import com.untitledkingdom.ueberapp.devices.Device
-import com.untitledkingdom.ueberapp.devices.DeviceConst
-import com.untitledkingdom.ueberapp.devices.DeviceDataStatus
+import com.untitledkingdom.ueberapp.devices.data.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
@@ -105,7 +105,7 @@ class BackgroundContainer @Inject constructor(
                 fromService = service
             )
             when (status) {
-                is DeviceDataStatus.SuccessDate -> checkDate(
+                is DeviceDataStatus.SuccessRetrievingDate -> validateDate(
                     status.date,
                     service,
                     characteristic,
@@ -116,21 +116,23 @@ class BackgroundContainer @Inject constructor(
         } catch (e: ConnectionLostException) {
             Timber.d("Unable to write deviceReading $e")
             startReading(effects)
+        } catch (e: Exception) {
+            stopReading(effects)
         }
     }
 
-    private suspend fun checkDate(
+    private suspend fun validateDate(
         bytes: List<Byte>,
         service: String,
         characteristic: String,
     ) {
         val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
         val currentDate = timeManager.provideCurrentLocalDateTime()
-        val checkIfTheSame = UtilFunctions.checkIfDateIsTheSame(
+        val checkIfDateAreTheSame = UtilFunctions.checkIfDateIsTheSame(
             date = currentDate,
             dateFromDevice = dateFromDevice
         )
-        if (!checkIfTheSame) {
+        if (!checkIfDateAreTheSame) {
             device.write(currentDate.toUByteArray(), service, characteristic)
         }
     }

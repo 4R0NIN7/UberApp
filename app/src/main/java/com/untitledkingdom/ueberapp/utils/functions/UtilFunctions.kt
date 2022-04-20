@@ -83,7 +83,6 @@ object UtilFunctions {
 
     fun checkIfDateIsTheSame(dateFromDevice: String, date: LocalDateTime): Boolean {
         val dateFromLocalDateTime = "${date.dayOfMonth}${date.monthValue}${date.year}"
-        Timber.d("DateFromDevice $dateFromDevice, dateLocal $dateFromLocalDateTime")
         return dateFromDevice == dateFromLocalDateTime
     }
 }
