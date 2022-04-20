@@ -109,16 +109,13 @@ object Modules {
     }
 
     @Provides
-    @Singleton
     fun provideBackgroundContainer(
-        scope: CoroutineScope,
         dataStorage: DataStorage,
         repository: MainRepository,
         timeManager: TimeManager
     ): BackgroundContainer {
         return BackgroundContainer(
             dataStorage = dataStorage,
-            scope = scope,
             repository = repository,
             timeManager = timeManager
         )

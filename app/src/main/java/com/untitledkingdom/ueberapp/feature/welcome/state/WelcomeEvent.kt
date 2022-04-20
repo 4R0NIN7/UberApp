@@ -3,6 +3,7 @@ package com.untitledkingdom.ueberapp.feature.welcome.state
 import com.juul.kable.Advertisement
 
 sealed interface WelcomeEvent {
+    object StartService : WelcomeEvent
     object RemoveScannedDevices : WelcomeEvent
     object StartScanning : WelcomeEvent
     object StopScanning : WelcomeEvent

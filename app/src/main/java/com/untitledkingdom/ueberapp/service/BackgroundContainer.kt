@@ -19,8 +19,11 @@ import com.untitledkingdom.ueberapp.utils.functions.checkIfDateIsTheSame
 import com.untitledkingdom.ueberapp.utils.functions.toDateString
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -30,12 +33,11 @@ typealias BackgroundProcessor = Processor<BackgroundEvent, BackgroundState, Back
 @ExperimentalCoroutinesApi
 @FlowPreview
 class BackgroundContainer @Inject constructor(
-    scope: CoroutineScope,
     private val repository: MainRepository,
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager
 ) {
-    private lateinit var device: Device
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val processor: BackgroundProcessor = scope.processor(
         initialState = BackgroundState(),
         onEvent = { event ->
@@ -46,8 +48,11 @@ class BackgroundContainer @Inject constructor(
         }
     )
 
+    fun cancel() {
+        scope.cancel()
+    }
+
     private fun stopReading(effects: EffectsCollector<BackgroundEffect>) {
-        device.cancel()
         effects.send(BackgroundEffect.Stop)
     }
 
@@ -56,12 +61,13 @@ class BackgroundContainer @Inject constructor(
             stopReading(effects)
         }
         try {
-            device = Device(dataStorage)
+            val device = Device(dataStorage)
             writeDateToDevice(
                 service = DeviceConst.SERVICE_TIME_SETTINGS,
                 characteristic = DeviceConst.TIME_CHARACTERISTIC,
+                device = device
             )
-            startObservingData(effects = effects)
+            startObservingData(effects = effects, device = device)
         } catch (e: ConnectionLostException) {
             Timber.d("Exception during creating device $e")
             stopReading(effects = effects)
@@ -69,7 +75,8 @@ class BackgroundContainer @Inject constructor(
     }
 
     private suspend fun startObservingData(
-        effects: EffectsCollector<BackgroundEffect>
+        effects: EffectsCollector<BackgroundEffect>,
+        device: Device
     ) {
         try {
             Timber.d("Starting collecting data from service")
@@ -93,6 +100,7 @@ class BackgroundContainer @Inject constructor(
     private suspend fun writeDateToDevice(
         service: String,
         characteristic: String,
+        device: Device,
     ) {
         try {
             val status = device.readDate(
@@ -104,6 +112,7 @@ class BackgroundContainer @Inject constructor(
                     status.date,
                     service,
                     characteristic,
+                    device = device
                 )
                 DeviceDataStatus.Error -> throw Exception()
                 else -> {}
@@ -118,6 +127,7 @@ class BackgroundContainer @Inject constructor(
         bytes: List<Byte>,
         service: String,
         characteristic: String,
+        device: Device
     ) {
         val dateFromDevice = toDateString(bytes.toByteArray())
         val currentDate = timeManager.provideCurrentLocalDateTime()

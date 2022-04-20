@@ -61,9 +61,16 @@ class WelcomeViewModel @Inject constructor(
                 }
                 WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveAdvertisements)
                 is WelcomeEvent.SetIsClickable -> flowOf(WelcomePartialState.SetIsClickable(event.isClickable))
+                WelcomeEvent.StartService -> startService(effects).toNoAction()
             }
         }
     )
+
+    private suspend fun startService(effects: EffectsCollector<WelcomeEffect>) {
+        if (dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) != "") {
+            effects.send(WelcomeEffect.StartService)
+        }
+    }
 
     private fun connectToDeviceAndGoToMain(
         effects: EffectsCollector<WelcomeEffect>,

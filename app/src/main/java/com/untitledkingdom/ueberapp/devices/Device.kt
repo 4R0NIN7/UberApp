@@ -183,11 +183,12 @@ class Device @Inject constructor(
             Timber.d("Device disconnected!")
             reconnect()
         } catch (e: Exception) {
-            Timber.d("Device disconnected!")
+            Timber.d("Device disconnected! +$e")
+            cancel()
         }
     }
 
-    fun cancel() {
+    private fun cancel() {
         scope.cancel()
     }
 }

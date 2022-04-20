@@ -14,16 +14,12 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
-import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.cancel
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -32,9 +28,6 @@ import javax.inject.Inject
 @FlowPreview
 @AndroidEntryPoint
 class BackgroundService @Inject constructor() : Service() {
-    private var isFirstRun = true
-    private var isSendingBroadcast = true
-
     companion object {
         private const val CHANNEL_ID = "BackgroundService"
         private const val CHANNEL_NAME = "BackgroundContainer Reading"
@@ -43,19 +36,14 @@ class BackgroundService @Inject constructor() : Service() {
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
         const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE "
         const val INTENT_MESSAGE_FROM_SERVICE = "INTENT_MESSAGE_FROM_SERVICE"
+        var isRunning = false
     }
+
+    private var isFirstRun = true
+    private var isSendingBroadcast = true
 
     @Inject
     lateinit var scope: CoroutineScope
-
-    @Inject
-    lateinit var dataStorage: DataStorage
-
-    @Inject
-    lateinit var repository: MainRepository
-
-    @Inject
-    lateinit var timeManager: TimeManager
 
     @Inject
     lateinit var backgroundContainer: BackgroundContainer
@@ -91,6 +79,7 @@ class BackgroundService @Inject constructor() : Service() {
                 ACTION_START_OR_RESUME_SERVICE -> {
                     if (isFirstRun) {
                         isFirstRun = false
+                        isRunning = true
                         backgroundContainer.processor.sendEvent(BackgroundEvent.StartReading)
                     } else {
                         Timber.d("Resuming service")
@@ -98,6 +87,8 @@ class BackgroundService @Inject constructor() : Service() {
                 }
                 ACTION_STOP_SERVICE -> {
                     Timber.d("Stopping service")
+                    isFirstRun = true
+                    isRunning = false
                     backgroundContainer.processor.sendEvent(BackgroundEvent.StopReading)
                 }
                 else -> {}
@@ -152,7 +143,11 @@ class BackgroundService @Inject constructor() : Service() {
     private fun stop() {
         stopForeground(true)
         stopSelf()
-        scope.cancel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        backgroundContainer.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
