@@ -12,16 +12,12 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
 import com.untitledkingdom.ueberapp.service.state.BackgroundState
-import com.untitledkingdom.ueberapp.utils.Modules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -34,9 +30,8 @@ class BackgroundContainer @Inject constructor(
     private val repository: MainRepository,
     private val timeManager: TimeManager,
     private val device: Device,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
+    scope: CoroutineScope
 ) {
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     val processor: BackgroundProcessor = scope.processor(
         initialState = BackgroundState(),
         onEvent = { event ->
@@ -46,11 +41,6 @@ class BackgroundContainer @Inject constructor(
             }
         }
     )
-
-    fun cancel() {
-        device.cancel()
-        scope.cancel()
-    }
 
     private fun stopReading(effects: EffectsCollector<BackgroundEffect>) {
         effects.send(BackgroundEffect.Stop)

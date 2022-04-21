@@ -16,10 +16,16 @@ import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
+import com.untitledkingdom.ueberapp.utils.ContainerDependencies
+import com.untitledkingdom.ueberapp.utils.DaggerContainerComponent
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
@@ -40,14 +46,22 @@ class BackgroundService @Inject constructor() : Service() {
 
     private var isFirstRun = true
     private var isSendingBroadcast = true
-
-    @Inject
-    lateinit var scope: CoroutineScope
+    private val dispatcher = Dispatchers.IO
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     @Inject
     lateinit var backgroundContainer: BackgroundContainer
 
     override fun onCreate() {
+        DaggerContainerComponent.builder()
+            .scope(scope).dependencies(
+                EntryPointAccessors.fromApplication(
+                    applicationContext,
+                    ContainerDependencies::class.java
+                )
+            )
+            .build()
+            .inject(this)
         super.onCreate()
         scope.onProcessor(
             processor = backgroundContainer::processor,
@@ -141,8 +155,8 @@ class BackgroundService @Inject constructor() : Service() {
     }
 
     override fun onDestroy() {
+        scope.cancel()
         super.onDestroy()
-        backgroundContainer.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

@@ -18,8 +18,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -38,15 +36,12 @@ import javax.inject.Inject
 @ExperimentalCoroutinesApi
 class Device @Inject constructor(
     private val dataStorage: DataStorage,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher,
+    private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private suspend fun getPeripheral(): Peripheral {
         val macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-        if (macAddress == "") {
-            cancel()
-        }
         return device
             ?: scope.peripheral(macAddress)
                 .also {
@@ -86,10 +81,6 @@ class Device @Inject constructor(
             reconnect()
         } catch (e: Exception) {
         }
-    }
-
-    fun cancel() {
-        scope.cancel()
     }
 
     suspend fun read(fromService: String, fromCharacteristic: String): DeviceDataStatus {
