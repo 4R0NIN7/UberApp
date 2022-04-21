@@ -11,7 +11,6 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
 import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
 import com.untitledkingdom.ueberapp.service.state.BackgroundState
-import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -25,7 +24,6 @@ typealias BackgroundProcessor = Processor<BackgroundEvent, BackgroundState, Back
 @FlowPreview
 class BackgroundContainer @Inject constructor(
     private val repository: MainRepository,
-    private val timeManager: TimeManager,
     private val device: Device,
     scope: CoroutineScope
 ) {
