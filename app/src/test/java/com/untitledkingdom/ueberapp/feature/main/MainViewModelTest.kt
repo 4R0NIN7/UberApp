@@ -39,10 +39,16 @@ class MainViewModelTest : BaseCoroutineTest() {
         given = {
             coEvery { kableService.scan() } returns flowOf()
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
+            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(
+                    listOf()
+                )
+            )
         },
         thenStates = {
             assertLast(
-                MainState()
+                MainState(isPreparing = false, advertisement = advertisement)
             )
         }
     )

@@ -6,6 +6,7 @@ import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import io.mockk.coEvery
@@ -14,11 +15,13 @@ import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,8 +49,18 @@ class DeviceTest {
     private val mainThreadSurrogate = StandardTestDispatcher()
 
     private val dataStorage by lazy { mockk<DataStorage>() }
+    private val timeManager by lazy { mockk<TimeManager>() }
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
-    private val device = spyk(Device(dataStorage, dispatcher))
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
+    private val device =
+        spyk(
+            Device(
+                dataStorage = dataStorage,
+                dispatcher = dispatcher,
+                scope = scope,
+                timeManager = timeManager
+            )
+        )
 
     private val byteList = listOf(1.toByte(), 2.toByte())
     private val deviceReading = mockk<DeviceReading>()
@@ -73,7 +86,9 @@ class DeviceTest {
 
     @Test
     fun readDateFromDevice(): Unit = runTest {
-        coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessRetrievingDate(byteList)
+        coEvery { device.readDate(any(), any()) } returns DeviceDataStatus.SuccessRetrievingDate(
+            byteList
+        )
         val deviceStatus = device.readDate(
             DeviceConst.SERVICE_TIME_SETTINGS,
             DeviceConst.TIME_CHARACTERISTIC

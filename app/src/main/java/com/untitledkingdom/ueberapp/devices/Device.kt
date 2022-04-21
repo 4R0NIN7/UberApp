@@ -13,13 +13,14 @@ import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.Modules
+import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
 import com.untitledkingdom.ueberapp.utils.functions.delayValue
+import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -38,15 +39,13 @@ import javax.inject.Inject
 @ExperimentalCoroutinesApi
 class Device @Inject constructor(
     private val dataStorage: DataStorage,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
+    private val timeManager: TimeManager,
+    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher,
+    private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private suspend fun getPeripheral(): Peripheral {
         val macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
-        if (macAddress == "") {
-            cancel()
-        }
         return device
             ?: scope.peripheral(macAddress)
                 .also {
@@ -79,6 +78,10 @@ class Device @Inject constructor(
                     retry = attempts.getAndIncrement()
                 )
             delay(reconnectTime)
+            writeDateToDevice(
+                service = DeviceConst.SERVICE_TIME_SETTINGS,
+                characteristic = DeviceConst.TIME_CHARACTERISTIC,
+            )
             getPeripheral().connect()
             attempts.set(0)
         } catch (e: ConnectionLostException) {
@@ -86,10 +89,6 @@ class Device @Inject constructor(
             reconnect()
         } catch (e: Exception) {
         }
-    }
-
-    fun cancel() {
-        scope.cancel()
     }
 
     suspend fun read(fromService: String, fromCharacteristic: String): DeviceDataStatus {
@@ -202,4 +201,44 @@ class Device @Inject constructor(
                 }
             }
         }
+
+    private suspend fun validateDate(
+        bytes: List<Byte>,
+        service: String,
+        characteristic: String,
+    ) {
+        val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
+        val currentDate = timeManager.provideCurrentLocalDateTime()
+        val checkIfDateAreTheSame = UtilFunctions.checkIfDateIsTheSame(
+            date = currentDate,
+            dateFromDevice = dateFromDevice
+        )
+        if (!checkIfDateAreTheSame) {
+            write(currentDate.toUByteArray(), service, characteristic)
+        }
+    }
+
+    private suspend fun writeDateToDevice(
+        service: String,
+        characteristic: String
+    ) {
+        try {
+            val status = readDate(
+                fromCharacteristic = characteristic,
+                fromService = service
+            )
+            when (status) {
+                is DeviceDataStatus.SuccessRetrievingDate -> validateDate(
+                    status.date,
+                    service,
+                    characteristic,
+                )
+                DeviceDataStatus.Error -> throw Exception()
+                else -> {}
+            }
+        } catch (e: ConnectionLostException) {
+            Timber.d("Unable to write deviceReading $e")
+            reconnect()
+        }
+    }
 }

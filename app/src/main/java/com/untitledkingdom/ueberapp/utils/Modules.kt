@@ -19,15 +19,17 @@ import com.untitledkingdom.ueberapp.database.DatabaseConstants
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
-import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
-import com.untitledkingdom.ueberapp.service.BackgroundContainer
+import com.untitledkingdom.ueberapp.service.BackgroundService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
+import dagger.BindsInstance
+import dagger.Component
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
@@ -109,20 +111,20 @@ object Modules {
         return CoroutineScope(SupervisorJob() + dispatcher)
     }
 
-    @Provides
-    fun provideBackgroundContainer(
-        @IoDispatcher dispatcher: CoroutineDispatcher,
-        dataStorage: DataStorage,
-        repository: MainRepository,
-        timeManager: TimeManager
-    ): BackgroundContainer {
-        return BackgroundContainer(
-            device = Device(dataStorage, dispatcher = dispatcher),
-            repository = repository,
-            timeManager = timeManager,
-            dispatcher = dispatcher
-        )
-    }
+//    @Provides
+//    fun provideBackgroundContainer(
+//        @IoDispatcher dispatcher: CoroutineDispatcher,
+//        dataStorage: DataStorage,
+//        repository: MainRepository,
+//        timeManager: TimeManager
+//    ): BackgroundContainer {
+//        return BackgroundContainer(
+//            device = Device(dataStorage, dispatcher = dispatcher),
+//            repository = repository,
+//            timeManager = timeManager,
+//            dispatcher = dispatcher
+//        )
+//    }
 
     @Retention(AnnotationRetention.RUNTIME)
     @Qualifier
@@ -176,4 +178,32 @@ interface BindModules {
 
     @Binds
     fun bindDispatcher(androidDispatcherProvider: AndroidDispatchersProvider): DispatchersProvider
+}
+
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
+@InstallIn(SingletonComponent::class)
+@EntryPoint
+interface ContainerDependencies {
+    fun getRepository(): MainRepository
+    fun getDataStorage(): DataStorage
+    fun getTimeManager(): TimeManager
+    @Modules.IoDispatcher
+    fun getDispatcher(): CoroutineDispatcher
+}
+
+@FlowPreview
+@ExperimentalCoroutinesApi
+@ExperimentalUnsignedTypes
+@Component(dependencies = [ContainerDependencies::class])
+interface ContainerComponent {
+    fun inject(service: BackgroundService)
+
+    @Component.Builder
+    interface Builder {
+        fun scope(@BindsInstance scope: CoroutineScope): Builder
+        fun dependencies(containerDependencies: ContainerDependencies): Builder
+        fun build(): ContainerComponent
+    }
 }
