@@ -145,6 +145,7 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 Timber.d("Bluetooth enabled")
+                restart()
             } else {
                 restart()
             }
@@ -154,15 +155,19 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 Timber.d("Gps enabled")
+                restart()
             } else {
                 restart()
             }
         }
 
     private fun restart() {
-        val intent = intent
-        finish()
-        startActivity(intent)
+        val packageManager: PackageManager = this.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(this.packageName)
+        val componentName = intent!!.component
+        val mainIntent = Intent.makeRestartActivityTask(componentName)
+        this.startActivity(mainIntent)
+        Runtime.getRuntime().exit(0)
     }
 
     override fun onNewIntent(intent: Intent?) {

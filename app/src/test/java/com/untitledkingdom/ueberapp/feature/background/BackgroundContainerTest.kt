@@ -24,7 +24,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.setMain
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDateTime
 
 @FlowPreview
 @ExperimentalUnsignedTypes
@@ -41,14 +40,6 @@ class BackgroundContainerTest : BaseCoroutineTest() {
             scope = CoroutineScope(SupervisorJob() + dispatcher)
         )
     }
-    private val localDateTime: LocalDateTime = LocalDateTime.of(
-        1970,
-        1,
-        1,
-        1,
-        1,
-        1
-    )
 
     @Before
     fun before() {
