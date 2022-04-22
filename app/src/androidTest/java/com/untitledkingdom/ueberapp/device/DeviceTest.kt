@@ -7,7 +7,7 @@ import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
+import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -124,7 +124,7 @@ class DeviceTest {
     @Test
     fun readDateFromDeviceAndWriteDateToDevice(): Unit = runTest {
         val uByteArray = localDateTime.toUByteArray()
-        val dateString = UtilFunctions.toDateString(uByteArray)
+        val dateString = DateConverter.toDateString(uByteArray)
         coEvery {
             device.write(
                 uByteArray, DeviceConst.SERVICE_TIME_SETTINGS,
@@ -159,7 +159,7 @@ class DeviceTest {
         }
         confirmVerified(device)
         assertTrue(
-            UtilFunctions.checkIfDateIsTheSame(
+            DateConverter.checkIfDateIsTheSame(
                 dateFromDevice = dateString,
                 date = localDateTime
             )

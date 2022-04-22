@@ -3,12 +3,12 @@ package com.untitledkingdom.ueberapp.feature.welcome
 import com.juul.kable.Advertisement
 import com.juul.kable.Peripheral
 import com.tomcz.ellipse.test.processorTest
-import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
+import com.untitledkingdom.ueberapp.scanner.ScanService
+import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -19,7 +19,7 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class WelcomeViewModelTest : BaseCoroutineTest() {
     private val dataStorage by lazy { mockk<DataStorage>() }
-    private val kableService by lazy { mockk<KableService>() }
+    private val kableService by lazy { mockk<ScanService>() }
     private val viewModel: WelcomeViewModel by lazy { WelcomeViewModel(kableService, dataStorage) }
     private val advertisement = mockk<Advertisement>()
     private val peripheral = mockk<Peripheral>()

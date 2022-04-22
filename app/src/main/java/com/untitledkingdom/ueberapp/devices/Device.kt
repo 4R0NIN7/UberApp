@@ -8,14 +8,13 @@ import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
 import com.juul.kable.peripheral
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.utils.Modules
+import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
-import com.untitledkingdom.ueberapp.utils.functions.delayValue
+import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +32,7 @@ import timber.log.Timber
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
+import kotlin.math.pow
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -40,12 +40,12 @@ import javax.inject.Inject
 class Device @Inject constructor(
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher,
+    @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null
     private suspend fun getPeripheral(): Peripheral {
-        val macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS)
+        val macAddress = dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS)
         return device
             ?: scope.peripheral(macAddress)
                 .also {
@@ -53,6 +53,13 @@ class Device @Inject constructor(
                     scope.enableAutoReconnect()
                 }
     }
+
+    @Suppress("SameParameterValue")
+    private fun delayValue(
+        base: Long,
+        multiplier: Float,
+        retry: Int,
+    ): Long = (base * multiplier.pow(retry - 1)).toLong()
 
     private val attempts: AtomicInteger = AtomicInteger()
     private suspend fun CoroutineScope.enableAutoReconnect() {
@@ -207,9 +214,9 @@ class Device @Inject constructor(
         service: String,
         characteristic: String,
     ) {
-        val dateFromDevice = UtilFunctions.toDateString(bytes.toByteArray())
+        val dateFromDevice = DateConverter.toDateString(bytes.toByteArray())
         val currentDate = timeManager.provideCurrentLocalDateTime()
-        val checkIfDateAreTheSame = UtilFunctions.checkIfDateIsTheSame(
+        val checkIfDateAreTheSame = DateConverter.checkIfDateIsTheSame(
             date = currentDate,
             dateFromDevice = dateFromDevice
         )

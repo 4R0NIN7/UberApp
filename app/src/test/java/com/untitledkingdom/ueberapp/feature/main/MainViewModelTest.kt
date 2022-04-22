@@ -2,13 +2,13 @@ package com.untitledkingdom.ueberapp.feature.main
 
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.test.processorTest
-import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainState
+import com.untitledkingdom.ueberapp.scanner.ScanService
+import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -22,7 +22,7 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class MainViewModelTest : BaseCoroutineTest() {
     private val dataStorage by lazy { mockk<DataStorage>() }
-    private val kableService by lazy { mockk<KableService>() }
+    private val kableService by lazy { mockk<ScanService>() }
     private val repository by lazy { mockk<MainRepository>() }
     private val viewModel: MainViewModel by lazy {
         MainViewModel(
@@ -39,7 +39,11 @@ class MainViewModelTest : BaseCoroutineTest() {
         given = {
             coEvery { kableService.scan() } returns flowOf()
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
+                ScanStatus.Found(
+                    advertisement
+                )
+            )
             coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     listOf()
@@ -57,7 +61,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start scanning`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -85,7 +89,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start observing data from repository`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -112,7 +116,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start observing data from repository with error`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -131,7 +135,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `disconnect from device`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )

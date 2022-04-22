@@ -9,16 +9,16 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.NoAction
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
-import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.feature.main.state.MainPartialState
 import com.untitledkingdom.ueberapp.feature.main.state.MainState
+import com.untitledkingdom.ueberapp.scanner.ScanService
+import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -38,7 +38,7 @@ typealias MainProcessor = Processor<MainEvent, MainState, MainEffect>
 class MainViewModel @Inject constructor(
     private val repository: MainRepository,
     private val dataStorage: DataStorage,
-    private val kableService: KableService,
+    private val scanService: ScanService,
 ) : ViewModel() {
     val processor: MainProcessor = processor(
         initialState = MainState(),
@@ -61,9 +61,9 @@ class MainViewModel @Inject constructor(
     )
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
-        kableService.stopScan()
+        scanService.stopScan()
         repository.clear()
-        dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, "")
+        dataStorage.saveToStorage(DataStorageConst.MAC_ADDRESS, "")
         effects.send(MainEffect.GoToWelcome)
     }
 
@@ -84,7 +84,7 @@ class MainViewModel @Inject constructor(
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
-        kableService.refreshDeviceData(macAddress = dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS))
+        scanService.refreshDeviceInfo(macAddress = dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS))
             .map { status ->
                 when (status) {
                     is ScanStatus.Failed -> effects.send(MainEffect.ShowError(status.message as String))
@@ -98,6 +98,7 @@ class MainViewModel @Inject constructor(
                 }
             }
 
+    @Suppress("SameParameterValue")
     private fun setAdvertisementPartial(
         advertisement: Advertisement,
         isPreparing: Boolean

@@ -1,5 +1,6 @@
 package com.untitledkingdom.ueberapp.feature.main
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,8 +48,8 @@ import com.untitledkingdom.ueberapp.feature.details.DetailsScreen
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
+import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
-import com.untitledkingdom.ueberapp.ui.common.ValueItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
@@ -72,6 +73,7 @@ import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 import timber.log.Timber
 
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @ExperimentalMaterialApi
 @ExperimentalPagerApi
 @Composable
@@ -85,10 +87,8 @@ fun MainScreenCompose(processor: MainProcessor) {
             } else {
                 Tabs(processor = processor)
             }
-        },
-        content = {
         }
-    )
+    ) {}
 }
 
 @ExperimentalMaterialApi
@@ -221,8 +221,8 @@ fun HistoryScreen(processor: MainProcessor) {
                         DayDisplay(
                             date = date,
                             processor = processor,
-                            temperature = getReadingsForDay(values, isTemperature = true),
-                            humidity = getReadingsForDay(values, isTemperature = false)
+                            temperature = getReadingsForADay(values, isTemperature = true),
+                            humidity = getReadingsForADay(values, isTemperature = false)
                         )
                     }
                 }
@@ -233,7 +233,7 @@ fun HistoryScreen(processor: MainProcessor) {
     }
 }
 
-private fun getReadingsForDay(
+private fun getReadingsForADay(
     deviceData: List<BleData>,
     isTemperature: Boolean
 ): Map<String, Double?> {
@@ -357,7 +357,7 @@ fun DeviceInfo(processor: MainProcessor) {
         }
         val values by processor.collectAsState { it.values }
         if (values.isNotEmpty()) {
-            ValueItem(bleData = values.last())
+            ReadingItem(bleData = values.last())
         } else {
             Text(
                 text = "DeviceReading is empty!",

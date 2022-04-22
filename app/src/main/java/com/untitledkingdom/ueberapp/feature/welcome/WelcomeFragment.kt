@@ -14,7 +14,7 @@ import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
-import com.untitledkingdom.ueberapp.service.BackgroundService
+import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -64,13 +64,13 @@ class WelcomeFragment : Fragment() {
     }
 
     private fun startService() {
-        controlOverService(BackgroundService.ACTION_START_OR_RESUME_SERVICE, requireContext())
+        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
     }
 
     private fun goToMainFragment() {
         Toast.makeText(requireContext(), "Successfully connected to device!", Toast.LENGTH_SHORT)
             .show()
-        if (!BackgroundService.isRunning) {
+        if (!ReadingService.isRunning) {
             startService()
         }
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)

@@ -24,8 +24,8 @@ import com.untitledkingdom.ueberapp.feature.main.DividerGray
 import com.untitledkingdom.ueberapp.feature.main.MainProcessor
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.LineGraphWithText
+import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.Toolbar
-import com.untitledkingdom.ueberapp.ui.common.ValueItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
@@ -52,7 +52,7 @@ fun DetailsScreen(processor: MainProcessor) {
         ) {
             Chart(processor = processor)
             DividerGray()
-            Values(processor = processor)
+            Readings(processor = processor)
         }
     }
 }
@@ -80,7 +80,7 @@ fun Chart(processor: MainProcessor) {
 }
 
 @Composable
-fun Values(processor: MainProcessor) {
+fun Readings(processor: MainProcessor) {
     val selectedDate by processor.collectAsState { it.selectedDate }
     val valuesFilteredBySelectedDate by processor.collectAsState {
         it.values.filter { bleData ->
@@ -95,7 +95,7 @@ fun Values(processor: MainProcessor) {
         contentPadding = PaddingValues(bottom = padding16)
     ) {
         items(items = valuesFilteredBySelectedDate) { bleData ->
-            ValueItem(
+            ReadingItem(
                 bleData = bleData
             )
         }

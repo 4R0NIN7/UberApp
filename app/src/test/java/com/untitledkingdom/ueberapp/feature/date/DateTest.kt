@@ -1,7 +1,7 @@
 package com.untitledkingdom.ueberapp.feature.date
 
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
-import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
+import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Test
@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 class DateTest : BaseCoroutineTest() {
-    private val utilsFunctions = UtilFunctions
+    private val utilsFunctions = DateConverter
     private val localDateTime: LocalDateTime = LocalDateTime.of(
         1970,
         1,

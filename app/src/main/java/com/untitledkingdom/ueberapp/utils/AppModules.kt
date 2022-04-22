@@ -12,16 +12,16 @@ import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.api.FakeApi
-import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.KableServiceImpl
 import com.untitledkingdom.ueberapp.database.Database
-import com.untitledkingdom.ueberapp.database.DatabaseConstants
+import com.untitledkingdom.ueberapp.database.DatabaseConst
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
-import com.untitledkingdom.ueberapp.service.BackgroundService
+import com.untitledkingdom.ueberapp.scanner.ScanService
+import com.untitledkingdom.ueberapp.scanner.ScanServiceImpl
+import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
 import dagger.Binds
@@ -51,14 +51,14 @@ import javax.inject.Singleton
 @ExperimentalUnsignedTypes
 @Module
 @InstallIn(SingletonComponent::class)
-object Modules {
+object AppModules {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-        name = DataStorageConstants.DATA_STORE_NAME
+        name = DataStorageConst.DATA_STORE_NAME
     )
 
     @Provides
     @Singleton
-    fun provideMockRestApiClient(): ApiService {
+    fun provideRestApiClient(): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -90,14 +90,8 @@ object Modules {
         Room.databaseBuilder(
             context,
             Database::class.java,
-            DatabaseConstants.DATABASE_NAME
+            DatabaseConst.DATABASE_NAME
         ).fallbackToDestructiveMigration().build()
-
-    @Provides
-    @Singleton
-    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage {
-        return dataStorageImpl
-    }
 
     @Provides
     @Singleton
@@ -110,21 +104,6 @@ object Modules {
     fun provideCoroutine(@IoDispatcher dispatcher: CoroutineDispatcher): CoroutineScope {
         return CoroutineScope(SupervisorJob() + dispatcher)
     }
-
-//    @Provides
-//    fun provideBackgroundContainer(
-//        @IoDispatcher dispatcher: CoroutineDispatcher,
-//        dataStorage: DataStorage,
-//        repository: MainRepository,
-//        timeManager: TimeManager
-//    ): BackgroundContainer {
-//        return BackgroundContainer(
-//            device = Device(dataStorage, dispatcher = dispatcher),
-//            repository = repository,
-//            timeManager = timeManager,
-//            dispatcher = dispatcher
-//        )
-//    }
 
     @Retention(AnnotationRetention.RUNTIME)
     @Qualifier
@@ -161,23 +140,30 @@ object Modules {
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface BindModules {
+interface Binds {
     @Binds
-    fun bindKableService(kableServiceImpl: KableServiceImpl): KableService
+    fun bindKableService(kableServiceImpl: ScanServiceImpl): ScanService
 
     @FlowPreview
     @ExperimentalCoroutinesApi
     @ExperimentalUnsignedTypes
     @Binds
+    @Singleton
     fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
 
     @Binds
+    @Singleton
     fun bindTimeManager(
         timeManagerImpl: TimeManagerImpl,
     ): TimeManager
 
     @Binds
+    @Singleton
     fun bindDispatcher(androidDispatcherProvider: AndroidDispatchersProvider): DispatchersProvider
+
+    @Binds
+    @Singleton
+    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
 }
 
 @ExperimentalUnsignedTypes
@@ -189,7 +175,8 @@ interface ContainerDependencies {
     fun getRepository(): MainRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
-    @Modules.IoDispatcher
+
+    @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
 }
 
@@ -198,7 +185,7 @@ interface ContainerDependencies {
 @ExperimentalUnsignedTypes
 @Component(dependencies = [ContainerDependencies::class])
 interface ContainerComponent {
-    fun inject(service: BackgroundService)
+    fun inject(service: ReadingService)
 
     @Component.Builder
     interface Builder {
