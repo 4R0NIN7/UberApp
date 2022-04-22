@@ -39,7 +39,7 @@ class MainViewModelTest : BaseCoroutineTest() {
         given = {
             coEvery { kableService.scan() } returns flowOf()
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -61,7 +61,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start scanning`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -89,7 +89,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start observing data from repository`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -116,7 +116,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `start observing data from repository with error`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )
@@ -135,7 +135,7 @@ class MainViewModelTest : BaseCoroutineTest() {
     fun `disconnect from device`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.refreshDeviceData(any()) } returns flowOf(
+            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
                 )

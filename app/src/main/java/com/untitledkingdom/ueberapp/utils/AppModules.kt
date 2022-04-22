@@ -51,14 +51,14 @@ import javax.inject.Singleton
 @ExperimentalUnsignedTypes
 @Module
 @InstallIn(SingletonComponent::class)
-object Modules {
+object AppModules {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
         name = DataStorageConst.DATA_STORE_NAME
     )
 
     @Provides
     @Singleton
-    fun provideMockRestApiClient(): ApiService {
+    fun provideRestApiClient(): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -95,12 +95,6 @@ object Modules {
 
     @Provides
     @Singleton
-    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage {
-        return dataStorageImpl
-    }
-
-    @Provides
-    @Singleton
     fun provideDataStore(context: Application): DataStore<Preferences> {
         return context.dataStore
     }
@@ -110,21 +104,6 @@ object Modules {
     fun provideCoroutine(@IoDispatcher dispatcher: CoroutineDispatcher): CoroutineScope {
         return CoroutineScope(SupervisorJob() + dispatcher)
     }
-
-//    @Provides
-//    fun provideBackgroundContainer(
-//        @IoDispatcher dispatcher: CoroutineDispatcher,
-//        dataStorage: DataStorage,
-//        repository: MainRepository,
-//        timeManager: TimeManager
-//    ): ReadingContainer {
-//        return ReadingContainer(
-//            device = Device(dataStorage, dispatcher = dispatcher),
-//            repository = repository,
-//            timeManager = timeManager,
-//            dispatcher = dispatcher
-//        )
-//    }
 
     @Retention(AnnotationRetention.RUNTIME)
     @Qualifier
@@ -161,7 +140,7 @@ object Modules {
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface BindModules {
+interface Binds {
     @Binds
     fun bindKableService(kableServiceImpl: ScanServiceImpl): ScanService
 
@@ -169,15 +148,22 @@ interface BindModules {
     @ExperimentalCoroutinesApi
     @ExperimentalUnsignedTypes
     @Binds
+    @Singleton
     fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
 
     @Binds
+    @Singleton
     fun bindTimeManager(
         timeManagerImpl: TimeManagerImpl,
     ): TimeManager
 
     @Binds
+    @Singleton
     fun bindDispatcher(androidDispatcherProvider: AndroidDispatchersProvider): DispatchersProvider
+
+    @Binds
+    @Singleton
+    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
 }
 
 @ExperimentalUnsignedTypes
@@ -190,7 +176,7 @@ interface ContainerDependencies {
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
 
-    @Modules.IoDispatcher
+    @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
 }
 

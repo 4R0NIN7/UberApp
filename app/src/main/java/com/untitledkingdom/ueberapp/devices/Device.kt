@@ -12,7 +12,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.utils.Modules
+import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
@@ -40,7 +40,7 @@ import kotlin.math.pow
 class Device @Inject constructor(
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher,
+    @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null

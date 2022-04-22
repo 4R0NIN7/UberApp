@@ -5,7 +5,7 @@ import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
-import com.untitledkingdom.ueberapp.utils.Modules
+import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +27,7 @@ class MainRepositoryImpl @Inject constructor(
     private val database: Database,
     private val timeManager: TimeManager,
     private val apiService: ApiService,
-    @Modules.IoDispatcher private val dispatcher: CoroutineDispatcher
+    @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : MainRepository {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private var lastIdSent = 0

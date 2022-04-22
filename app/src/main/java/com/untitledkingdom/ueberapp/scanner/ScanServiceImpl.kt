@@ -56,7 +56,7 @@ class ScanServiceImpl @Inject constructor() : ScanService {
         isScanning = true
     }
 
-    override fun refreshDeviceData(macAddress: String): Flow<ScanStatus> = flow {
+    override fun refreshDeviceInfo(macAddress: String): Flow<ScanStatus> = flow {
         scanner
             .advertisements
             .catch { cause ->

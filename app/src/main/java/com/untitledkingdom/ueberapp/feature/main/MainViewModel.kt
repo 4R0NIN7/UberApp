@@ -84,7 +84,7 @@ class MainViewModel @Inject constructor(
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
-        scanService.refreshDeviceData(macAddress = dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS))
+        scanService.refreshDeviceInfo(macAddress = dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS))
             .map { status ->
                 when (status) {
                     is ScanStatus.Failed -> effects.send(MainEffect.ShowError(status.message as String))
@@ -98,6 +98,7 @@ class MainViewModel @Inject constructor(
                 }
             }
 
+    @Suppress("SameParameterValue")
     private fun setAdvertisementPartial(
         advertisement: Advertisement,
         isPreparing: Boolean

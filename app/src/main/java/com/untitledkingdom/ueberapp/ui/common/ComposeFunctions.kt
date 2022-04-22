@@ -144,7 +144,7 @@ internal fun RowText(
 }
 
 @Composable
-fun ValueItem(bleData: BleData) {
+fun ReadingItem(bleData: BleData) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
