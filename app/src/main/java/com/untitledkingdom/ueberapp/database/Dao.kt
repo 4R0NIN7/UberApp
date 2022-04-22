@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface Dao {
-    @Query("SELECT * from ${DatabaseConstants.TABLE}")
+    @Query("SELECT * from ${DatabaseConst.TABLE}")
     suspend fun getAllData(): List<BleData>
 
-    @Query("SELECT * from ${DatabaseConstants.TABLE}")
+    @Query("SELECT * from ${DatabaseConst.TABLE}")
     fun getAllDataFlow(): Flow<List<BleData>>
 
-    @Query("SELECT * from ${DatabaseConstants.TABLE} WHERE ID = :id")
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :id")
     suspend fun getData(id: Int): BleData
 
     @Insert(onConflict = REPLACE)
@@ -24,6 +24,6 @@ interface Dao {
     @Insert(onConflict = REPLACE)
     suspend fun saveAllData(dataList: List<BleData>)
 
-    @Query("DELETE from ${DatabaseConstants.TABLE}")
+    @Query("DELETE from ${DatabaseConst.TABLE}")
     suspend fun wipeData()
 }

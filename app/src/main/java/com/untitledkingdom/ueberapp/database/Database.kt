@@ -7,7 +7,7 @@ import com.untitledkingdom.ueberapp.devices.data.BleData
 
 @Database(
     entities = [BleData::class],
-    version = DatabaseConstants.VERSION,
+    version = DatabaseConst.VERSION,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

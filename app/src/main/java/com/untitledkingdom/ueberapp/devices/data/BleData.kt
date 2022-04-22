@@ -2,10 +2,10 @@ package com.untitledkingdom.ueberapp.devices.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.untitledkingdom.ueberapp.database.DatabaseConstants
+import com.untitledkingdom.ueberapp.database.DatabaseConst
 import java.time.LocalDateTime
 
-@Entity(tableName = DatabaseConstants.TABLE)
+@Entity(tableName = DatabaseConst.TABLE)
 data class BleData(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,

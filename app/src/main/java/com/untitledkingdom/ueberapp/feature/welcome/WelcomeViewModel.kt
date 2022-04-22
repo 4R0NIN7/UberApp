@@ -9,14 +9,14 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.NoAction
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
-import com.untitledkingdom.ueberapp.ble.KableService
-import com.untitledkingdom.ueberapp.ble.data.ScanStatus
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.datastore.DataStorageConstants
+import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomePartialState
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
+import com.untitledkingdom.ueberapp.scanner.ScanService
+import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.utils.functions.childScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +32,7 @@ typealias WelcomeProcessor = Processor<WelcomeEvent, WelcomeState, WelcomeEffect
 @ExperimentalCoroutinesApi
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
-    private val kableService: KableService,
+    private val scanService: ScanService,
     private val dataStorage: DataStorage
 ) : ViewModel() {
     private val scope = viewModelScope.childScope()
@@ -48,7 +48,7 @@ class WelcomeViewModel @Inject constructor(
                         effects
                     )
                 WelcomeEvent.StopScanning -> {
-                    kableService.stopScan().toNoAction()
+                    scanService.stopScan().toNoAction()
                 }
                 is WelcomeEvent.SetScanningTo -> flowOf(
                     WelcomePartialState.SetIsScanning(isScanning = event.scanningTo)
@@ -67,7 +67,7 @@ class WelcomeViewModel @Inject constructor(
     )
 
     private suspend fun startService(effects: EffectsCollector<WelcomeEffect>) {
-        if (dataStorage.getFromStorage(DataStorageConstants.MAC_ADDRESS) != "") {
+        if (dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS) != "") {
             effects.send(WelcomeEffect.StartService)
         }
     }
@@ -78,12 +78,12 @@ class WelcomeViewModel @Inject constructor(
     ): Flow<WelcomePartialState> = flow {
         emit(WelcomePartialState.SetIsClickable(true))
         try {
-            val peripheral = kableService.returnPeripheral(
+            val peripheral = scanService.returnPeripheral(
                 advertisement = advertisement,
                 scope = scope
             )
             peripheral.connect()
-            dataStorage.saveToStorage(DataStorageConstants.MAC_ADDRESS, advertisement.address)
+            dataStorage.saveToStorage(DataStorageConst.MAC_ADDRESS, advertisement.address)
             effects.send(WelcomeEffect.GoToMain)
         } catch (e: Exception) {
             Timber.d("Exception in connect to device! + $e")
@@ -93,7 +93,7 @@ class WelcomeViewModel @Inject constructor(
 
     private fun startScanning(
         effects: EffectsCollector<WelcomeEffect>,
-    ): Flow<PartialState<WelcomeState>> = kableService.scan().map { status ->
+    ): Flow<PartialState<WelcomeState>> = scanService.scan().map { status ->
         when (status) {
             ScanStatus.Scanning -> {
                 setIsClickablePartial(true)

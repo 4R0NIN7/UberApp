@@ -5,12 +5,12 @@ import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.MainRepository
-import com.untitledkingdom.ueberapp.service.BackgroundContainer
-import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
-import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
-import com.untitledkingdom.ueberapp.service.state.BackgroundState
+import com.untitledkingdom.ueberapp.service.ReadingContainer
+import com.untitledkingdom.ueberapp.service.state.ReadingEffect
+import com.untitledkingdom.ueberapp.service.state.ReadingEvent
+import com.untitledkingdom.ueberapp.service.state.ReadingState
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
-import com.untitledkingdom.ueberapp.utils.functions.UtilFunctions
+import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -28,13 +28,13 @@ import org.junit.Test
 @FlowPreview
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
-class BackgroundContainerTest : BaseCoroutineTest() {
+class ReadingContainerTest : BaseCoroutineTest() {
     private val dataStorage by lazy { mockk<DataStorage>() }
     private val repository by lazy { mockk<MainRepository>() }
     private val device = mockk<Device>()
     private val mainThreadSurrogate = UnconfinedTestDispatcher()
     private val backgroundContainer by lazy {
-        BackgroundContainer(
+        ReadingContainer(
             repository = repository,
             device = device,
             scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -53,7 +53,7 @@ class BackgroundContainerTest : BaseCoroutineTest() {
         },
         thenStates = {
             assertLast(
-                BackgroundState()
+                ReadingState()
             )
         }
     )
@@ -63,18 +63,18 @@ class BackgroundContainerTest : BaseCoroutineTest() {
         context = mainThreadSurrogate,
         processor = { backgroundContainer.processor },
         given = {
-            val utilFunctions = UtilFunctions
+            val utilFunctions = DateConverter
             val deviceReading = mockk<DeviceReading>()
             mockkObject(utilFunctions)
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
             coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)
             coEvery { repository.saveData(any(), any()) } returns Unit
         },
-        whenEvent = BackgroundEvent.StartReading,
+        whenEvent = ReadingEvent.StartReading,
         thenEffects = {
             assertValues(
-                BackgroundEffect.StartForegroundService,
-                BackgroundEffect.SendBroadcastToActivity
+                ReadingEffect.StartForegroundService,
+                ReadingEffect.SendBroadcastToActivity
             )
         }
     )
@@ -85,10 +85,10 @@ class BackgroundContainerTest : BaseCoroutineTest() {
         given = {
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
         },
-        whenEvent = BackgroundEvent.StopReading,
+        whenEvent = ReadingEvent.StopReading,
         thenEffects = {
             assertValues(
-                BackgroundEffect.Stop
+                ReadingEffect.Stop
             )
         }
     )

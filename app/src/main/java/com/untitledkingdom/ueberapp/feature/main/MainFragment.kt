@@ -14,7 +14,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
-import com.untitledkingdom.ueberapp.service.BackgroundService
+import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,7 +40,7 @@ class MainFragment : Fragment() {
             processor = viewModel::processor,
             onEffect = ::trigger,
         )
-        controlOverService(BackgroundService.ACTION_START_OR_RESUME_SERVICE, requireContext())
+        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
         return ComposeView(
             requireContext()
         ).apply {
@@ -66,7 +66,7 @@ class MainFragment : Fragment() {
 
     private fun goToWelcome() {
         toastMessage(message = "Successfully disconnected from device", requireContext())
-        controlOverService(BackgroundService.ACTION_STOP_SERVICE, requireContext())
+        controlOverService(ReadingService.ACTION_STOP_SERVICE, requireContext())
         findNavController().navigate(R.id.action_mainFragment_to_welcomeFragment)
     }
 }

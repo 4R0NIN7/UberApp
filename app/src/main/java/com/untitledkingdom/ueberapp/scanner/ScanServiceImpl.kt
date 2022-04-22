@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.ble
+package com.untitledkingdom.ueberapp.scanner
 
 import com.juul.kable.Advertisement
 import com.juul.kable.Peripheral
@@ -6,7 +6,7 @@ import com.juul.kable.Scanner
 import com.juul.kable.logs.Logging
 import com.juul.kable.logs.SystemLogEngine
 import com.juul.kable.peripheral
-import com.untitledkingdom.ueberapp.ble.data.ScanStatus
+import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import javax.inject.Inject
 
-class KableServiceImpl @Inject constructor() : KableService {
+class ScanServiceImpl @Inject constructor() : ScanService {
     private val scanner = Scanner {
         filters = null
         logging {

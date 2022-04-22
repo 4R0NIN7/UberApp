@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.ble.data
+package com.untitledkingdom.ueberapp.scanner.data
 
 import com.juul.kable.Advertisement
 

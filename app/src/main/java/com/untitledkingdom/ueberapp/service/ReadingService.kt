@@ -14,8 +14,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.service.state.BackgroundEffect
-import com.untitledkingdom.ueberapp.service.state.BackgroundEvent
+import com.untitledkingdom.ueberapp.service.state.ReadingEffect
+import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
 import com.untitledkingdom.ueberapp.utils.DaggerContainerComponent
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,10 +32,10 @@ import javax.inject.Inject
 @ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
-class BackgroundService @Inject constructor() : Service() {
+class ReadingService @Inject constructor() : Service() {
     companion object {
-        private const val CHANNEL_ID = "BackgroundService"
-        private const val CHANNEL_NAME = "BackgroundContainer Reading"
+        private const val CHANNEL_ID = "ReadingService"
+        private const val CHANNEL_NAME = "ReadingContainer Reading"
         private const val ONGOING_NOTIFICATION_ID = 123
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val ACTION_START_OR_RESUME_SERVICE = "ACTION_START_OR_RESUME_SERVICE "
@@ -50,7 +50,7 @@ class BackgroundService @Inject constructor() : Service() {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     @Inject
-    lateinit var backgroundContainer: BackgroundContainer
+    lateinit var readingContainer: ReadingContainer
 
     override fun onCreate() {
         DaggerContainerComponent.builder()
@@ -64,16 +64,16 @@ class BackgroundService @Inject constructor() : Service() {
             .inject(this)
         super.onCreate()
         scope.onProcessor(
-            processor = backgroundContainer::processor,
+            processor = readingContainer::processor,
             onEffect = ::trigger,
         )
     }
 
-    private fun trigger(effect: BackgroundEffect) {
+    private fun trigger(effect: ReadingEffect) {
         when (effect) {
-            BackgroundEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
-            BackgroundEffect.StartForegroundService -> startForegroundService()
-            BackgroundEffect.Stop -> stop()
+            ReadingEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
+            ReadingEffect.StartForegroundService -> startForegroundService()
+            ReadingEffect.Stop -> stop()
         }
     }
 
@@ -92,13 +92,13 @@ class BackgroundService @Inject constructor() : Service() {
                     if (isFirstRun) {
                         isFirstRun = false
                         isRunning = true
-                        backgroundContainer.processor.sendEvent(BackgroundEvent.StartReading)
+                        readingContainer.processor.sendEvent(ReadingEvent.StartReading)
                     }
                 }
                 ACTION_STOP_SERVICE -> {
                     isFirstRun = true
                     isRunning = false
-                    backgroundContainer.processor.sendEvent(BackgroundEvent.StopReading)
+                    readingContainer.processor.sendEvent(ReadingEvent.StopReading)
                 }
                 else -> {}
             }

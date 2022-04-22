@@ -1,3 +1,3 @@
 package com.untitledkingdom.ueberapp.service.state
 
-data class BackgroundState(val any: Any? = null)
+data class ReadingState(val any: Any? = null)
