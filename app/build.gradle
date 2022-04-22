@@ -28,6 +28,10 @@ android {
         buildConfigField("String", "CIPHER_KEY", apikeyProperties['CIPHER_KEY'])
         buildConfigField("String", "SALT", apikeyProperties['SALT'])
         buildConfigField("String", "IV", apikeyProperties['IV'])
+        buildConfigField("String", "SERVICE_TIME_SETTINGS", apikeyProperties['SERVICE_TIME_SETTINGS'])
+        buildConfigField("String", "SERVICE_DATA_SERVICE", apikeyProperties['SERVICE_DATA_SERVICE'])
+        buildConfigField("String", "TIME_CHARACTERISTIC", apikeyProperties['TIME_CHARACTERISTIC'])
+        buildConfigField("String", "READINGS_CHARACTERISTIC", apikeyProperties['READINGS_CHARACTERISTIC'])
     }
     buildTypes {
         release {
