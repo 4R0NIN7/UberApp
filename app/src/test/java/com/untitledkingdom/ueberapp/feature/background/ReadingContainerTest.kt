@@ -8,7 +8,6 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.ReadingContainer
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
-import com.untitledkingdom.ueberapp.service.state.ReadingState
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import io.mockk.coEvery
@@ -47,18 +46,6 @@ class ReadingContainerTest : BaseCoroutineTest() {
     }
 
     @Test
-    fun initialState() = processorTest(
-        processor = { backgroundContainer.processor },
-        given = {
-        },
-        thenStates = {
-            assertLast(
-                ReadingState()
-            )
-        }
-    )
-
-    @Test
     fun startReading() = processorTest(
         context = mainThreadSurrogate,
         processor = { backgroundContainer.processor },
@@ -72,6 +59,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
         },
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
+            println("assert")
             assertValues(
                 ReadingEffect.StartForegroundService,
                 ReadingEffect.SendBroadcastToActivity
@@ -87,7 +75,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
         },
         whenEvent = ReadingEvent.StopReading,
         thenEffects = {
-            assertValues(
+            assertLast(
                 ReadingEffect.Stop
             )
         }

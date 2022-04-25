@@ -62,6 +62,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
         whenEvent = WelcomeEvent.StartService,
         thenEffects = {
             assertLast(WelcomeEffect.StartService)
+        }, thenStates = {
         }
     )
 
@@ -75,6 +76,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
         whenEvent = WelcomeEvent.StartService,
         thenEffects = {
             assertEmpty()
+        }, thenStates = {
         }
     )
 
@@ -91,6 +93,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
         whenEvent = WelcomeEvent.StartConnectingToDevice(advertisement),
         thenEffects = {
             assertLast(WelcomeEffect.GoToMain)
+        }, thenStates = {
         }
     )
 }
