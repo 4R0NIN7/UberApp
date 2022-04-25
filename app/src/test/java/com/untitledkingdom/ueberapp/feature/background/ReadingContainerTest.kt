@@ -59,7 +59,6 @@ class ReadingContainerTest : BaseCoroutineTest() {
         },
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
-            println("assert")
             assertValues(
                 ReadingEffect.StartForegroundService,
                 ReadingEffect.SendBroadcastToActivity

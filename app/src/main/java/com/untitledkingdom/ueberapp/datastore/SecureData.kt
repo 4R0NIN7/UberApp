@@ -39,7 +39,6 @@ class SecureData @Inject constructor() {
                 Base64.DEFAULT
             )
         } catch (e: Exception) {
-            println("Error while encrypting: $e")
             null
         }
     }
@@ -59,7 +58,6 @@ class SecureData @Inject constructor() {
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec)
             String(cipher.doFinal(Base64.decode(stringToDecrypt, Base64.DEFAULT)))
         } catch (e: Exception) {
-            println("Error while decrypting: $e")
             null
         }
     }
