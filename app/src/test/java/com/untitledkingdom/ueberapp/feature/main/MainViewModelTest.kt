@@ -128,6 +128,15 @@ class MainViewModelTest : BaseCoroutineTest() {
         },
         thenEffects = {
             assertLast(MainEffect.ShowError("Error during collecting data from DB"))
+        },
+        thenStates = {
+            assertLast(
+                MainState(
+                    advertisement = advertisement,
+                    values = listOf(),
+                    isPreparing = false
+                )
+            )
         }
     )
 
@@ -153,6 +162,14 @@ class MainViewModelTest : BaseCoroutineTest() {
         whenEvent = MainEvent.EndConnectingToDevice,
         thenEffects = {
             assertLast(MainEffect.GoToWelcome)
+        }, thenStates = {
+            assertLast(
+                MainState(
+                    advertisement = advertisement,
+                    values = listOf(),
+                    isPreparing = false
+                )
+            )
         }
     )
 }
