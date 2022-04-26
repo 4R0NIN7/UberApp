@@ -10,10 +10,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
@@ -72,8 +74,25 @@ class ReadingService @Inject constructor() : Service() {
     private fun trigger(effect: ReadingEffect) {
         when (effect) {
             ReadingEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
-            ReadingEffect.StartForegroundService -> startForegroundService()
+            is ReadingEffect.StartForegroundService -> startForegroundService()
             ReadingEffect.Stop -> stop()
+            is ReadingEffect.UpdateNotification -> updateNotification(effect.reading)
+        }
+    }
+
+    private fun updateNotification(reading: DeviceReading) {
+        val notification = Notification.Builder(this, CHANNEL_ID)
+            .setAutoCancel(false)
+            .setOngoing(true)
+            .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
+            .setContentTitle("Reading in background...")
+            .setContentText("Temperature is ${reading.temperature}, Humidity is ${reading.humidity}")
+            .setContentIntent(getMainActivityPendingIntent())
+            .build()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
+            as NotificationManager
+        NotificationManagerCompat.from(this).apply {
+            notificationManager.notify(ONGOING_NOTIFICATION_ID, notification)
         }
     }
 

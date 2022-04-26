@@ -61,6 +61,7 @@ class ReadingContainer @Inject constructor(
                     deviceReading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
+                effects.send(ReadingEffect.UpdateNotification(reading))
                 effects.send(ReadingEffect.SendBroadcastToActivity)
             }
         } catch (e: ConnectionLostException) {
