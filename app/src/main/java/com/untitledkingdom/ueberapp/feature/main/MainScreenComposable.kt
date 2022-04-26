@@ -52,11 +52,11 @@ import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
-import com.untitledkingdom.ueberapp.ui.values.BlackSelectedDay
+import com.untitledkingdom.ueberapp.ui.values.BlackTitle
 import com.untitledkingdom.ueberapp.ui.values.Blue
 import com.untitledkingdom.ueberapp.ui.values.DevicesTabsColorBlack
+import com.untitledkingdom.ueberapp.ui.values.DividerLight
 import com.untitledkingdom.ueberapp.ui.values.Gray
-import com.untitledkingdom.ueberapp.ui.values.SectionDividerLight
 import com.untitledkingdom.ueberapp.ui.values.SplashPurple
 import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.White
@@ -221,8 +221,7 @@ fun HistoryScreen(processor: MainProcessor) {
                         DayDisplay(
                             date = date,
                             processor = processor,
-                            temperature = getReadingsForADay(values, isTemperature = true),
-                            humidity = getReadingsForADay(values, isTemperature = false)
+                            readings = getStatisticsPerDay(data = values)
                         )
                     }
                 }
@@ -233,31 +232,30 @@ fun HistoryScreen(processor: MainProcessor) {
     }
 }
 
-private fun getReadingsForADay(
-    deviceData: List<BleData>,
-    isTemperature: Boolean
-): Map<String, Double?> {
-    return if (isTemperature) {
-        val min = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().minOrNull()
-        val avg = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().average()
-        val max = deviceData.map { it.deviceReading.temperature.toDouble() }.toList().maxOrNull()
+private fun getStatisticsPerDay(
+    data: List<BleData>
+): List<Map<String, Double?>> {
+    var min = data.map { it.deviceReading.temperature.toDouble() }.toList().minOrNull()
+    var avg = data.map { it.deviceReading.temperature.toDouble() }.toList().average()
+    var max = data.map { it.deviceReading.temperature.toDouble() }.toList().maxOrNull()
+    val temperature =
         mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
-    } else {
-        val min = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().minOrNull()
-        val avg = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().average()
-        val max = deviceData.map { it.deviceReading.humidity.toDouble() }.toList().maxOrNull()
-        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
-    }
+    min = data.map { it.deviceReading.humidity.toDouble() }.toList().minOrNull()
+    avg = data.map { it.deviceReading.humidity.toDouble() }.toList().average()
+    max = data.map { it.deviceReading.humidity.toDouble() }.toList().maxOrNull()
+    val humidity = mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
+    return listOf(temperature, humidity)
 }
 
 @ExperimentalMaterialApi
 @Composable
 fun DayDisplay(
     date: String,
-    temperature: Map<String, Double?>,
-    humidity: Map<String, Double?>,
+    readings: List<Map<String, Double?>>,
     processor: MainProcessor
 ) {
+    val temperature: Map<String, Double?> = readings[0]
+    val humidity: Map<String, Double?> = readings[1]
     val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
         "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
         "Max: ${decimalFormat.format(temperature[BleDataConst.MAX])}"
@@ -352,21 +350,8 @@ fun DeviceInfo(processor: MainProcessor) {
             .padding(top = padding24)
             .padding(horizontal = padding12)
     ) {
-        Column {
-            ConnectedDevice(processor = processor)
-        }
-        val values by processor.collectAsState { it.values }
-        if (values.isNotEmpty()) {
-            ReadingItem(bleData = values.last())
-        } else {
-            Text(
-                text = "DeviceReading is empty!",
-                style = Typography.body1,
-                fontWeight = FontWeight.Bold,
-                fontSize = fontSize18,
-                color = Black
-            )
-        }
+        ConnectedDevice(processor = processor)
+        ActualReading(processor = processor)
     }
 }
 
@@ -375,12 +360,12 @@ fun DividerGray(modifier: Modifier = Modifier) {
     Divider(
         modifier = modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = SectionDividerLight,
+        color = DividerLight,
     )
 }
 
 @Composable
-fun ConnectedDevice(processor: MainProcessor) {
+fun ConnectedDevice(processor: MainProcessor) = Column {
     val selectedAdvertisement by processor.collectAsState { it.advertisement }
     if (selectedAdvertisement != null) {
         Column(
@@ -391,7 +376,7 @@ fun ConnectedDevice(processor: MainProcessor) {
                 text = "Selected device",
                 style = Typography.h6,
                 fontWeight = FontWeight.SemiBold,
-                color = BlackSelectedDay,
+                color = BlackTitle,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -407,5 +392,32 @@ fun ConnectedDevice(processor: MainProcessor) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ActualReading(processor: MainProcessor) = Column {
+    val values by processor.collectAsState { it.values }
+    if (values.isNotEmpty()) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(padding24)
+        ) {
+            Text(
+                text = "Actual data from device",
+                style = Typography.h6,
+                fontWeight = FontWeight.SemiBold,
+                color = BlackTitle,
+            )
+            ReadingItem(bleData = values.last())
+        }
+    } else {
+        Text(
+            text = "Didn't receive data!",
+            style = Typography.body1,
+            fontWeight = FontWeight.Bold,
+            fontSize = fontSize18,
+            color = Black
+        )
     }
 }

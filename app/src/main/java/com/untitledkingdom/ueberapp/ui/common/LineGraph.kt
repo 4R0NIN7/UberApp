@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -17,6 +17,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,119 +26,146 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.madrapps.plot.line.DataPoint
 import com.madrapps.plot.line.LineGraph
 import com.madrapps.plot.line.LinePlot
+import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.GrayOsVersion
 import com.untitledkingdom.ueberapp.ui.values.RoomName1Color
-import com.untitledkingdom.ueberapp.ui.values.RoomName2Color
 import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
-import com.untitledkingdom.ueberapp.ui.values.RoomName5Color
-import com.untitledkingdom.ueberapp.ui.values.RoomName7Color
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.padding8
+import com.untitledkingdom.ueberapp.ui.values.signalBad
+import com.untitledkingdom.ueberapp.ui.values.signalFull
+import com.untitledkingdom.ueberapp.ui.values.signalGood
+import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 import com.untitledkingdom.ueberapp.utils.functions.toPx
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 
 @Composable
-internal fun LineGraphWithText(lines: List<List<DataPoint>>, modifier: Modifier) {
+internal fun LineGraphWithText(
+    data: List<BleData>,
+    modifier: Modifier,
+    listState: LazyListState
+) {
+    val temperature = data.map {
+        DataPoint(data.indexOf(it).toFloat(), it.deviceReading.temperature)
+    }
+    val humidity = data.map {
+        DataPoint(data.indexOf(it).toFloat(), it.deviceReading.humidity.toFloat())
+    }
     val totalWidth = remember { mutableStateOf(0) }
     Column(
-        Modifier.onGloballyPositioned {
+        modifier = Modifier.onGloballyPositioned {
             totalWidth.value = it.size.width
         }
     ) {
-        val xOffset = remember { mutableStateOf(0f) }
+        val xOffset = remember { mutableStateOf(100f) }
         val cardWidth = remember { mutableStateOf(0) }
         val visibility = remember { mutableStateOf(false) }
         val points = remember { mutableStateOf(listOf<DataPoint>()) }
+        val coroutineScope = rememberCoroutineScope()
         val density = LocalDensity.current
-        Box(Modifier.height(150.dp)) {
-            if (visibility.value) {
-                Surface(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .align(Alignment.BottomCenter)
-                        .onGloballyPositioned {
-                            cardWidth.value = it.size.width
-                        }
-                        .graphicsLayer(translationX = xOffset.value),
-                    shape = RoundedCornerShape(padding8),
-                    color = White
+        if (visibility.value) {
+            Surface(
+                modifier = Modifier
+                    .width(200.dp)
+                    .onGloballyPositioned {
+                        cardWidth.value = it.size.width
+                    }
+                    .graphicsLayer(translationX = xOffset.value),
+                shape = RoundedCornerShape(padding8),
+                color = White
+            ) {
+                Column(
+                    Modifier
+                        .padding(horizontal = 8.dp)
                 ) {
-                    Column(
-                        Modifier
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        val value = points.value
-                        if (value.isNotEmpty()) {
-                            val x = DecimalFormat("#.#").format(value[0].x)
-                            Text(
-                                modifier = Modifier.padding(vertical = 8.dp),
-                                text = "Score at pos $x",
-                                style = MaterialTheme.typography.subtitle1,
-                                color = Black
-                            )
-                            ScoreRow("Humidity", value[1].y, RoomName2Color)
-                            ScoreRow("Temperature", value[0].y, RoomName1Color)
-                        }
+                    val value = points.value
+                    if (value.isNotEmpty()) {
+                        val datePoint =
+                            try {
+                                data[value[0].x.toInt()].localDateTime.format(
+                                    DateFormatter.dateDDMMMMYYYYHHMMSS
+                                )
+                            } catch (e: IndexOutOfBoundsException) {
+                                "Unknown"
+                            }
+                        Text(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            text = "Reading on $datePoint",
+                            style = MaterialTheme.typography.subtitle1,
+                            color = Black
+                        )
+                        ScoreRow("Humidity", value[1].y, RoomName1Color)
+                        ScoreRow("Temperature", value[0].y, signalGood)
                     }
                 }
             }
         }
-        val padding = 16.dp
-        val temperature = lines[0]
-        val humidity = lines[1]
         MaterialTheme(colors = MaterialTheme.colors.copy(surface = AppBackground)) {
             LineGraph(
                 plot = LinePlot(
                     listOf(
                         LinePlot.Line(
-                            humidity,
-                            LinePlot.Connection(RoomName2Color, 2.dp),
-                            LinePlot.Intersection(color = RoomName3Color),
-                            LinePlot.Highlight { center ->
-                                val color = RoomName2Color
+                            dataPoints = temperature,
+                            connection = LinePlot.Connection(signalGood, 2.dp),
+                            intersection = LinePlot.Intersection(color = RoomName3Color),
+                            highlight = LinePlot.Highlight { center ->
+                                val color = signalGood
                                 drawCircle(color, 9.dp.toPx(), center, alpha = 0.3f)
                                 drawCircle(color, 6.dp.toPx(), center)
-                                drawCircle(Color.White, 3.dp.toPx(), center)
+                                drawCircle(Color.Black, 3.dp.toPx(), center)
                             },
                         ),
                         LinePlot.Line(
-                            temperature,
-                            LinePlot.Connection(color = RoomName5Color, 2.dp),
-                            LinePlot.Intersection(color = RoomName7Color),
-                            LinePlot.Highlight { center ->
-                                val color = RoomName1Color
+                            dataPoints = humidity,
+                            connection = LinePlot.Connection(color = signalFull, 1.dp),
+                            intersection = LinePlot.Intersection(color = signalBad),
+                            highlight = LinePlot.Highlight { center ->
+                                val color = signalGood
                                 drawCircle(color, 9.dp.toPx(), center, alpha = 0.3f)
                                 drawCircle(color, 6.dp.toPx(), center)
                                 drawCircle(Color.White, 3.dp.toPx(), center)
                             },
-                            LinePlot.AreaUnderLine(color = GrayOsVersion)
+                            areaUnderLine = LinePlot.AreaUnderLine(color = GrayOsVersion)
                         ),
                     ),
+                    grid = LinePlot.Grid(GrayOsVersion, steps = 8),
+                    xAxis = LinePlot.XAxis(unit = 2f, roundToInt = true),
+                    paddingRight = padding8,
+                    paddingTop = padding8,
                 ),
                 modifier = modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.5f)
-                    .padding(horizontal = padding),
-                onSelectionStart = { visibility.value = true },
-                onSelectionEnd = { visibility.value = false }
-            ) { x, pts ->
-                val cWidth = cardWidth.value.toFloat()
-                var xCenter = x + padding.toPx(density)
-                xCenter = when {
-                    xCenter + cWidth / 2f > totalWidth.value -> totalWidth.value - cWidth
-                    xCenter - cWidth / 2f < 0f -> 0f
-                    else -> xCenter - cWidth / 2f
+                    .fillMaxHeight(0.7f)
+                    .padding(horizontal = padding8),
+                onSelectionStart = {
+                    visibility.value = true
+                },
+                onSelectionEnd = {
+                    visibility.value = false
+                },
+                onSelection = { x, pts ->
+                    val cWidth = cardWidth.value.toFloat()
+                    var xCenter = x + padding8.toPx(density)
+                    xCenter = when {
+                        xCenter + cWidth / 2f > totalWidth.value -> totalWidth.value - cWidth
+                        xCenter - cWidth / 2f < 0f -> 0f
+                        else -> xCenter - cWidth / 2f
+                    }
+                    xOffset.value = xCenter
+                    points.value = pts
+                    coroutineScope.launch {
+                        val value = points.value
+                        listState.animateScrollToItem(index = value[0].x.toInt())
+                    }
                 }
-                xOffset.value = xCenter
-                points.value = pts
-            }
+            )
         }
     }
 }
@@ -152,7 +180,8 @@ private fun ScoreRow(title: String, value: Float, color: Color) {
     ) {
         Row(modifier = Modifier.align(Alignment.CenterStart)) {
             Image(
-                painter = ColorPainter(color), contentDescription = "Line color",
+                painter = ColorPainter(color),
+                contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
                     .padding(end = 4.dp)
@@ -174,69 +203,4 @@ private fun ScoreRow(title: String, value: Float, color: Color) {
             color = Color.DarkGray
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LineGraphWithTextPreview() {
-    LineGraphWithText(
-        listOf(DataPoints.dataPoints1, DataPoints.dataPoints2),
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-object DataPoints {
-    val dataPoints1 = listOf(
-        DataPoint(0f, 0f),
-        DataPoint(1f, 20f),
-        DataPoint(2f, 50f),
-        DataPoint(3f, 10f),
-        DataPoint(4f, 0f),
-        DataPoint(5f, -25f),
-        DataPoint(6f, -75f),
-        DataPoint(7f, -100f),
-        DataPoint(8f, -80f),
-        DataPoint(9f, -75f),
-        DataPoint(10f, -55f),
-        DataPoint(11f, -45f),
-        DataPoint(12f, 50f),
-        DataPoint(13f, 80f),
-        DataPoint(14f, 70f),
-        DataPoint(15f, 125f),
-        DataPoint(16f, 200f),
-        DataPoint(17f, 170f),
-        DataPoint(18f, 135f),
-        DataPoint(19f, 60f),
-        DataPoint(20f, 20f),
-        DataPoint(21f, 40f),
-        DataPoint(22f, 75f),
-        DataPoint(23f, 50f),
-    )
-
-    val dataPoints2 = listOf(
-        DataPoint(0f, 0f),
-        DataPoint(1f, 0f),
-        DataPoint(2f, 25f),
-        DataPoint(3f, 75f),
-        DataPoint(4f, 100f),
-        DataPoint(5f, 80f),
-        DataPoint(6f, 75f),
-        DataPoint(7f, 50f),
-        DataPoint(8f, 80f),
-        DataPoint(9f, 70f),
-        DataPoint(10f, 0f),
-        DataPoint(11f, 0f),
-        DataPoint(12f, 45f),
-        DataPoint(13f, 20f),
-        DataPoint(14f, 40f),
-        DataPoint(15f, 75f),
-        DataPoint(16f, 50f),
-        DataPoint(17f, 75f),
-        DataPoint(18f, 40f),
-        DataPoint(19f, 20f),
-        DataPoint(20f, 0f),
-        DataPoint(21f, 0f),
-        DataPoint(22f, 50f),
-        DataPoint(23f, 25f),
-    )
 }
