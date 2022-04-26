@@ -32,14 +32,19 @@ import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
-import com.untitledkingdom.ueberapp.ui.values.Blue
 import com.untitledkingdom.ueberapp.ui.values.Gray
+import com.untitledkingdom.ueberapp.ui.values.Purple200
+import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
 import com.untitledkingdom.ueberapp.ui.values.SplashPurple
 import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.fontSize18
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
+import com.untitledkingdom.ueberapp.ui.values.signalAlmostDisconnected
+import com.untitledkingdom.ueberapp.ui.values.signalBad
+import com.untitledkingdom.ueberapp.ui.values.signalFull
+import com.untitledkingdom.ueberapp.ui.values.signalGood
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 
 @Composable
@@ -64,8 +69,12 @@ fun DeviceItem(
             Column(
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
-                RowText(key = "Device name", value = scannedDevice.name, colorValue = Gray)
-                RowText(key = "Device address", value = scannedDevice.address, colorValue = Gray)
+                RowText(key = "Device name", value = scannedDevice.name, colorValue = Purple200)
+                RowText(
+                    key = "Device address",
+                    value = scannedDevice.address,
+                    colorValue = RoomName3Color
+                )
                 RowText(
                     key = "Signal strength", value = scannedDevice.rssi.toString(),
                     colorValue = colorRssi(
@@ -109,9 +118,10 @@ private fun signalStrengthRssi(rssi: Int): Painter {
 @Composable
 private fun colorRssi(rssi: Int): Color {
     return when (rssi) {
-        in -40..0 -> Blue
-        in -60..-40 -> Black
-        else -> Gray
+        in -30..-0 -> signalFull
+        in -40..-30 -> signalGood
+        in -60..-40 -> signalBad
+        else -> signalAlmostDisconnected
     }
 }
 
@@ -144,7 +154,7 @@ internal fun RowText(
 }
 
 @Composable
-fun ReadingItem(bleData: BleData) {
+fun ReadingItem(bleData: BleData, action: () -> Unit = { }) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -152,6 +162,7 @@ fun ReadingItem(bleData: BleData) {
         Card(
             modifier = Modifier
                 .clickable {
+                    action()
                 }
                 .fillMaxWidth(),
             shape = shape8,

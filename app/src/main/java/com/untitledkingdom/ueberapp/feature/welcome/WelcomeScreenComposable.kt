@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,7 +28,9 @@ import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
+import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.Typography
+import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
@@ -82,12 +85,24 @@ fun AppInfo(processor: WelcomeProcessor) {
                         WelcomeEvent.RemoveScannedDevices,
                         WelcomeEvent.StartScanning
                     )
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Black,
+                    contentColor = White
+                ),
             ) {
                 Text(text = "Start Scan")
             }
         } else {
-            Button(onClick = { processor.sendEvent(WelcomeEvent.StopScanning) }) {
+            Button(
+                onClick = {
+                    processor.sendEvent(WelcomeEvent.StopScanning)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Black,
+                    contentColor = White
+                ),
+            ) {
                 Text(text = "Stop Scan")
             }
         }

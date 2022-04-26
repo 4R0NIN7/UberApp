@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.madrapps.plot.line.DataPoint
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.main.DividerGray
@@ -38,7 +39,11 @@ fun DetailsScreen(processor: MainProcessor) {
     Scaffold(topBar = {
         Toolbar(
             title = stringResource(R.string.main_close),
-            action = { processor.sendEvent(MainEvent.SetSelectedDate("")) }
+            action = {
+                processor.sendEvent(
+                    MainEvent.SetSelectedDate("")
+                )
+            }
         )
     }) {
         Column(
@@ -50,37 +55,36 @@ fun DetailsScreen(processor: MainProcessor) {
                 .padding(horizontal = padding12)
                 .padding(it)
         ) {
-            Chart(processor = processor)
+            val listState = rememberLazyListState()
+            Chart(processor = processor, listState)
             DividerGray()
-            Readings(processor = processor)
+            Readings(processor = processor, listState)
         }
     }
 }
 
 @Composable
-fun Chart(processor: MainProcessor) {
+fun Chart(processor: MainProcessor, listState: LazyListState) {
     val selectedDate by processor.collectAsState { it.selectedDate }
     val readings by processor.collectAsState {
         it.values.filter { bleData ->
             bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
         }.distinct()
     }
-    val temperaturePoints = readings.map {
-        DataPoint(it.id.toFloat(), it.deviceReading.temperature)
-    }
-    val humidityPoints = readings.map {
-        DataPoint(it.id.toFloat(), it.deviceReading.humidity.toFloat())
-    }
     Column {
         LineGraphWithText(
-            lines = listOf(temperaturePoints, humidityPoints),
-            modifier = Modifier.fillMaxWidth()
+            data = readings,
+            modifier = Modifier.fillMaxWidth(),
+            listState = listState,
         )
     }
 }
 
 @Composable
-fun Readings(processor: MainProcessor) {
+fun Readings(
+    processor: MainProcessor,
+    listState: LazyListState,
+) {
     val selectedDate by processor.collectAsState { it.selectedDate }
     val valuesFilteredBySelectedDate by processor.collectAsState {
         it.values.filter { bleData ->
@@ -92,11 +96,12 @@ fun Readings(processor: MainProcessor) {
             .fillMaxHeight()
             .padding(top = padding16),
         verticalArrangement = Arrangement.spacedBy(padding8),
-        contentPadding = PaddingValues(bottom = padding16)
+        contentPadding = PaddingValues(bottom = padding16),
+        state = listState
     ) {
         items(items = valuesFilteredBySelectedDate) { bleData ->
             ReadingItem(
-                bleData = bleData
+                bleData = bleData,
             )
         }
     }
