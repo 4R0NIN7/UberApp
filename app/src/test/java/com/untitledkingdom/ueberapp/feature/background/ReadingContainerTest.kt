@@ -32,6 +32,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
     private val repository by lazy { mockk<MainRepository>() }
     private val device = mockk<Device>()
     private val mainThreadSurrogate = UnconfinedTestDispatcher()
+    private val deviceReading = mockk<DeviceReading>()
     private val backgroundContainer by lazy {
         ReadingContainer(
             repository = repository,
@@ -51,7 +52,6 @@ class ReadingContainerTest : BaseCoroutineTest() {
         processor = { backgroundContainer.processor },
         given = {
             val utilFunctions = DateConverter
-            val deviceReading = mockk<DeviceReading>()
             mockkObject(utilFunctions)
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
             coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)
@@ -61,6 +61,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
         thenEffects = {
             assertValues(
                 ReadingEffect.StartForegroundService,
+                ReadingEffect.UpdateNotification(deviceReading),
                 ReadingEffect.SendBroadcastToActivity
             )
         }
