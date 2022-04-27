@@ -9,15 +9,15 @@ interface MainPartialState : PartialState<MainState> {
         override fun reduce(oldState: MainState): MainState = oldState.copy(tabIndex = newTabIndex)
     }
 
-    data class SetAdvertisement(val advertisement: Advertisement?, val isPreparing: Boolean) :
+    data class SetAdvertisement(val advertisement: Advertisement?) :
         MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(advertisement = advertisement, isPreparing = false)
+            oldState.copy(advertisement = advertisement)
     }
 
-    data class SetValues(val values: List<BleData>, val isPreparing: Boolean) : MainPartialState {
+    data class SetValues(val values: List<BleData>) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(values = values, isPreparing = isPreparing)
+            oldState.copy(values = values)
     }
 
     data class SetSelectedDate(val selectedDate: String) : MainPartialState {

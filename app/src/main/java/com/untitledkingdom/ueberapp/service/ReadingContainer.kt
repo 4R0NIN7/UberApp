@@ -35,6 +35,7 @@ class ReadingContainer @Inject constructor(
     )
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
+        repository.stop()
         effects.send(ReadingEffect.Stop)
     }
 
@@ -54,15 +55,14 @@ class ReadingContainer @Inject constructor(
         effects: EffectsCollector<ReadingEffect>,
     ) {
         try {
+            effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
-            effects.send(ReadingEffect.StartForegroundService)
             device.observationOnDataCharacteristic().collect { reading ->
                 repository.saveData(
                     deviceReading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
-                effects.send(ReadingEffect.UpdateNotification(reading))
-                effects.send(ReadingEffect.SendBroadcastToActivity)
+                effects.send(ReadingEffect.StartNotifying(reading))
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Service cannot connect to device!")

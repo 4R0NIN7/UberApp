@@ -11,6 +11,7 @@ import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.CoroutineScope
@@ -60,9 +61,8 @@ class ReadingContainerTest : BaseCoroutineTest() {
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
             assertValues(
-                ReadingEffect.StartForegroundService,
-                ReadingEffect.UpdateNotification(deviceReading),
-                ReadingEffect.SendBroadcastToActivity
+                ReadingEffect.SendBroadcastToActivity,
+                ReadingEffect.StartNotifying(deviceReading),
             )
         }
     )
@@ -72,6 +72,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
         processor = { backgroundContainer.processor },
         given = {
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
+            every { repository.stop() } returns Unit
         },
         whenEvent = ReadingEvent.StopReading,
         thenEffects = {
