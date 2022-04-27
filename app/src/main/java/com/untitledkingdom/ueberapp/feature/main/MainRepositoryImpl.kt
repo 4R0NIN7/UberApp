@@ -15,7 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -81,23 +81,21 @@ class MainRepositoryImpl @Inject constructor(
     }
 
     override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
-        flow {
-            database.getDao().getAllDataFlow().distinctUntilChanged().collect { data ->
-                if (isFirstTime) {
-                    sendData(data)
-                    lastIdSent = data.last().id
-                    isFirstTime = false
-                }
-                if (lastIdSent + 19 == data.last().id) {
-                    sendData(
-                        data.filter {
-                            it.id in lastIdSent..data.last().id
-                        }
-                    )
-                    lastIdSent = data.last().id
-                }
-                emit(RepositoryStatus.SuccessBleData(data))
+        database.getDao().getAllDataFlow().distinctUntilChanged().map { data ->
+            if (isFirstTime) {
+                sendData(data)
+                lastIdSent = data.last().id
+                isFirstTime = false
             }
+            if (lastIdSent + 19 == data.last().id) {
+                sendData(
+                    data.filter {
+                        it.id in lastIdSent..data.last().id
+                    }
+                )
+                lastIdSent = data.last().id
+            }
+            RepositoryStatus.SuccessBleData(data)
         }
 
     override fun clear() {
