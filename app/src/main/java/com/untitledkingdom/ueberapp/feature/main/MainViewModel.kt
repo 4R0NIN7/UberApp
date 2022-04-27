@@ -62,13 +62,12 @@ class MainViewModel @Inject constructor(
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
-        repository.clear()
         dataStorage.saveToStorage(DataStorageConst.MAC_ADDRESS, "")
         effects.send(MainEffect.GoToWelcome)
     }
 
     private fun collectDataFromDataBase(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
-        repository.getDataFromDataBaseAsFlow(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
+        repository.getDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
             .map { status ->
                 when (status) {
                     RepositoryStatus.Error ->
@@ -76,7 +75,7 @@ class MainViewModel @Inject constructor(
                             .send(MainEffect.ShowError("Error during collecting data from DB"))
                             .let { NoAction() }
                     is RepositoryStatus.SuccessBleData -> {
-                        MainPartialState.SetValues(status.data, isPreparing = false)
+                        MainPartialState.SetValues(status.data)
                     }
                 }
             }
@@ -90,25 +89,20 @@ class MainViewModel @Inject constructor(
                     is ScanStatus.Failed -> effects.send(MainEffect.ShowError(status.message as String))
                         .let { NoAction() }
                     is ScanStatus.Found -> setAdvertisementPartial(
-                        status.advertisement,
-                        isPreparing = false
+                        status.advertisement
                     )
                     ScanStatus.Scanning -> setIsScanningPartial(true)
                     ScanStatus.Stopped -> setIsScanningPartial(false)
                 }
             }
 
-    @Suppress("SameParameterValue")
     private fun setAdvertisementPartial(
-        advertisement: Advertisement,
-        isPreparing: Boolean
-    ): MainPartialState {
-        return MainPartialState.SetAdvertisement(advertisement, isPreparing)
-    }
+        advertisement: Advertisement
+    ): MainPartialState =
+        MainPartialState.SetAdvertisement(advertisement)
 
-    private fun setIsScanningPartial(isScanning: Boolean): MainPartialState {
-        return MainPartialState.SetIsScanning(isScanning)
-    }
+    private fun setIsScanningPartial(isScanning: Boolean): MainPartialState =
+        MainPartialState.SetIsScanning(isScanning)
 
     override fun onCleared() {
         super.onCleared()

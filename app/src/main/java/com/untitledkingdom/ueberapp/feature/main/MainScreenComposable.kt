@@ -167,8 +167,9 @@ fun Tabs(processor: MainProcessor) {
                 AppBackground,
             )
         ) {
-            val isPreparing by processor.collectAsState { it.isPreparing }
-            if (!isPreparing) {
+            val values by processor.collectAsState { it.values }
+            val advertisement by processor.collectAsState { it.advertisement }
+            if (advertisement != null && values.isNotEmpty()) {
                 when (tabIndex) {
                     0 -> {
                         processor.sendEvent(MainEvent.TabChanged(0))

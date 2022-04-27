@@ -44,7 +44,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
-            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     listOf()
                 )
@@ -52,7 +52,7 @@ class MainViewModelTest : BaseCoroutineTest() {
         },
         thenStates = {
             assertLast(
-                MainState(isPreparing = false, advertisement = advertisement)
+                MainState(advertisement = advertisement)
             )
         }
     )
@@ -67,7 +67,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     listOf()
                 )
@@ -79,7 +79,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    isPreparing = false
                 )
             )
         }
@@ -95,7 +94,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     listOf()
                 )
@@ -105,8 +104,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             assertLast(
                 MainState(
                     advertisement = advertisement,
-                    values = listOf(),
-                    isPreparing = false
+                    values = listOf()
                 )
             )
         }
@@ -122,7 +120,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.Error
             )
         },
@@ -140,7 +138,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
-            coEvery { repository.getDataFromDataBaseAsFlow(any()) } returns flowOf(
+            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     listOf()
                 )
@@ -148,7 +146,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { kableService.stopScan() } returns Unit
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
-            coEvery { repository.clear() } returns Unit
+            coEvery { repository.stop() } returns Unit
         },
         whenEvent = MainEvent.EndConnectingToDevice,
         thenEffects = {

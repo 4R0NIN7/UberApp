@@ -32,22 +32,6 @@ class MainRepositoryImpl @Inject constructor(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private var lastIdSent = 0
     private var isFirstTime = true
-    override suspend fun getData(serviceUUID: String): List<BleData> {
-        val data = database
-            .getDao()
-            .getAllData()
-            .filter { it.serviceUUID == serviceUUID }
-        if (lastIdSent + 19 == data.last().id) {
-            sendData(
-                data.filter {
-                    it.id in lastIdSent..data.last().id
-                }
-            )
-            isFirstTime = false
-            lastIdSent = data.last().id
-        }
-        return data
-    }
 
     override suspend fun wipeData() {
         database.getDao().wipeData()
@@ -70,6 +54,26 @@ class MainRepositoryImpl @Inject constructor(
         }
     }
 
+    private suspend fun sendDataToServer(serviceUUID: String) {
+        val data = database
+            .getDao()
+            .getAllData()
+            .filter { it.serviceUUID == serviceUUID }
+        if (isFirstTime) {
+            sendData(data)
+            lastIdSent = data.last().id
+            isFirstTime = false
+        }
+        if (lastIdSent + 19 == data.last().id) {
+            sendData(
+                data.filter {
+                    it.id in lastIdSent..data.last().id
+                }
+            )
+            lastIdSent = data.last().id
+        }
+    }
+
     override suspend fun saveData(serviceUUID: String, deviceReading: DeviceReading) {
         val now = timeManager.provideCurrentLocalDateTime()
         val bleData = BleData(
@@ -78,27 +82,15 @@ class MainRepositoryImpl @Inject constructor(
             serviceUUID = serviceUUID,
         )
         database.getDao().saveData(data = bleData)
+        sendDataToServer(serviceUUID)
     }
 
-    override fun getDataFromDataBaseAsFlow(serviceUUID: String): Flow<RepositoryStatus> =
+    override fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
         database.getDao().getAllDataFlow().distinctUntilChanged().map { data ->
-            if (isFirstTime) {
-                sendData(data)
-                lastIdSent = data.last().id
-                isFirstTime = false
-            }
-            if (lastIdSent + 19 == data.last().id) {
-                sendData(
-                    data.filter {
-                        it.id in lastIdSent..data.last().id
-                    }
-                )
-                lastIdSent = data.last().id
-            }
             RepositoryStatus.SuccessBleData(data)
         }
 
-    override fun clear() {
+    override fun stop() {
         scope.cancel()
     }
 }
