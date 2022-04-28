@@ -27,6 +27,7 @@ import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.LineGraphWithText
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.Toolbar
+import com.untitledkingdom.ueberapp.ui.common.isSynchronized
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
@@ -91,6 +92,8 @@ fun Readings(
             bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
         }.distinct()
     }
+    val firstIdSend by processor.collectAsState { it.firstIdSend }
+    val lastIdSend by processor.collectAsState { it.lastIdSend }
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -102,6 +105,11 @@ fun Readings(
         items(items = valuesFilteredBySelectedDate) { bleData ->
             ReadingItem(
                 bleData = bleData,
+                isSynchronized = isSynchronized(
+                    firstIdSend = firstIdSend,
+                    lastIdSend = lastIdSend,
+                    id = bleData.id
+                )
             )
         }
     }

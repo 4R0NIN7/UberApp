@@ -32,6 +32,8 @@ class MainViewModelTest : BaseCoroutineTest() {
         )
     }
     private val advertisement = mockk<Advertisement>()
+    private val firstIdSend = 1
+    private val lastIdSend = 100
 
     @Test
     fun `initial state`() = processorTest(
@@ -49,10 +51,20 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
+            coEvery { repository.firstIdSent } returns flowOf(
+                firstIdSend
+            )
+            coEvery { repository.lastIdSent } returns flowOf(
+                lastIdSend
+            )
         },
         thenStates = {
             assertLast(
-                MainState(advertisement = advertisement)
+                MainState(
+                    advertisement = advertisement,
+                    firstIdSend = firstIdSend,
+                    lastIdSend = lastIdSend
+                )
             )
         }
     )
@@ -93,6 +105,12 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
+            coEvery { repository.firstIdSent } returns flowOf(
+                firstIdSend
+            )
+            coEvery { repository.lastIdSent } returns flowOf(
+                lastIdSend
+            )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
@@ -104,7 +122,9 @@ class MainViewModelTest : BaseCoroutineTest() {
             assertLast(
                 MainState(
                     advertisement = advertisement,
-                    values = listOf()
+                    values = listOf(),
+                    firstIdSend = firstIdSend,
+                    lastIdSend = lastIdSend
                 )
             )
         }
@@ -122,6 +142,12 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.Error
+            )
+            coEvery { repository.firstIdSent } returns flowOf(
+                firstIdSend
+            )
+            coEvery { repository.lastIdSent } returns flowOf(
+                lastIdSend
             )
         },
         thenEffects = {

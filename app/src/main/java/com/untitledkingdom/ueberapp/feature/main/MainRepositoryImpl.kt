@@ -14,6 +14,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -30,11 +31,26 @@ class MainRepositoryImpl @Inject constructor(
     @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : MainRepository {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
-    private var lastIdSent = 0
+    private val _firstIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val _lastIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
     private var isFirstTime = true
+
+    override val firstIdSent: Flow<Int>
+        get() = _firstIdSent
+
+    override val lastIdSent: Flow<Int>
+        get() = _lastIdSent
 
     override suspend fun wipeData() {
         database.getDao().wipeData()
+    }
+
+    private fun setLastId(newId: Int) {
+        _lastIdSent.value = newId
+    }
+
+    private fun setFirstId(newId: Int) {
+        _firstIdSent.value = newId
     }
 
     private fun sendData(data: List<BleData>) {
@@ -45,6 +61,7 @@ class MainRepositoryImpl @Inject constructor(
                 val response = apiService.sendDataToService(bleData = data)
                 if (response.isSuccessful) {
                     Timber.d("Data sent!")
+                    setLastId(data.last().id)
                 } else {
                     throw Exception()
                 }
@@ -61,16 +78,15 @@ class MainRepositoryImpl @Inject constructor(
             .filter { it.serviceUUID == serviceUUID }
         if (isFirstTime) {
             sendData(data)
-            lastIdSent = data.last().id
             isFirstTime = false
+            setFirstId(data.first().id)
         }
-        if (lastIdSent + 19 == data.last().id) {
+        if (_lastIdSent.value + 19 == data.last().id) {
             sendData(
                 data.filter {
-                    it.id in lastIdSent..data.last().id
+                    it.id in _lastIdSent.value..data.last().id
                 }
             )
-            lastIdSent = data.last().id
         }
     }
 
