@@ -34,7 +34,7 @@ import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.GrayOsVersion
-import com.untitledkingdom.ueberapp.ui.values.RoomName1Color
+import com.untitledkingdom.ueberapp.ui.values.PurpleRed
 import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
 import com.untitledkingdom.ueberapp.ui.values.White
 import com.untitledkingdom.ueberapp.ui.values.padding8
@@ -101,7 +101,7 @@ internal fun LineGraphWithText(
                             style = MaterialTheme.typography.subtitle1,
                             color = Black
                         )
-                        ScoreRow("Humidity", value[1].y, RoomName1Color)
+                        ScoreRow("Humidity", value[1].y, PurpleRed)
                         ScoreRow("Temperature", value[0].y, signalGood)
                     }
                 }

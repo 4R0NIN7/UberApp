@@ -8,5 +8,7 @@ data class MainState(
     val tabIndex: Int = 0,
     val isScanning: Boolean = false,
     val advertisement: Advertisement? = null,
-    val values: List<BleData> = listOf()
+    val values: List<BleData> = listOf(),
+    val firstIdSend: Int = 0,
+    val lastIdSend: Int = 0
 )

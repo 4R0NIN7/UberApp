@@ -50,6 +50,7 @@ import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
+import com.untitledkingdom.ueberapp.ui.common.isSynchronized
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackTitle
@@ -399,7 +400,11 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
     val values by processor.collectAsState { it.values }
+    val firstIdSend by processor.collectAsState { it.firstIdSend }
+    val lastIdSend by processor.collectAsState { it.lastIdSend }
+    Timber.d("First id send $firstIdSend\nLast id send $lastIdSend")
     if (values.isNotEmpty()) {
+        val lastReading = values.last()
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(padding24)
@@ -410,7 +415,14 @@ fun ActualReading(processor: MainProcessor) = Column {
                 fontWeight = FontWeight.SemiBold,
                 color = BlackTitle,
             )
-            ReadingItem(bleData = values.last())
+            ReadingItem(
+                bleData = lastReading,
+                isSynchronized = isSynchronized(
+                    firstIdSend = firstIdSend,
+                    lastIdSend = lastIdSend,
+                    id = lastReading.id
+                )
+            )
         }
     } else {
         Text(

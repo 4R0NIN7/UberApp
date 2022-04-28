@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -34,6 +35,7 @@ import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.Gray
 import com.untitledkingdom.ueberapp.ui.values.Purple200
+import com.untitledkingdom.ueberapp.ui.values.PurpleRed
 import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
 import com.untitledkingdom.ueberapp.ui.values.SplashPurple
 import com.untitledkingdom.ueberapp.ui.values.Typography
@@ -154,17 +156,16 @@ internal fun RowText(
 }
 
 @Composable
-fun ReadingItem(bleData: BleData, action: () -> Unit = { }) {
+fun ReadingItem(
+    bleData: BleData,
+    isSynchronized: Boolean
+) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Card(
-            modifier = Modifier
-                .clickable {
-                    action()
-                }
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             shape = shape8,
             border = null,
             backgroundColor = AppBackground
@@ -187,6 +188,34 @@ fun ReadingItem(bleData: BleData, action: () -> Unit = { }) {
                     value = bleData.deviceReading.humidity.toString(),
                     colorValue = Gray
                 )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .padding(padding8)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Synchronized ",
+                        style = Typography.body1,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = fontSize18,
+                        color = Black
+                    )
+                    if (isSynchronized) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_baseline_beenhere_24),
+                            contentDescription = null,
+                            tint = signalFull
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_baseline_do_not_disturb_alt_24),
+                            contentDescription = null,
+                            tint = PurpleRed
+                        )
+                    }
+                }
             }
         }
     }
@@ -246,3 +275,9 @@ fun LoadingDialog() {
         }
     }
 }
+
+fun isSynchronized(
+    firstIdSend: Int,
+    lastIdSend: Int,
+    id: Int
+): Boolean = id in firstIdSend..lastIdSend
