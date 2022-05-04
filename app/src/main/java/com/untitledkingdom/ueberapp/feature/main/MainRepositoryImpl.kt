@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
@@ -31,6 +32,8 @@ class MainRepositoryImpl @Inject constructor(
     @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher
 ) : MainRepository {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val incrementer = AtomicInteger(1)
+    private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
     private val _firstIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
     private val _lastIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
     private var isFirstTime = true
@@ -67,6 +70,7 @@ class MainRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.d("Unable to send data!")
+                incrementer.incrementAndGet()
             }
         }
     }
@@ -77,11 +81,11 @@ class MainRepositoryImpl @Inject constructor(
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
         if (isFirstTime) {
-            sendData(data)
             isFirstTime = false
             setFirstId(data.first().id)
+            setLastId(apiService.getLastSynchronizedReading())
         }
-        if (_lastIdSent.value + 19 == data.last().id) {
+        if (_lastIdSent.value + numberOfTries == data.last().id) {
             sendData(
                 data.filter {
                     it.id in _lastIdSent.value..data.last().id

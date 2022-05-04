@@ -34,7 +34,6 @@ class MainViewModelTest : BaseCoroutineTest() {
     private val advertisement = mockk<Advertisement>()
     private val firstIdSend = 1
     private val lastIdSend = 100
-
     @Test
     fun `initial state`() = processorTest(
         processor = { viewModel.processor },
@@ -84,6 +83,8 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
+            coEvery { repository.firstIdSent } returns flowOf(firstIdSend)
+            coEvery { repository.lastIdSent } returns flowOf(lastIdSend)
         },
         whenEvent = MainEvent.StartScanning,
         thenStates = {
@@ -91,6 +92,8 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
+                    firstIdSend = firstIdSend,
+                    lastIdSend = lastIdSend
                 )
             )
         }
@@ -168,6 +171,12 @@ class MainViewModelTest : BaseCoroutineTest() {
                 RepositoryStatus.SuccessBleData(
                     listOf()
                 )
+            )
+            coEvery { repository.firstIdSent } returns flowOf(
+                firstIdSend
+            )
+            coEvery { repository.lastIdSent } returns flowOf(
+                lastIdSend
             )
             coEvery { kableService.stopScan() } returns Unit
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
