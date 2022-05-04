@@ -70,6 +70,7 @@ class MainRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.d("Unable to send data!")
+                incrementer.incrementAndGet()
             }
         }
     }
@@ -80,10 +81,9 @@ class MainRepositoryImpl @Inject constructor(
             .getAllData()
             .filter { it.serviceUUID == serviceUUID }
         if (isFirstTime) {
-            sendData(data)
             isFirstTime = false
             setFirstId(data.first().id)
-            setLastId(data.last().id)
+            setLastId(apiService.getLastSynchronizedReading())
         }
         if (_lastIdSent.value + numberOfTries == data.last().id) {
             sendData(

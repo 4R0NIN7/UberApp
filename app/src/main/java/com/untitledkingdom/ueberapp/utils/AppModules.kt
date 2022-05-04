@@ -58,7 +58,7 @@ object AppModules {
 
     @Provides
     @Singleton
-    fun provideRestApiClient(): ApiService {
+    fun provideRestApiClient(database: Database): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -68,7 +68,7 @@ object AppModules {
             .baseUrl(BuildConfig.URL)
             .build()
         // return retrofit.create(ApiService::class.java)
-        return FakeApi()
+        return FakeApi(database)
     }
 
     private fun getMockRetrofitClient(): OkHttpClient {
