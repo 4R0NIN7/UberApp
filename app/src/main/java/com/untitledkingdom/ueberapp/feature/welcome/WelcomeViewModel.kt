@@ -48,6 +48,7 @@ class WelcomeViewModel @Inject constructor(
                         effects
                     )
                 WelcomeEvent.StopScanning -> {
+                    Timber.d("StopScanning viewModel")
                     scanService.stopScan().toNoAction()
                 }
                 is WelcomeEvent.SetScanningTo -> flowOf(
@@ -60,7 +61,7 @@ class WelcomeViewModel @Inject constructor(
                     )
                 }
                 WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveAdvertisements)
-                is WelcomeEvent.SetIsClickable -> flowOf(WelcomePartialState.SetIsClickable(event.isClickable))
+                is WelcomeEvent.SetIsClickable -> flowOf(setIsClickablePartial(event.isClickable))
                 WelcomeEvent.StartService -> startService(effects).toNoAction()
             }
         }
@@ -76,7 +77,7 @@ class WelcomeViewModel @Inject constructor(
         effects: EffectsCollector<WelcomeEffect>,
         advertisement: Advertisement
     ): Flow<WelcomePartialState> = flow {
-        emit(WelcomePartialState.SetIsClickable(true))
+        emit(setIsClickablePartial(true))
         try {
             val peripheral = scanService.returnPeripheral(
                 advertisement = advertisement,
@@ -105,6 +106,9 @@ class WelcomeViewModel @Inject constructor(
             is ScanStatus.Failed -> effects.send(WelcomeEffect.ShowError(status.message as String))
                 .let { NoAction() }
             ScanStatus.Stopped -> setIsScanningPartial(false)
+            ScanStatus.Omit -> {
+                NoAction()
+            }
         }
     }
 

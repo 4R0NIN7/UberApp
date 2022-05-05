@@ -10,11 +10,10 @@ import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
-import timber.log.Timber
 import javax.inject.Inject
 
 class ScanServiceImpl @Inject constructor() : ScanService {
@@ -27,66 +26,53 @@ class ScanServiceImpl @Inject constructor() : ScanService {
         }
     }
     private var isScanning = true
-    override fun scan(): Flow<ScanStatus> = flow {
-        scanner
-            .advertisements
-            .catch { cause ->
-                emit(
-                    ScanStatus.Failed(
-                        cause.message ?: "Error during scanning!"
-                    )
-                )
-            }
-            .collect { advertisement ->
-                if (advertisement.name != null) {
-                    emit(
-                        ScanStatus.Found(
-                            advertisement = advertisement
-                        )
-                    )
-                }
-            }
-    }.onStart {
-        emit(ScanStatus.Scanning)
-        isScanning = true
-    }.takeWhile {
-        isScanning
-    }.onCompletion {
-        emit(ScanStatus.Stopped)
-        isScanning = true
-    }
 
-    override fun refreshDeviceInfo(macAddress: String): Flow<ScanStatus> = flow {
+    override fun scan(): Flow<ScanStatus> =
         scanner
             .advertisements
             .catch { cause ->
-                emit(
-                    ScanStatus.Failed(
-                        cause.message ?: "Error during scanning!"
-                    )
+                ScanStatus.Failed(
+                    cause.message ?: "Error during scanning!"
+                )
+            }.map { advertisement ->
+                if (!advertisement.name.isNullOrEmpty()) {
+                    ScanStatus.Found(advertisement = advertisement)
+                } else {
+                    ScanStatus.Omit
+                }
+            }.onStart {
+                isScanning = true
+                emit(ScanStatus.Scanning)
+            }.takeWhile {
+                isScanning
+            }.onCompletion {
+                emit(ScanStatus.Stopped)
+            }
+
+    override fun refreshDeviceInfo(macAddress: String): Flow<ScanStatus> =
+        scanner
+            .advertisements
+            .catch { cause ->
+                ScanStatus.Failed(
+                    cause.message ?: "Error during scanning!"
                 )
             }
-            .collect { advertisement ->
+            .map { advertisement ->
                 if (advertisement.address == macAddress) {
-                    emit(
-                        ScanStatus.Found(
-                            advertisement = advertisement
-                        )
-                    )
+                    ScanStatus.Found(advertisement = advertisement)
+                } else {
+                    ScanStatus.Omit
                 }
+            }.onStart {
+                emit(ScanStatus.Scanning)
+                isScanning = true
+            }.takeWhile {
+                isScanning
+            }.onCompletion {
+                emit(ScanStatus.Stopped)
             }
-    }.onStart {
-        emit(ScanStatus.Scanning)
-        isScanning = true
-    }.takeWhile {
-        isScanning
-    }.onCompletion {
-        emit(ScanStatus.Stopped)
-        isScanning = true
-    }
 
     override fun stopScan() {
-        Timber.d("Stopping scanning")
         isScanning = false
     }
 

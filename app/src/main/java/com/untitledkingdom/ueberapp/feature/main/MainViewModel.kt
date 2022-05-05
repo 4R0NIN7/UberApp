@@ -106,6 +106,9 @@ class MainViewModel @Inject constructor(
                     )
                     ScanStatus.Scanning -> setIsScanningPartial(true)
                     ScanStatus.Stopped -> setIsScanningPartial(false)
+                    ScanStatus.Omit -> {
+                        NoAction()
+                    }
                 }
             }
 

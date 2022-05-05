@@ -402,7 +402,6 @@ fun ActualReading(processor: MainProcessor) = Column {
     val values by processor.collectAsState { it.values }
     val firstIdSend by processor.collectAsState { it.firstIdSend }
     val lastIdSend by processor.collectAsState { it.lastIdSend }
-    Timber.d("First id send $firstIdSend\nLast id send $lastIdSend")
     if (values.isNotEmpty()) {
         val lastReading = values.last()
         Column(

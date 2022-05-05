@@ -3,6 +3,7 @@ package com.untitledkingdom.ueberapp.scanner.data
 import com.juul.kable.Advertisement
 
 sealed class ScanStatus {
+    object Omit : ScanStatus()
     object Stopped : ScanStatus()
     object Scanning : ScanStatus()
     data class Found(val advertisement: Advertisement) : ScanStatus()
