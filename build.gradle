@@ -15,7 +15,7 @@ buildscript {
         hilt_lifecycle_viewModel_version = '1.0.0-alpha03'
         navigation_compose_version = '2.5.0-alpha04'
         app_compat_version = '1.4.1'
-        material_version = '1.5.0'
+        material_version = '1.6.0'
         auth_services_version = '20.1.0'
         runtime_ktx_version = '2.4.1'
         activity_compose_version = '1.4.0'
@@ -33,7 +33,7 @@ buildscript {
         moshi_converter_version = '2.9.0'
         logging_version = '4.2.1'
         okhttp3_version = '4.7.2'
-        kable_version = '0.16.1'
+        kable_version = '0.17.0'
         work_version = "2.7.1"
         pager_version = '0.24.6-alpha'
         plot_version = '0.1.2'
