@@ -44,8 +44,8 @@ class MainRepositoryImpl @Inject constructor(
     override val lastIdSent: Flow<Int>
         get() = _lastIdSent
 
-    override suspend fun wipeData() {
-        database.getDao().wipeData()
+    override suspend fun wipeData(serviceUUID: String) {
+        database.getDao().wipeData(serviceUUID)
     }
 
     private fun setLastId(newId: Int) {
@@ -106,7 +106,7 @@ class MainRepositoryImpl @Inject constructor(
     }
 
     override fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
-        database.getDao().getAllDataFlow().distinctUntilChanged().map { data ->
+        database.getDao().getAllDataFlow(serviceUUID).distinctUntilChanged().map { data ->
             RepositoryStatus.SuccessBleData(data)
         }
 

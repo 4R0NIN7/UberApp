@@ -24,7 +24,6 @@ import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import timber.log.Timber
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -45,7 +44,6 @@ class MainActivity : AppCompatActivity() {
     private val serviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ReadingService.INTENT_MESSAGE_FROM_SERVICE) {
-                Timber.d("Got message from service!")
                 navigateToMainFragment(Intent(ReadingService.ACTION_SHOW_MAIN_FRAGMENT))
             }
         }
@@ -143,20 +141,14 @@ class MainActivity : AppCompatActivity() {
 
     private var requestBluetooth =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                Timber.d("Bluetooth enabled")
-                restart()
-            } else {
+            if (result.resultCode != RESULT_OK) {
                 restart()
             }
         }
 
     private var requestGps =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                Timber.d("Gps enabled")
-                restart()
-            } else {
+            if (result.resultCode != RESULT_OK) {
                 restart()
             }
         }
