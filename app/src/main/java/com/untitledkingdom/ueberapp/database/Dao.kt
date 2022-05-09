@@ -12,11 +12,14 @@ interface Dao {
     @Query("SELECT * from ${DatabaseConst.TABLE}")
     suspend fun getAllData(): List<BleData>
 
-    @Query("SELECT * from ${DatabaseConst.TABLE}")
-    fun getAllDataFlow(): Flow<List<BleData>>
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
+    fun getAllDataFlow(serviceUUID: String): Flow<List<BleData>>
 
     @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :id")
     suspend fun getData(id: Int): BleData
+
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :serviceUUID ORDER BY ID DESC LIMIT 1")
+    fun getLastBleData(serviceUUID: String): Flow<BleData>
 
     @Insert(onConflict = REPLACE)
     suspend fun saveData(data: BleData)
@@ -24,6 +27,6 @@ interface Dao {
     @Insert(onConflict = REPLACE)
     suspend fun saveAllData(dataList: List<BleData>)
 
-    @Query("DELETE from ${DatabaseConst.TABLE}")
-    suspend fun wipeData()
+    @Query("DELETE from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
+    suspend fun wipeData(serviceUUID: String)
 }
