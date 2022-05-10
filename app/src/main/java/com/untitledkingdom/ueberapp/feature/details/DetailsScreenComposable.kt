@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.data.BleData
 import com.untitledkingdom.ueberapp.feature.main.DividerGray
 import com.untitledkingdom.ueberapp.feature.main.MainProcessor
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -57,21 +58,21 @@ fun DetailsScreen(processor: MainProcessor) {
                 .padding(it)
         ) {
             val listState = rememberLazyListState()
-            Chart(processor = processor, listState)
+            val selectedDate by processor.collectAsState { state -> state.selectedDate }
+            val readings by processor.collectAsState { state ->
+                state.values.filter { bleData ->
+                    bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
+                }.distinct().sortedBy { data -> data.id }
+            }
+            Chart(listState, readings)
             DividerGray()
-            Readings(processor = processor, listState)
+            Readings(processor = processor, listState, readings)
         }
     }
 }
 
 @Composable
-fun Chart(processor: MainProcessor, listState: LazyListState) {
-    val selectedDate by processor.collectAsState { it.selectedDate }
-    val readings by processor.collectAsState {
-        it.values.filter { bleData ->
-            bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }.distinct()
-    }
+fun Chart(listState: LazyListState, readings: List<BleData>) {
     Column {
         LineGraphWithText(
             data = readings,
@@ -85,13 +86,8 @@ fun Chart(processor: MainProcessor, listState: LazyListState) {
 fun Readings(
     processor: MainProcessor,
     listState: LazyListState,
+    readings: List<BleData>
 ) {
-    val selectedDate by processor.collectAsState { it.selectedDate }
-    val valuesFilteredBySelectedDate by processor.collectAsState {
-        it.values.filter { bleData ->
-            bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }.distinct()
-    }
     val firstIdSend by processor.collectAsState { it.firstIdSend }
     val lastIdSend by processor.collectAsState { it.lastIdSend }
     LazyColumn(
@@ -102,7 +98,7 @@ fun Readings(
         contentPadding = PaddingValues(bottom = padding16),
         state = listState
     ) {
-        items(items = valuesFilteredBySelectedDate) { bleData ->
+        items(items = readings) { bleData ->
             ReadingItem(
                 bleData = bleData,
                 isSynchronized = isSynchronized(
