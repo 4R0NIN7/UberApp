@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -107,7 +108,14 @@ class MainRepositoryImpl @Inject constructor(
 
     override fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
         database.getDao().getAllDataFlow(serviceUUID).distinctUntilChanged().map { data ->
+            RepositoryStatus.SuccessGetListBleData(data)
+        }
+
+    override fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
+        database.getDao().getLastBleData(serviceUUID).map { data ->
             RepositoryStatus.SuccessBleData(data)
+        }.catch {
+            emit(RepositoryStatus.SuccessBleData(data = null))
         }
 
     override fun stop() {

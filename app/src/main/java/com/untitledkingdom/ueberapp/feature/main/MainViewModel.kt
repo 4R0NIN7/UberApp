@@ -25,9 +25,11 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.takeWhile
 import javax.inject.Inject
 
 typealias MainProcessor = Processor<MainEvent, MainState, MainEffect>
@@ -41,14 +43,15 @@ class MainViewModel @Inject constructor(
     private val dataStorage: DataStorage,
     private val scanService: ScanService,
 ) : ViewModel() {
+    private var isCollectingData = true
     val processor: MainProcessor = processor(
         initialState = MainState(),
         prepare = {
             merge(
                 refreshDeviceInfo(effects),
-                collectDataFromDataBase(effects),
                 prepareFirstId(),
-                prepareLastId()
+                prepareLastId(),
+                getLastData()
             )
         },
         onEvent = { event ->
@@ -59,9 +62,27 @@ class MainViewModel @Inject constructor(
                 MainEvent.StartScanning -> refreshDeviceInfo(
                     effects = effects
                 )
+                MainEvent.StartCollectingData -> {
+                    isCollectingData = true
+                    collectDataFromDataBase(effects)
+                }
+                MainEvent.StopCollectingData -> stopCollectingData()
             }
         }
     )
+
+    private fun stopCollectingData(): Flow<MainPartialState> = flow {
+        isCollectingData = false
+        emit(MainPartialState.SetValues(listOf()))
+    }
+
+    private fun getLastData(): Flow<PartialState<MainState>> = repository
+        .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(lastBleData = status.data)
+                else -> NoAction()
+            }
+        }
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
@@ -73,14 +94,17 @@ class MainViewModel @Inject constructor(
         repository.getDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
             .map { status ->
                 when (status) {
-                    RepositoryStatus.Error ->
-                        effects
-                            .send(MainEffect.ShowError("Error during collecting data from DB"))
+                    RepositoryStatus.Error -> {
+                        effects.send(MainEffect.ShowError("Error during collecting data from DB"))
                             .let { NoAction() }
-                    is RepositoryStatus.SuccessBleData -> {
+                    }
+                    is RepositoryStatus.SuccessGetListBleData -> {
                         MainPartialState.SetValues(status.data)
                     }
+                    else -> NoAction()
                 }
+            }.takeWhile {
+                isCollectingData
             }
 
     private fun prepareLastId(): Flow<PartialState<MainState>> =

@@ -168,15 +168,19 @@ fun Tabs(processor: MainProcessor) {
                 AppBackground,
             )
         ) {
-            val values by processor.collectAsState { it.values }
+            val lastData by processor.collectAsState { it.lastData }
             val advertisement by processor.collectAsState { it.advertisement }
-            if (advertisement != null && values.isNotEmpty()) {
+            if (advertisement != null && lastData != null) {
                 when (tabIndex) {
                     0 -> {
-                        processor.sendEvent(MainEvent.TabChanged(0))
+                        processor.sendEvent(MainEvent.TabChanged(0), MainEvent.StopCollectingData)
                         MainScreen(processor)
                     }
                     1 -> {
+                        val values by processor.collectAsState { it.values }
+                        if (values.isEmpty()) {
+                            processor.sendEvent(MainEvent.StartCollectingData)
+                        }
                         processor.sendEvent(MainEvent.TabChanged(1))
                         HistoryScreen(processor)
                     }
@@ -399,11 +403,10 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
-    val values by processor.collectAsState { it.values }
+    val lastData by processor.collectAsState { it.lastData }
     val firstIdSend by processor.collectAsState { it.firstIdSend }
     val lastIdSend by processor.collectAsState { it.lastIdSend }
-    if (values.isNotEmpty()) {
-        val lastReading = values.last()
+    if (lastData != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(padding24)
@@ -415,11 +418,11 @@ fun ActualReading(processor: MainProcessor) = Column {
                 color = BlackTitle,
             )
             ReadingItem(
-                bleData = lastReading,
+                bleData = lastData!!,
                 isSynchronized = isSynchronized(
                     firstIdSend = firstIdSend,
                     lastIdSend = lastIdSend,
-                    id = lastReading.id
+                    id = lastData!!.id
                 )
             )
         }

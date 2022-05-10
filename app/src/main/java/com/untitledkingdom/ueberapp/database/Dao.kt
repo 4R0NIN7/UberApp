@@ -12,13 +12,13 @@ interface Dao {
     @Query("SELECT * from ${DatabaseConst.TABLE}")
     suspend fun getAllData(): List<BleData>
 
-    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID ORDER BY localDateTime DESC")
     fun getAllDataFlow(serviceUUID: String): Flow<List<BleData>>
 
     @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :id")
     suspend fun getData(id: Int): BleData
 
-    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :serviceUUID ORDER BY ID DESC LIMIT 1")
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID ORDER BY ID DESC LIMIT 1")
     fun getLastBleData(serviceUUID: String): Flow<BleData>
 
     @Insert(onConflict = REPLACE)
