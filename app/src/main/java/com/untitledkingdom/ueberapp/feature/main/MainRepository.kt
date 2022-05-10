@@ -10,6 +10,4 @@ interface MainRepository {
     fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus>
     fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus>
     fun stop()
-    val lastIdSent: Flow<Int>
-    val firstIdSent: Flow<Int>
 }

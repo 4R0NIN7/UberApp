@@ -24,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -49,8 +48,6 @@ class MainViewModel @Inject constructor(
         prepare = {
             merge(
                 refreshDeviceInfo(effects),
-                prepareFirstId(),
-                prepareLastId(),
                 getLastData()
             )
         },
@@ -106,16 +103,6 @@ class MainViewModel @Inject constructor(
             }.takeWhile {
                 isCollectingData
             }
-
-    private fun prepareLastId(): Flow<PartialState<MainState>> =
-        repository.lastIdSent.flatMapLatest {
-            flowOf(MainPartialState.SetLastIdSend(lastIdSend = it))
-        }
-
-    private fun prepareFirstId(): Flow<PartialState<MainState>> =
-        repository.firstIdSent.flatMapLatest {
-            flowOf(MainPartialState.SetFirstIdSend(firstIdSend = it))
-        }
 
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>

@@ -30,16 +30,7 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(isScanning = isScanning)
     }
 
-    data class SetLastIdSend(val lastIdSend: Int) : MainPartialState {
-        override fun reduce(oldState: MainState): MainState = oldState.copy(lastIdSend = lastIdSend)
-    }
-
     data class SetLastBleData(val lastBleData: BleData?) : MainPartialState {
         override fun reduce(oldState: MainState): MainState = oldState.copy(lastData = lastBleData)
-    }
-
-    data class SetFirstIdSend(val firstIdSend: Int) : MainPartialState {
-        override fun reduce(oldState: MainState): MainState =
-            oldState.copy(firstIdSend = firstIdSend)
     }
 }

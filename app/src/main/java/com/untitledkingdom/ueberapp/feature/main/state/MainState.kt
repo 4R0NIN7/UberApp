@@ -10,6 +10,4 @@ data class MainState(
     val advertisement: Advertisement? = null,
     val values: List<BleData> = listOf(),
     val lastData: BleData? = null,
-    val firstIdSend: Int = 0,
-    val lastIdSend: Int = 0
 )

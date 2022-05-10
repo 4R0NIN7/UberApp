@@ -28,7 +28,6 @@ import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.LineGraphWithText
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.Toolbar
-import com.untitledkingdom.ueberapp.ui.common.isSynchronized
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
@@ -66,7 +65,7 @@ fun DetailsScreen(processor: MainProcessor) {
             }
             Chart(listState, readings)
             DividerGray()
-            Readings(processor = processor, listState, readings)
+            Readings(listState, readings)
         }
     }
 }
@@ -84,12 +83,9 @@ fun Chart(listState: LazyListState, readings: List<BleData>) {
 
 @Composable
 fun Readings(
-    processor: MainProcessor,
     listState: LazyListState,
     readings: List<BleData>
 ) {
-    val firstIdSend by processor.collectAsState { it.firstIdSend }
-    val lastIdSend by processor.collectAsState { it.lastIdSend }
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -101,11 +97,6 @@ fun Readings(
         items(items = readings) { bleData ->
             ReadingItem(
                 bleData = bleData,
-                isSynchronized = isSynchronized(
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend,
-                    id = bleData.id
-                )
             )
         }
     }

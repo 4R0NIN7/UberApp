@@ -12,6 +12,7 @@ data class BleData(
     val deviceReading: DeviceReading,
     val localDateTime: LocalDateTime,
     val serviceUUID: String,
+    val isSynchronized: Boolean = false
 )
 
 data class DeviceReading(

@@ -43,8 +43,6 @@ class MainViewModelTest : BaseCoroutineTest() {
         1
     )
     private val advertisement = mockk<Advertisement>()
-    private val firstIdSend = 1
-    private val lastIdSend = 100
     private val bleData = BleData(
         id = 100,
         deviceReading = DeviceReading(temperature = 10f, humidity = 52),
@@ -68,12 +66,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
-            )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(null)
             )
@@ -82,8 +74,6 @@ class MainViewModelTest : BaseCoroutineTest() {
             assertLast(
                 MainState(
                     advertisement = advertisement,
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend
                 )
             )
         }
@@ -104,8 +94,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
-            coEvery { repository.firstIdSent } returns flowOf(firstIdSend)
-            coEvery { repository.lastIdSent } returns flowOf(lastIdSend)
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     null
@@ -118,8 +106,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend
                 )
             )
         }
@@ -133,12 +119,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                 ScanStatus.Found(
                     advertisement
                 )
-            )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
@@ -158,8 +138,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend,
                     lastData = bleData
                 )
             )
@@ -178,12 +156,6 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.Error
-            )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(null)
@@ -209,11 +181,10 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(
+                    bleData
+                )
             )
             coEvery { kableService.stopScan() } returns Unit
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"

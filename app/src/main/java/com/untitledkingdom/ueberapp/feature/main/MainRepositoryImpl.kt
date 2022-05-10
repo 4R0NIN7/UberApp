@@ -35,26 +35,20 @@ class MainRepositoryImpl @Inject constructor(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private val incrementer = AtomicInteger(1)
     private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
-    private val _firstIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
-    private val _lastIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val firstIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val lastIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
     private var isFirstTime = true
-
-    override val firstIdSent: Flow<Int>
-        get() = _firstIdSent
-
-    override val lastIdSent: Flow<Int>
-        get() = _lastIdSent
 
     override suspend fun wipeData(serviceUUID: String) {
         database.getDao().wipeData(serviceUUID)
     }
 
     private fun setLastId(newId: Int) {
-        _lastIdSent.value = newId
+        lastIdSent.value = newId
     }
 
     private fun setFirstId(newId: Int) {
-        _firstIdSent.value = newId
+        firstIdSent.value = newId
     }
 
     private fun sendData(data: List<BleData>) {
@@ -66,6 +60,17 @@ class MainRepositoryImpl @Inject constructor(
                 if (response.isSuccessful) {
                     Timber.d("Data sent!")
                     setLastId(data.last().id)
+                    database.getDao().saveAllData(
+                        dataList = data.map {
+                            BleData(
+                                it.id,
+                                it.deviceReading,
+                                it.localDateTime,
+                                it.serviceUUID,
+                                isSynchronized = true
+                            )
+                        }
+                    )
                 } else {
                     throw Exception()
                 }
@@ -86,10 +91,10 @@ class MainRepositoryImpl @Inject constructor(
             setFirstId(data.first().id)
             setLastId(apiService.getLastSynchronizedReading())
         }
-        if (_lastIdSent.value + numberOfTries == data.last().id) {
+        if (lastIdSent.value + numberOfTries == data.last().id) {
             sendData(
                 data.filter {
-                    it.id in _lastIdSent.value..data.last().id
+                    it.id in lastIdSent.value..data.last().id
                 }
             )
         }

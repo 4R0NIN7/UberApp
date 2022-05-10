@@ -50,7 +50,6 @@ import com.untitledkingdom.ueberapp.ui.common.DeviceItem
 import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
-import com.untitledkingdom.ueberapp.ui.common.isSynchronized
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.BlackTitle
@@ -404,8 +403,6 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
     val lastData by processor.collectAsState { it.lastData }
-    val firstIdSend by processor.collectAsState { it.firstIdSend }
-    val lastIdSend by processor.collectAsState { it.lastIdSend }
     if (lastData != null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -418,12 +415,7 @@ fun ActualReading(processor: MainProcessor) = Column {
                 color = BlackTitle,
             )
             ReadingItem(
-                bleData = lastData!!,
-                isSynchronized = isSynchronized(
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend,
-                    id = lastData!!.id
-                )
+                bleData = lastData!!
             )
         }
     } else {

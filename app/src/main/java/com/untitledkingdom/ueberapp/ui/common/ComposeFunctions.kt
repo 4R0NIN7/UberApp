@@ -157,8 +157,7 @@ internal fun RowText(
 
 @Composable
 fun ReadingItem(
-    bleData: BleData,
-    isSynchronized: Boolean
+    bleData: BleData
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -202,7 +201,7 @@ fun ReadingItem(
                         fontSize = fontSize18,
                         color = Black
                     )
-                    if (isSynchronized) {
+                    if (bleData.isSynchronized) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_baseline_beenhere_24),
                             contentDescription = null,
