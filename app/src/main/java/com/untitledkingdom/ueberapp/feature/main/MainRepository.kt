@@ -8,6 +8,7 @@ interface MainRepository {
     suspend fun wipeData(serviceUUID: String)
     suspend fun saveData(serviceUUID: String, deviceReading: DeviceReading)
     fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus>
+    fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus>
     fun stop()
     val lastIdSent: Flow<Int>
     val firstIdSent: Flow<Int>

@@ -48,7 +48,8 @@ class MainViewModel @Inject constructor(
                 refreshDeviceInfo(effects),
                 collectDataFromDataBase(effects),
                 prepareFirstId(),
-                prepareLastId()
+                prepareLastId(),
+                getLastData()
             )
         },
         onEvent = { event ->
@@ -62,6 +63,14 @@ class MainViewModel @Inject constructor(
             }
         }
     )
+
+    private fun getLastData(): Flow<PartialState<MainState>> = repository
+        .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(status.data)
+                else -> NoAction()
+            }
+        }
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
@@ -77,9 +86,10 @@ class MainViewModel @Inject constructor(
                         effects
                             .send(MainEffect.ShowError("Error during collecting data from DB"))
                             .let { NoAction() }
-                    is RepositoryStatus.SuccessBleData -> {
+                    is RepositoryStatus.SuccessGetListBleData -> {
                         MainPartialState.SetValues(status.data)
                     }
+                    else -> NoAction()
                 }
             }
 

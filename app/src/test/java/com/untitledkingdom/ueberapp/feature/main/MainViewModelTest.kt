@@ -46,7 +46,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(
+                RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
             )
@@ -79,7 +79,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(
+                RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
             )
@@ -116,7 +116,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(
+                RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
             )
@@ -168,7 +168,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(
+                RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
             )
