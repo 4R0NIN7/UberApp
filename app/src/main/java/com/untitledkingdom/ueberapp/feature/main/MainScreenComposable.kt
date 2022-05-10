@@ -173,10 +173,14 @@ fun Tabs(processor: MainProcessor) {
             if (advertisement != null && lastData != null) {
                 when (tabIndex) {
                     0 -> {
-                        processor.sendEvent(MainEvent.TabChanged(0))
+                        processor.sendEvent(MainEvent.TabChanged(0), MainEvent.StopCollectingData)
                         MainScreen(processor)
                     }
                     1 -> {
+                        val values by processor.collectAsState { it.values }
+                        if (values.isEmpty()) {
+                            processor.sendEvent(MainEvent.StartCollectingData)
+                        }
                         processor.sendEvent(MainEvent.TabChanged(1))
                         HistoryScreen(processor)
                     }
