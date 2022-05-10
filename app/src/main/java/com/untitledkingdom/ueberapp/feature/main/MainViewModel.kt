@@ -94,10 +94,10 @@ class MainViewModel @Inject constructor(
         repository.getDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
             .map { status ->
                 when (status) {
-                    RepositoryStatus.Error ->
-                        effects
-                            .send(MainEffect.ShowError("Error during collecting data from DB"))
+                    RepositoryStatus.Error -> {
+                        effects.send(MainEffect.ShowError("Error during collecting data from DB"))
                             .let { NoAction() }
+                    }
                     is RepositoryStatus.SuccessGetListBleData -> {
                         MainPartialState.SetValues(status.data)
                     }

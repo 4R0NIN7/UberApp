@@ -3,6 +3,8 @@ package com.untitledkingdom.ueberapp.feature.main
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.test.processorTest
 import com.untitledkingdom.ueberapp.datastore.DataStorage
+import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -16,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Test
+import java.time.LocalDateTime
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -31,9 +34,24 @@ class MainViewModelTest : BaseCoroutineTest() {
             kableService
         )
     }
+    private val localDateTime: LocalDateTime = LocalDateTime.of(
+        1970,
+        1,
+        1,
+        1,
+        1,
+        1
+    )
     private val advertisement = mockk<Advertisement>()
     private val firstIdSend = 1
     private val lastIdSend = 100
+    private val bleData = BleData(
+        id = 100,
+        deviceReading = DeviceReading(temperature = 10f, humidity = 52),
+        localDateTime = localDateTime,
+        serviceUUID = "11223344"
+    )
+
     @Test
     fun `initial state`() = processorTest(
         processor = { viewModel.processor },
@@ -55,6 +73,9 @@ class MainViewModelTest : BaseCoroutineTest() {
             )
             coEvery { repository.lastIdSent } returns flowOf(
                 lastIdSend
+            )
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(null)
             )
         },
         thenStates = {
@@ -85,6 +106,11 @@ class MainViewModelTest : BaseCoroutineTest() {
             )
             coEvery { repository.firstIdSent } returns flowOf(firstIdSend)
             coEvery { repository.lastIdSent } returns flowOf(lastIdSend)
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(
+                    null
+                )
+            )
         },
         whenEvent = MainEvent.StartScanning,
         thenStates = {
@@ -120,6 +146,12 @@ class MainViewModelTest : BaseCoroutineTest() {
                     listOf()
                 )
             )
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(bleData)
+            )
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(bleData)
+            )
         },
         thenStates = {
             assertLast(
@@ -127,7 +159,8 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement = advertisement,
                     values = listOf(),
                     firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend
+                    lastIdSend = lastIdSend,
+                    lastData = bleData
                 )
             )
         }
@@ -152,9 +185,13 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { repository.lastIdSent } returns flowOf(
                 lastIdSend
             )
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(null)
+            )
         },
+        whenEvent = MainEvent.StartCollectingData,
         thenEffects = {
-            assertLast(MainEffect.ShowError("Error during collecting data from DB"))
+            assertValues(MainEffect.ShowError("Error during collecting data from DB"))
         },
     )
 
