@@ -79,7 +79,7 @@ class MainViewModel @Inject constructor(
     private fun getLastData(): Flow<PartialState<MainState>> = repository
         .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
             when (status) {
-                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(status.data)
+                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(lastBleData = status.data)
                 else -> NoAction()
             }
         }
