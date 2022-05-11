@@ -98,26 +98,10 @@ class MainViewModel @Inject constructor(
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
+        repository.stop()
         dataStorage.saveToStorage(DataStorageConst.MAC_ADDRESS, "")
         effects.send(MainEffect.GoToWelcome)
     }
-
-    private fun collectDataFromDataBase(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
-        repository.getDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
-            .map { status ->
-                when (status) {
-                    RepositoryStatus.Error -> {
-                        effects.send(MainEffect.ShowError("Error during collecting data from DB"))
-                            .let { NoAction() }
-                    }
-                    is RepositoryStatus.SuccessGetListBleData -> {
-                        MainPartialState.SetValues(status.data, date = "")
-                    }
-                    else -> NoAction()
-                }
-            }.takeWhile {
-                isCollectingCharacteristics
-            }
 
     private fun collectDataCharacteristics(): Flow<PartialState<MainState>> =
         repository.getCharacteristicsPerDay().map { status ->

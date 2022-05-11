@@ -15,9 +15,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -36,8 +34,7 @@ class MainRepositoryImpl @Inject constructor(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
     private val incrementer = AtomicInteger(1)
     private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
-    private val firstIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
-    private val lastIdSent: MutableStateFlow<Int> = MutableStateFlow(0)
+    private var lastIdSent: Int = 0
     private var isFirstTime = true
 
     override suspend fun wipeData(serviceUUID: String) {
@@ -45,60 +42,64 @@ class MainRepositoryImpl @Inject constructor(
     }
 
     private fun setLastId(newId: Int) {
-        lastIdSent.value = newId
+        lastIdSent = newId
     }
 
-    private fun setFirstId(newId: Int) {
-        firstIdSent.value = newId
-    }
-
-    private fun sendData(data: List<BleDataEntity>) {
+    private fun sendData(data: List<BleDataEntity>) = scope.launch {
         Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
-        scope.launch {
-            Timber.d("Sending data...")
-            try {
-                val response = apiService.sendDataToService(bleDatumEntities = data)
-                if (response.isSuccessful) {
-                    Timber.d("Data sent!")
-                    setLastId(data.last().id)
-                    database.getDao().saveAllData(
-                        dataList = data.map {
-                            BleDataEntity(
-                                id = it.id,
-                                temperature = it.temperature,
-                                humidity = it.humidity,
-                                dateTime = it.dateTime,
-                                serviceUUID = it.serviceUUID,
-                                isSynchronized = true
-                            )
-                        }
-                    )
-                } else {
-                    throw Exception()
-                }
-            } catch (e: Exception) {
-                Timber.d("Unable to send data!")
-                incrementer.incrementAndGet()
+        Timber.d("Sending data...")
+        try {
+            val response = apiService.sendDataToService(bleDatumEntities = data)
+            if (response.isSuccessful) {
+                Timber.d("Data sent!")
+                setLastId(data.last().id)
+                database.getDao().saveAllData(
+                    dataList = data.map {
+                        BleDataEntity(
+                            id = it.id,
+                            temperature = it.temperature,
+                            humidity = it.humidity,
+                            dateTime = it.dateTime,
+                            serviceUUID = it.serviceUUID,
+                            isSynchronized = true
+                        )
+                    }
+                )
+            } else {
+                throw Exception()
             }
+        } catch (e: Exception) {
+            Timber.d("Unable to send data!")
+            incrementer.incrementAndGet()
         }
     }
 
     private suspend fun sendDataToServer(serviceUUID: String) {
-        val data = database
-            .getDao()
-            .getAllData()
-            .filter { it.serviceUUID == serviceUUID }
         if (isFirstTime) {
             isFirstTime = false
-            setFirstId(data.first().id)
-            setLastId(apiService.getLastSynchronizedReading())
-        }
-        if (lastIdSent.value + numberOfTries == data.last().id) {
-            sendData(
-                data.filter {
-                    it.id in lastIdSent.value..data.last().id
-                }
+            val dataThatWasNotSynchronized = database
+                .getDao()
+                .getAllData()
+                .filter { it.serviceUUID == serviceUUID && !it.isSynchronized }
+            sendData(dataThatWasNotSynchronized)
+            setLastId(
+                database
+                    .getDao()
+                    .getAllData()
+                    .last { it.serviceUUID == serviceUUID }.id
             )
+        } else {
+            val data = database
+                .getDao()
+                .getAllData()
+                .filter { it.serviceUUID == serviceUUID }
+            if (lastIdSent + numberOfTries == data.last().id) {
+                sendData(
+                    data.filter {
+                        it.id in lastIdSent..data.last().id
+                    }
+                )
+            }
         }
     }
 
@@ -121,11 +122,6 @@ class MainRepositoryImpl @Inject constructor(
             emit(RepositoryStatus.SuccessGetListBleData(listOf()))
         }
 
-    override fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
-        database.getDao().getAllDataFlow(serviceUUID).distinctUntilChanged().map { list ->
-            RepositoryStatus.SuccessGetListBleData(list.map { it.toDeviceReading() })
-        }
-
     override fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
         database.getDao().getLastBleData(serviceUUID).map { data ->
             try {
@@ -142,5 +138,10 @@ class MainRepositoryImpl @Inject constructor(
 
     override fun stop() {
         scope.cancel()
+    }
+
+    override fun start() {
+        Timber.d("Starting repository")
+        isFirstTime = true
     }
 }

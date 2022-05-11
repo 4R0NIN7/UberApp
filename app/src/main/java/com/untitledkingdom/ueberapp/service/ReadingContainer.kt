@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.takeWhile
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -25,10 +26,14 @@ class ReadingContainer @Inject constructor(
     private val device: Device,
     scope: CoroutineScope
 ) {
+    private var isActive = true
     val processor: BackgroundProcessor = scope.processor(
         onEvent = { event ->
             when (event) {
-                ReadingEvent.StartReading -> startReading(effects)
+                ReadingEvent.StartReading -> {
+                    isActive = true
+                    startReading(effects)
+                }
                 ReadingEvent.StopReading -> stopReading(effects)
             }
         }
@@ -36,6 +41,7 @@ class ReadingContainer @Inject constructor(
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
         repository.stop()
+        isActive = false
         effects.send(ReadingEffect.Stop)
     }
 
@@ -57,7 +63,11 @@ class ReadingContainer @Inject constructor(
         try {
             effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
-            device.observationOnDataCharacteristic().collect { reading ->
+            repository.start()
+            device.observationOnDataCharacteristic().takeWhile {
+                isActive
+            }.collect { reading ->
+                Timber.d("Reading $reading")
                 repository.saveData(
                     reading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
@@ -66,7 +76,6 @@ class ReadingContainer @Inject constructor(
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Service cannot connect to device!")
-            startReading(effects)
         } catch (e: Exception) {
             Timber.d("startObservingData exception! $e")
         }

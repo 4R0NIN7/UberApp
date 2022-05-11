@@ -57,6 +57,7 @@ class ReadingContainerTest : BaseCoroutineTest() {
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
             coEvery { device.observationOnDataCharacteristic() } returns flowOf(reading)
             coEvery { repository.saveData(any(), any()) } returns Unit
+            coEvery { repository.start() } returns Unit
         },
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {

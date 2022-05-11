@@ -67,11 +67,6 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
                 RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
             )
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
-                )
-            )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(null)
             )
@@ -96,11 +91,6 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
-                )
-            )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     null
@@ -128,7 +118,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
+            coEvery { repository.getDataFilteredByDate(any()) } returns flowOf(
                 RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
@@ -139,41 +129,20 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(bleDataEntity.toDeviceReading())
             )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
+            )
         },
         thenStates = {
             assertLast(
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    lastDeviceReading = bleDataEntity.toDeviceReading()
+                    lastDeviceReading = bleDataEntity.toDeviceReading(),
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
-    )
-
-    @Test
-    fun `start observing data from repository with error`() = processorTest(
-        processor = { viewModel.processor },
-        given = {
-            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
-                ScanStatus.Found(
-                    advertisement
-                )
-            )
-            coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.Error
-            )
-            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
-                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
-            )
-            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(null)
-            )
-        },
-        thenEffects = {
-            assertValues(MainEffect.ShowError("Error during collecting data from DB"))
-        },
     )
 
     @Test
@@ -183,11 +152,6 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
                 ScanStatus.Found(
                     advertisement
-                )
-            )
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
                 )
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(

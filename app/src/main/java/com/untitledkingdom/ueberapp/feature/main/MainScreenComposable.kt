@@ -370,17 +370,18 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
     val lastData by processor.collectAsState { it.lastDeviceReading }
+    val selectedAdvertisement by processor.collectAsState { it.advertisement }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(padding24)
     ) {
-        if (lastData != null) {
-            Text(
-                text = "Actual data from device",
-                style = Typography.h6,
-                fontWeight = FontWeight.SemiBold,
-                color = BlackTitle,
-            )
+        Text(
+            text = "Actual data from device",
+            style = Typography.h6,
+            fontWeight = FontWeight.SemiBold,
+            color = BlackTitle,
+        )
+        if (lastData != null && selectedAdvertisement != null) {
             ReadingItem(
                 bleData = lastData!!
             )
