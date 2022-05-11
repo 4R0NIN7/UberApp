@@ -6,7 +6,6 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
-import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +21,7 @@ typealias BackgroundProcessor = Processor<ReadingEvent, Unit, ReadingEffect>
 @ExperimentalCoroutinesApi
 @FlowPreview
 class ReadingContainer @Inject constructor(
-    private val repository: MainRepository,
+    private val repository: ReadingRepository,
     private val device: Device,
     scope: CoroutineScope
 ) {
@@ -40,7 +39,6 @@ class ReadingContainer @Inject constructor(
     )
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
-        repository.stop()
         isActive = false
         effects.send(ReadingEffect.Stop)
     }

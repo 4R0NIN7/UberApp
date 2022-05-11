@@ -22,6 +22,8 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.ScanServiceImpl
+import com.untitledkingdom.ueberapp.service.ReadingRepository
+import com.untitledkingdom.ueberapp.service.ReadingRepositoryImpl
 import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
@@ -59,7 +61,7 @@ object AppModules {
 
     @Provides
     @Singleton
-    fun provideRestApiClient(database: Database): ApiService {
+    fun provideRestApiClient(): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -69,7 +71,7 @@ object AppModules {
             .baseUrl(BuildConfig.URL)
             .build()
         // return retrofit.create(ApiService::class.java)
-        return FakeApi(database)
+        return FakeApi()
     }
 
     private fun getMockRetrofitClient(): OkHttpClient {
@@ -147,12 +149,13 @@ interface Binds {
     @Binds
     fun bindKableService(kableServiceImpl: ScanServiceImpl): ScanService
 
-    @FlowPreview
-    @ExperimentalCoroutinesApi
-    @ExperimentalUnsignedTypes
     @Binds
     @Singleton
     fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
+
+    @Binds
+    @Singleton
+    fun bindReadingRepository(readingRepositoryImpl: ReadingRepositoryImpl): ReadingRepository
 
     @Binds
     @Singleton
@@ -166,7 +169,7 @@ interface Binds {
 
     @Binds
     @Singleton
-    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
+    fun bindDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
 }
 
 @ExperimentalUnsignedTypes
@@ -175,7 +178,7 @@ interface Binds {
 @InstallIn(SingletonComponent::class)
 @EntryPoint
 interface ContainerDependencies {
-    fun getRepository(): MainRepository
+    fun getRepository(): ReadingRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
 

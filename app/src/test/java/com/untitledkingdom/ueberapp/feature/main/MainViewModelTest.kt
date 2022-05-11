@@ -96,6 +96,11 @@ class MainViewModelTest : BaseCoroutineTest() {
                     null
                 )
             )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(
+                    listOf(bleDataCharacteristics)
+                )
+            )
         },
         whenEvent = MainEvent.StartScanning,
         thenStates = {
@@ -103,6 +108,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
@@ -159,10 +165,14 @@ class MainViewModelTest : BaseCoroutineTest() {
                     bleDataEntity.toDeviceReading()
                 )
             )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(
+                    listOf(bleDataCharacteristics)
+                )
+            )
             coEvery { kableService.stopScan() } returns Unit
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
-            coEvery { repository.stop() } returns Unit
         },
         whenEvent = MainEvent.EndConnectingToDevice,
         thenEffects = {

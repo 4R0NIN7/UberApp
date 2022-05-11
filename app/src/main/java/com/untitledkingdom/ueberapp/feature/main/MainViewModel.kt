@@ -98,7 +98,6 @@ class MainViewModel @Inject constructor(
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
-        repository.stop()
         dataStorage.saveToStorage(DataStorageConst.MAC_ADDRESS, "")
         effects.send(MainEffect.GoToWelcome)
     }
