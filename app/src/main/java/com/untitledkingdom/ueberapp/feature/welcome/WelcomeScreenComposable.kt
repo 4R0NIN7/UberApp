@@ -121,7 +121,7 @@ fun Devices(processor: WelcomeProcessor) {
         verticalArrangement = Arrangement.spacedBy(padding8),
         contentPadding = PaddingValues(bottom = padding16)
     ) {
-        items(items = advertisements.sortedBy { it.name }) {
+        items(items = advertisements.sortedByDescending { it.rssi }) {
             DeviceItem(
                 scannedDevice = it.toScannedDevice(),
                 action = {

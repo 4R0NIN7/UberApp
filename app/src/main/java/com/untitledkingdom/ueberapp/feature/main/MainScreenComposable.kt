@@ -370,7 +370,6 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
     val lastData by processor.collectAsState { it.lastDeviceReading }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(padding24)
@@ -386,13 +385,6 @@ fun ActualReading(processor: MainProcessor) = Column {
                 bleData = lastData!!
             )
         } else {
-            Text(
-                text = "Didn't receive data!",
-                style = Typography.body1,
-                fontWeight = FontWeight.Bold,
-                fontSize = fontSize18,
-                color = Black
-            )
             LinearProgressBar()
         }
     }
