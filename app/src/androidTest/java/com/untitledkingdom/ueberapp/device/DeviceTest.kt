@@ -5,7 +5,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
@@ -63,7 +63,7 @@ class DeviceTest {
         )
 
     private val byteList = listOf(1.toByte(), 2.toByte())
-    private val deviceReading = mockk<DeviceReading>()
+    private val reading = mockk<Reading>()
 
     private val localDateTime: LocalDateTime = LocalDateTime.of(
         1970,
@@ -168,14 +168,14 @@ class DeviceTest {
 
     @Test
     fun observeDataFromDevice(): Unit = runTest {
-        coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)
+        coEvery { device.observationOnDataCharacteristic() } returns flowOf(reading)
         val reading = device.observationOnDataCharacteristic()
         coVerify {
             device.observationOnDataCharacteristic()
         }
-        val differentReading = flowOf(DeviceReading(1f, 2))
+        val differentReading = flowOf(Reading(1f, 2))
         confirmVerified(device)
         assertNotEquals(differentReading, reading)
-        assertEquals(deviceReading, reading.first())
+        assertEquals(this@DeviceTest.reading, reading.first())
     }
 }

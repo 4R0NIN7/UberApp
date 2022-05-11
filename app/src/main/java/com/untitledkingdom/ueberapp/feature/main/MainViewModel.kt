@@ -24,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -42,41 +41,57 @@ class MainViewModel @Inject constructor(
     private val dataStorage: DataStorage,
     private val scanService: ScanService,
 ) : ViewModel() {
-    private var isCollectingData = true
+    private var isCollectingCharacteristics = true
+    private var isCollectingDataFilteredByDate = true
     val processor: MainProcessor = processor(
         initialState = MainState(),
         prepare = {
             merge(
                 refreshDeviceInfo(effects),
-                getLastData()
+                getLastData(),
+                collectDataCharacteristics()
             )
         },
         onEvent = { event ->
             when (event) {
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> disconnect(effects).toNoAction()
-                is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
+                is MainEvent.OpenDetails -> {
+                    isCollectingDataFilteredByDate = true
+                    openDetails(event.date)
+                }
                 MainEvent.StartScanning -> refreshDeviceInfo(
                     effects = effects
                 )
-                MainEvent.StartCollectingData -> {
-                    isCollectingData = true
-                    collectDataFromDataBase(effects)
+                MainEvent.ResetValues -> {
+                    isCollectingDataFilteredByDate = false
+                    flowOf(
+                        MainPartialState.SetSelectedDate(
+                            selectedDate = ""
+                        )
+                    )
                 }
-                MainEvent.StopCollectingData -> stopCollectingData()
             }
         }
     )
 
-    private fun stopCollectingData(): Flow<MainPartialState> = flow {
-        isCollectingData = false
-        emit(MainPartialState.SetValues(listOf()))
-    }
+    private fun openDetails(date: String): Flow<PartialState<MainState>> =
+        repository.getDataFilteredByDate(date).map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessGetListBleData ->
+                    MainPartialState.SetValues(status.data, date)
+                else -> NoAction()
+            }
+        }.takeWhile {
+            isCollectingDataFilteredByDate
+        }
 
     private fun getLastData(): Flow<PartialState<MainState>> = repository
         .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
             when (status) {
-                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(lastBleData = status.data)
+                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(
+                    lastDeviceReading = status.data
+                )
                 else -> NoAction()
             }
         }
@@ -96,13 +111,25 @@ class MainViewModel @Inject constructor(
                             .let { NoAction() }
                     }
                     is RepositoryStatus.SuccessGetListBleData -> {
-                        MainPartialState.SetValues(status.data)
+                        MainPartialState.SetValues(status.data, date = "")
                     }
                     else -> NoAction()
                 }
             }.takeWhile {
-                isCollectingData
+                isCollectingCharacteristics
             }
+
+    private fun collectDataCharacteristics(): Flow<PartialState<MainState>> =
+        repository.getCharacteristicsPerDay().map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessBleCharacteristics -> {
+                    MainPartialState.SetDataCharacteristics(
+                        status.bleCharacteristics
+                    )
+                }
+                else -> NoAction()
+            }
+        }
 
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>

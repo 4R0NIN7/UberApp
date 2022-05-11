@@ -2,7 +2,8 @@ package com.untitledkingdom.ueberapp.feature.main.state
 
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.PartialState
-import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.database.data.BleDataCharacteristics
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 
 interface MainPartialState : PartialState<MainState> {
     data class TabChanged(val newTabIndex: Int) : MainPartialState {
@@ -15,9 +16,9 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(advertisement = advertisement)
     }
 
-    data class SetValues(val values: List<BleData>) : MainPartialState {
+    data class SetValues(val values: List<DeviceReading>, val date: String) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(values = values)
+            oldState.copy(values = values, selectedDate = date)
     }
 
     data class SetSelectedDate(val selectedDate: String) : MainPartialState {
@@ -30,7 +31,14 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(isScanning = isScanning)
     }
 
-    data class SetLastBleData(val lastBleData: BleData?) : MainPartialState {
-        override fun reduce(oldState: MainState): MainState = oldState.copy(lastData = lastBleData)
+    data class SetLastBleData(val lastDeviceReading: DeviceReading?) : MainPartialState {
+        override fun reduce(oldState: MainState): MainState =
+            oldState.copy(lastDeviceReading = lastDeviceReading)
+    }
+
+    data class SetDataCharacteristics(val dataCharacteristics: List<BleDataCharacteristics>) :
+        MainPartialState {
+        override fun reduce(oldState: MainState): MainState =
+            oldState.copy(dataCharacteristics = dataCharacteristics)
     }
 }

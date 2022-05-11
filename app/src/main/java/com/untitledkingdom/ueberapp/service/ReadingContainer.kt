@@ -59,7 +59,7 @@ class ReadingContainer @Inject constructor(
             Timber.d("Starting collecting data from service")
             device.observationOnDataCharacteristic().collect { reading ->
                 repository.saveData(
-                    deviceReading = reading,
+                    reading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
                 effects.send(ReadingEffect.StartNotifying(reading))

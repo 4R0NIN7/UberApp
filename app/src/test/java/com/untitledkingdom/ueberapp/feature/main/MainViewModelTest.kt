@@ -2,9 +2,9 @@ package com.untitledkingdom.ueberapp.feature.main
 
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.test.processorTest
+import com.untitledkingdom.ueberapp.database.data.BleDataCharacteristics
+import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.devices.data.BleData
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.feature.main.state.MainState
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
+import com.untitledkingdom.ueberapp.utils.functions.toDeviceReading
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,12 +44,14 @@ class MainViewModelTest : BaseCoroutineTest() {
         1
     )
     private val advertisement = mockk<Advertisement>()
-    private val bleData = BleData(
+    private val bleDataEntity = BleDataEntity(
         id = 100,
-        deviceReading = DeviceReading(temperature = 10f, humidity = 52),
-        localDateTime = localDateTime,
+        temperature = 10f,
+        humidity = 52,
+        dateTime = localDateTime,
         serviceUUID = "11223344"
     )
+    private val bleDataCharacteristics = mockk<BleDataCharacteristics>()
 
     @Test
     fun `initial state`() = processorTest(
@@ -60,6 +63,9 @@ class MainViewModelTest : BaseCoroutineTest() {
                 ScanStatus.Found(
                     advertisement
                 )
+            )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
             )
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessGetListBleData(
@@ -74,6 +80,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             assertLast(
                 MainState(
                     advertisement = advertisement,
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
@@ -127,10 +134,10 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(bleData)
+                RepositoryStatus.SuccessBleData(bleDataEntity.toDeviceReading())
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(bleData)
+                RepositoryStatus.SuccessBleData(bleDataEntity.toDeviceReading())
             )
         },
         thenStates = {
@@ -138,7 +145,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    lastData = bleData
+                    lastDeviceReading = bleDataEntity.toDeviceReading()
                 )
             )
         }
@@ -157,11 +164,13 @@ class MainViewModelTest : BaseCoroutineTest() {
             coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.Error
             )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
+            )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(null)
             )
         },
-        whenEvent = MainEvent.StartCollectingData,
         thenEffects = {
             assertValues(MainEffect.ShowError("Error during collecting data from DB"))
         },
@@ -183,7 +192,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
-                    bleData
+                    bleDataEntity.toDeviceReading()
                 )
             )
             coEvery { kableService.stopScan() } returns Unit

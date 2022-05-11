@@ -14,6 +14,7 @@ import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.api.FakeApi
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConst
+import com.untitledkingdom.ueberapp.database.TimeConverter
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
@@ -86,12 +87,14 @@ object AppModules {
 
     @Provides
     @Singleton
-    fun provideDataBase(context: Application): Database =
+    fun provideDataBase(context: Application, timeManager: TimeManager): Database =
         Room.databaseBuilder(
             context,
             Database::class.java,
             DatabaseConst.DATABASE_NAME
-        ).fallbackToDestructiveMigration().build()
+        ).addTypeConverter(TimeConverter(timeManager = timeManager))
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     @Singleton

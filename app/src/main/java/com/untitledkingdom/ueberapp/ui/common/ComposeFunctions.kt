@@ -16,6 +16,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
@@ -29,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
@@ -157,7 +158,7 @@ internal fun RowText(
 
 @Composable
 fun ReadingItem(
-    bleData: BleData
+    bleData: DeviceReading
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -173,18 +174,18 @@ fun ReadingItem(
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
                 RowText(
-                    key = "DeviceReading at",
+                    key = "Reading at",
                     value = bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYYHHMMSS),
                     colorValue = Black
                 )
                 RowText(
                     key = "Temperature ",
-                    value = bleData.deviceReading.temperature.toString(),
+                    value = bleData.reading.temperature.toString(),
                     colorValue = Gray
                 )
                 RowText(
                     key = "Humidity ",
-                    value = bleData.deviceReading.humidity.toString(),
+                    value = bleData.reading.humidity.toString(),
                     colorValue = Gray
                 )
                 Row(
@@ -275,8 +276,15 @@ fun LoadingDialog() {
     }
 }
 
-fun isSynchronized(
-    firstIdSend: Int,
-    lastIdSend: Int,
-    id: Int
-): Boolean = id in firstIdSend..lastIdSend
+@Composable
+fun LinearProgressBar() {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(15.dp),
+            backgroundColor = AppBackground,
+            color = Purple200
+        )
+    }
+}

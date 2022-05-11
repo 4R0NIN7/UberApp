@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.DividerGray
 import com.untitledkingdom.ueberapp.feature.main.MainProcessor
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -32,7 +32,6 @@ import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
-import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 
 @ExperimentalMaterialApi
 @Composable
@@ -42,7 +41,7 @@ fun DetailsScreen(processor: MainProcessor) {
             title = stringResource(R.string.main_close),
             action = {
                 processor.sendEvent(
-                    MainEvent.SetSelectedDate("")
+                    MainEvent.ResetValues
                 )
             }
         )
@@ -57,11 +56,8 @@ fun DetailsScreen(processor: MainProcessor) {
                 .padding(it)
         ) {
             val listState = rememberLazyListState()
-            val selectedDate by processor.collectAsState { state -> state.selectedDate }
             val readings by processor.collectAsState { state ->
-                state.values.filter { bleData ->
-                    bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-                }.distinct().sortedBy { data -> data.id }
+                state.values.sortedBy { data -> data.id }
             }
             Chart(listState, readings)
             DividerGray()
@@ -71,7 +67,7 @@ fun DetailsScreen(processor: MainProcessor) {
 }
 
 @Composable
-fun Chart(listState: LazyListState, readings: List<BleData>) {
+fun Chart(listState: LazyListState, readings: List<DeviceReading>) {
     Column {
         LineGraphWithText(
             data = readings,
@@ -84,7 +80,7 @@ fun Chart(listState: LazyListState, readings: List<BleData>) {
 @Composable
 fun Readings(
     listState: LazyListState,
-    readings: List<BleData>
+    readings: List<DeviceReading>
 ) {
     LazyColumn(
         modifier = Modifier

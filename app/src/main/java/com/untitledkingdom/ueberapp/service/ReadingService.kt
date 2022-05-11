@@ -14,7 +14,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
@@ -107,7 +107,7 @@ class ReadingService @Inject constructor() : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun startNotifying(reading: DeviceReading) {
+    private fun startNotifying(reading: Reading) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         val channel = NotificationChannel(

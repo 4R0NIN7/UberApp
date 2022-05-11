@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.devices.data
+package com.untitledkingdom.ueberapp.database.data
 
 object BleDataConst {
     const val MIN = "MIN"

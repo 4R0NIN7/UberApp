@@ -2,11 +2,12 @@ package com.untitledkingdom.ueberapp.feature.main
 
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
-import com.untitledkingdom.ueberapp.devices.data.BleData
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.database.data.BleDataEntity
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.toDeviceReading
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,22 +52,23 @@ class MainRepositoryImpl @Inject constructor(
         firstIdSent.value = newId
     }
 
-    private fun sendData(data: List<BleData>) {
+    private fun sendData(data: List<BleDataEntity>) {
         Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         scope.launch {
             Timber.d("Sending data...")
             try {
-                val response = apiService.sendDataToService(bleData = data)
+                val response = apiService.sendDataToService(bleDatumEntities = data)
                 if (response.isSuccessful) {
                     Timber.d("Data sent!")
                     setLastId(data.last().id)
                     database.getDao().saveAllData(
                         dataList = data.map {
-                            BleData(
-                                it.id,
-                                it.deviceReading,
-                                it.localDateTime,
-                                it.serviceUUID,
+                            BleDataEntity(
+                                id = it.id,
+                                temperature = it.temperature,
+                                humidity = it.humidity,
+                                dateTime = it.dateTime,
+                                serviceUUID = it.serviceUUID,
                                 isSynchronized = true
                             )
                         }
@@ -100,27 +102,42 @@ class MainRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveData(serviceUUID: String, deviceReading: DeviceReading) {
+    override suspend fun saveData(serviceUUID: String, reading: Reading) {
         val now = timeManager.provideCurrentLocalDateTime()
-        val bleData = BleData(
-            deviceReading = deviceReading,
-            localDateTime = now,
+        val bleDataEntity = BleDataEntity(
+            temperature = reading.temperature,
+            humidity = reading.humidity,
+            dateTime = now,
             serviceUUID = serviceUUID,
         )
-        database.getDao().saveData(data = bleData)
+        database.getDao().saveData(data = bleDataEntity)
         sendDataToServer(serviceUUID)
     }
 
+    override fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<RepositoryStatus> =
+        database.getDao().getDataFilteredByDate(dateYYYYMMDD).map { list ->
+            RepositoryStatus.SuccessGetListBleData(list.map { it.toDeviceReading() })
+        }.catch {
+            emit(RepositoryStatus.SuccessGetListBleData(listOf()))
+        }
+
     override fun getDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
-        database.getDao().getAllDataFlow(serviceUUID).distinctUntilChanged().map { data ->
-            RepositoryStatus.SuccessGetListBleData(data)
+        database.getDao().getAllDataFlow(serviceUUID).distinctUntilChanged().map { list ->
+            RepositoryStatus.SuccessGetListBleData(list.map { it.toDeviceReading() })
         }
 
     override fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus> =
         database.getDao().getLastBleData(serviceUUID).map { data ->
-            RepositoryStatus.SuccessBleData(data)
-        }.catch {
-            emit(RepositoryStatus.SuccessBleData(data = null))
+            try {
+                RepositoryStatus.SuccessBleData(data.toDeviceReading())
+            } catch (e: Exception) {
+                RepositoryStatus.SuccessBleData(data = null)
+            }
+        }
+
+    override fun getCharacteristicsPerDay(): Flow<RepositoryStatus> =
+        database.getDao().getAnalyticsPerDayFromDataBase().map { listAnalytics ->
+            RepositoryStatus.SuccessBleCharacteristics(listAnalytics)
         }
 
     override fun stop() {

@@ -42,12 +42,11 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.data.BleData
-import com.untitledkingdom.ueberapp.devices.data.BleDataConst
+import com.untitledkingdom.ueberapp.database.data.BleDataCharacteristics
 import com.untitledkingdom.ueberapp.feature.details.DetailsScreen
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
-import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
+import com.untitledkingdom.ueberapp.ui.common.LinearProgressBar
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.RowText
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
@@ -82,7 +81,8 @@ fun MainScreenCompose(processor: MainProcessor) {
         backgroundColor = AppBackground,
         topBar = {
             val selectedDate by processor.collectAsState { it.selectedDate }
-            if (selectedDate != "") {
+            val values by processor.collectAsState { it.values }
+            if (selectedDate != "" && values.isNotEmpty()) {
                 DetailsScreen(processor = processor)
             } else {
                 Tabs(processor = processor)
@@ -167,25 +167,15 @@ fun Tabs(processor: MainProcessor) {
                 AppBackground,
             )
         ) {
-            val lastData by processor.collectAsState { it.lastData }
-            val advertisement by processor.collectAsState { it.advertisement }
-            if (advertisement != null && lastData != null) {
-                when (tabIndex) {
-                    0 -> {
-                        processor.sendEvent(MainEvent.TabChanged(0), MainEvent.StopCollectingData)
-                        MainScreen(processor)
-                    }
-                    1 -> {
-                        val values by processor.collectAsState { it.values }
-                        if (values.isEmpty()) {
-                            processor.sendEvent(MainEvent.StartCollectingData)
-                        }
-                        processor.sendEvent(MainEvent.TabChanged(1))
-                        HistoryScreen(processor)
-                    }
+            when (tabIndex) {
+                0 -> {
+                    processor.sendEvent(MainEvent.TabChanged(newTabIndex = 0))
+                    MainScreen(processor)
                 }
-            } else {
-                LoadingDialog()
+                1 -> {
+                    processor.sendEvent(MainEvent.TabChanged(newTabIndex = 1))
+                    HistoryScreen(processor)
+                }
             }
         }
     }
@@ -199,13 +189,8 @@ fun MainScreen(processor: MainProcessor) {
 @ExperimentalMaterialApi
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
-    val valuesGroupedByDate by processor.collectAsState {
-        it.values.groupBy { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
-    }
-    val dates by processor.collectAsState {
-        it.values
-            .map { value -> value.localDateTime.format(DateFormatter.dateDDMMMMYYYY) }
-            .distinct()
+    val dayCharacteristics by processor.collectAsState {
+        it.dataCharacteristics
     }
     Column(
         verticalArrangement = Arrangement.SpaceBetween,
@@ -215,20 +200,16 @@ fun HistoryScreen(processor: MainProcessor) {
             .padding(top = padding24)
             .padding(horizontal = padding12)
     ) {
-        if (dates.isNotEmpty()) {
+        if (dayCharacteristics.isNotEmpty()) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(padding8),
                 contentPadding = PaddingValues(bottom = padding72)
             ) {
-                items(items = dates) { date ->
-                    val values = valuesGroupedByDate[date]
-                    if (values != null) {
-                        DayDisplay(
-                            date = date,
-                            processor = processor,
-                            readings = getStatisticsPerDay(data = values)
-                        )
-                    }
+                items(items = dayCharacteristics) { day ->
+                    DayDisplay(
+                        processor = processor,
+                        characteristics = day
+                    )
                 }
             }
         } else {
@@ -237,36 +218,20 @@ fun HistoryScreen(processor: MainProcessor) {
     }
 }
 
-private fun getStatisticsPerDay(
-    data: List<BleData>
-): List<Map<String, Double?>> {
-    var min = data.map { it.deviceReading.temperature.toDouble() }.toList().minOrNull()
-    var avg = data.map { it.deviceReading.temperature.toDouble() }.toList().average()
-    var max = data.map { it.deviceReading.temperature.toDouble() }.toList().maxOrNull()
-    val temperature =
-        mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
-    min = data.map { it.deviceReading.humidity.toDouble() }.toList().minOrNull()
-    avg = data.map { it.deviceReading.humidity.toDouble() }.toList().average()
-    max = data.map { it.deviceReading.humidity.toDouble() }.toList().maxOrNull()
-    val humidity = mapOf(BleDataConst.MIN to min, BleDataConst.AVG to avg, BleDataConst.MAX to max)
-    return listOf(temperature, humidity)
-}
-
 @ExperimentalMaterialApi
 @Composable
 fun DayDisplay(
-    date: String,
-    readings: List<Map<String, Double?>>,
+    characteristics: BleDataCharacteristics,
     processor: MainProcessor
 ) {
-    val temperature: Map<String, Double?> = readings[0]
-    val humidity: Map<String, Double?> = readings[1]
-    val temperatureString = "Min: ${decimalFormat.format(temperature[BleDataConst.MIN])}\n" +
-        "Avg: ${decimalFormat.format(temperature[BleDataConst.AVG])}\n" +
-        "Max: ${decimalFormat.format(temperature[BleDataConst.MAX])}"
-    val humidityString = "Min: ${decimalFormat.format(humidity[BleDataConst.MIN])}\n" +
-        "Avg: ${decimalFormat.format(humidity[BleDataConst.AVG])}\n" +
-        "Max: ${decimalFormat.format(humidity[BleDataConst.MAX])}"
+    val date = characteristics.day
+    val dateString = date.format(DateFormatter.dateYYYYMMDD)
+    val temperatureString = "Min: ${decimalFormat.format(characteristics.minimalTemperature)}\n" +
+        "Avg: ${decimalFormat.format(characteristics.averageTemperature)}\n" +
+        "Max: ${decimalFormat.format(characteristics.maximalTemperature)}"
+    val humidityString = "Min: ${decimalFormat.format(characteristics.minimalHumidity)}\n" +
+        "Avg: ${decimalFormat.format(characteristics.averageHumidity)}\n" +
+        "Max: ${decimalFormat.format(characteristics.maximalHumidity)}"
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -275,7 +240,7 @@ fun DayDisplay(
             modifier = Modifier
                 .clickable {
                     Timber.d("date in history $date")
-                    processor.sendEvent(MainEvent.SetSelectedDate(date = date))
+                    processor.sendEvent(MainEvent.OpenDetails(date = dateString))
                 }
                 .fillMaxWidth(),
             shape = shape8,
@@ -285,7 +250,7 @@ fun DayDisplay(
             Column(
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
-                RowText(key = "Date", value = date, colorValue = Black)
+                RowText(key = "Date", value = dateString, colorValue = Black)
                 ReadingsRow(
                     key = "Temperature",
                     value = temperatureString,
@@ -372,21 +337,21 @@ fun DividerGray(modifier: Modifier = Modifier) {
 @Composable
 fun ConnectedDevice(processor: MainProcessor) = Column {
     val selectedAdvertisement by processor.collectAsState { it.advertisement }
-    if (selectedAdvertisement != null) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(padding24)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(padding24)
+    ) {
+        Text(
+            text = "Selected device",
+            style = Typography.h6,
+            fontWeight = FontWeight.SemiBold,
+            color = BlackTitle,
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Selected device",
-                style = Typography.h6,
-                fontWeight = FontWeight.SemiBold,
-                color = BlackTitle,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            if (selectedAdvertisement != null) {
                 DeviceItem(
                     scannedDevice = selectedAdvertisement!!.toScannedDevice(),
                     action = {
@@ -395,6 +360,8 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
                         )
                     }
                 )
+            } else {
+                LinearProgressBar()
             }
         }
     }
@@ -402,12 +369,13 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
 
 @Composable
 fun ActualReading(processor: MainProcessor) = Column {
-    val lastData by processor.collectAsState { it.lastData }
-    if (lastData != null) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(padding24)
-        ) {
+    val lastData by processor.collectAsState { it.lastDeviceReading }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(padding24)
+    ) {
+        if (lastData != null) {
             Text(
                 text = "Actual data from device",
                 style = Typography.h6,
@@ -417,14 +385,15 @@ fun ActualReading(processor: MainProcessor) = Column {
             ReadingItem(
                 bleData = lastData!!
             )
+        } else {
+            Text(
+                text = "Didn't receive data!",
+                style = Typography.body1,
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize18,
+                color = Black
+            )
+            LinearProgressBar()
         }
-    } else {
-        Text(
-            text = "Didn't receive data!",
-            style = Typography.body1,
-            fontWeight = FontWeight.Bold,
-            fontSize = fontSize18,
-            color = Black
-        )
     }
 }
