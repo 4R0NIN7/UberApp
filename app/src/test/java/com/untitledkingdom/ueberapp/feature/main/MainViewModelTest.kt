@@ -2,9 +2,9 @@ package com.untitledkingdom.ueberapp.feature.main
 
 import com.juul.kable.Advertisement
 import com.tomcz.ellipse.test.processorTest
+import com.untitledkingdom.ueberapp.database.data.BleDataCharacteristics
+import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.datastore.DataStorage
-import com.untitledkingdom.ueberapp.devices.data.BleData
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.feature.main.state.MainState
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
+import com.untitledkingdom.ueberapp.utils.functions.toDeviceReading
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,14 +44,14 @@ class MainViewModelTest : BaseCoroutineTest() {
         1
     )
     private val advertisement = mockk<Advertisement>()
-    private val firstIdSend = 1
-    private val lastIdSend = 100
-    private val bleData = BleData(
+    private val bleDataEntity = BleDataEntity(
         id = 100,
-        deviceReading = DeviceReading(temperature = 10f, humidity = 52),
-        localDateTime = localDateTime,
+        temperature = 10f,
+        humidity = 52,
+        dateTime = localDateTime,
         serviceUUID = "11223344"
     )
+    private val bleDataCharacteristics = mockk<BleDataCharacteristics>()
 
     @Test
     fun `initial state`() = processorTest(
@@ -63,16 +64,8 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
-                )
-            )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(null)
@@ -82,8 +75,7 @@ class MainViewModelTest : BaseCoroutineTest() {
             assertLast(
                 MainState(
                     advertisement = advertisement,
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
@@ -99,16 +91,14 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
-                )
-            )
-            coEvery { repository.firstIdSent } returns flowOf(firstIdSend)
-            coEvery { repository.lastIdSent } returns flowOf(lastIdSend)
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
                 RepositoryStatus.SuccessBleData(
                     null
+                )
+            )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(
+                    listOf(bleDataCharacteristics)
                 )
             )
         },
@@ -118,8 +108,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
@@ -134,23 +123,20 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
-            )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
+            coEvery { repository.getDataFilteredByDate(any()) } returns flowOf(
                 RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(bleData)
+                RepositoryStatus.SuccessBleData(bleDataEntity.toDeviceReading())
             )
             coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(bleData)
+                RepositoryStatus.SuccessBleData(bleDataEntity.toDeviceReading())
+            )
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(listOf(bleDataCharacteristics))
             )
         },
         thenStates = {
@@ -158,41 +144,11 @@ class MainViewModelTest : BaseCoroutineTest() {
                 MainState(
                     advertisement = advertisement,
                     values = listOf(),
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend,
-                    lastData = bleData
+                    lastDeviceReading = bleDataEntity.toDeviceReading(),
+                    dataCharacteristics = listOf(bleDataCharacteristics)
                 )
             )
         }
-    )
-
-    @Test
-    fun `start observing data from repository with error`() = processorTest(
-        processor = { viewModel.processor },
-        given = {
-            coEvery { kableService.refreshDeviceInfo(any()) } returns flowOf(
-                ScanStatus.Found(
-                    advertisement
-                )
-            )
-            coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.Error
-            )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
-            )
-            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessBleData(null)
-            )
-        },
-        whenEvent = MainEvent.StartCollectingData,
-        thenEffects = {
-            assertValues(MainEffect.ShowError("Error during collecting data from DB"))
-        },
     )
 
     @Test
@@ -204,21 +160,19 @@ class MainViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
-            coEvery { repository.getDataFromDataBase(any()) } returns flowOf(
-                RepositoryStatus.SuccessGetListBleData(
-                    listOf()
+            coEvery { repository.getLastDataFromDataBase(any()) } returns flowOf(
+                RepositoryStatus.SuccessBleData(
+                    bleDataEntity.toDeviceReading()
                 )
             )
-            coEvery { repository.firstIdSent } returns flowOf(
-                firstIdSend
-            )
-            coEvery { repository.lastIdSent } returns flowOf(
-                lastIdSend
+            coEvery { repository.getCharacteristicsPerDay() } returns flowOf(
+                RepositoryStatus.SuccessBleCharacteristics(
+                    listOf(bleDataCharacteristics)
+                )
             )
             coEvery { kableService.stopScan() } returns Unit
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
-            coEvery { repository.stop() } returns Unit
         },
         whenEvent = MainEvent.EndConnectingToDevice,
         thenEffects = {

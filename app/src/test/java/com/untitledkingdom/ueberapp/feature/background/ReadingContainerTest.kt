@@ -3,15 +3,14 @@ package com.untitledkingdom.ueberapp.feature.background
 import com.tomcz.ellipse.test.processorTest
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
-import com.untitledkingdom.ueberapp.feature.main.MainRepository
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.ReadingContainer
+import com.untitledkingdom.ueberapp.service.ReadingRepository
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.CoroutineScope
@@ -30,10 +29,10 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class ReadingContainerTest : BaseCoroutineTest() {
     private val dataStorage by lazy { mockk<DataStorage>() }
-    private val repository by lazy { mockk<MainRepository>() }
+    private val repository by lazy { mockk<ReadingRepository>() }
     private val device = mockk<Device>()
     private val mainThreadSurrogate = UnconfinedTestDispatcher()
-    private val deviceReading = mockk<DeviceReading>()
+    private val reading = mockk<Reading>()
     private val backgroundContainer by lazy {
         ReadingContainer(
             repository = repository,
@@ -55,14 +54,15 @@ class ReadingContainerTest : BaseCoroutineTest() {
             val utilFunctions = DateConverter
             mockkObject(utilFunctions)
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
-            coEvery { device.observationOnDataCharacteristic() } returns flowOf(deviceReading)
+            coEvery { device.observationOnDataCharacteristic() } returns flowOf(reading)
             coEvery { repository.saveData(any(), any()) } returns Unit
+            coEvery { repository.start() } returns Unit
         },
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
             assertValues(
                 ReadingEffect.SendBroadcastToActivity,
-                ReadingEffect.StartNotifying(deviceReading),
+                ReadingEffect.StartNotifying(reading),
             )
         }
     )
@@ -72,7 +72,6 @@ class ReadingContainerTest : BaseCoroutineTest() {
         processor = { backgroundContainer.processor },
         given = {
             coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
-            every { repository.stop() } returns Unit
         },
         whenEvent = ReadingEvent.StopReading,
         thenEffects = {

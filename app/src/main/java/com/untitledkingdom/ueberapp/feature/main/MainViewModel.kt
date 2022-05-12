@@ -24,8 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -43,43 +41,57 @@ class MainViewModel @Inject constructor(
     private val dataStorage: DataStorage,
     private val scanService: ScanService,
 ) : ViewModel() {
-    private var isCollectingData = true
+    private var isCollectingCharacteristics = true
+    private var isCollectingDataFilteredByDate = true
     val processor: MainProcessor = processor(
         initialState = MainState(),
         prepare = {
             merge(
                 refreshDeviceInfo(effects),
-                prepareFirstId(),
-                prepareLastId(),
-                getLastData()
+                getLastData(),
+                collectDataCharacteristics()
             )
         },
         onEvent = { event ->
             when (event) {
                 is MainEvent.TabChanged -> flowOf(MainPartialState.TabChanged(event.newTabIndex))
                 is MainEvent.EndConnectingToDevice -> disconnect(effects).toNoAction()
-                is MainEvent.SetSelectedDate -> flowOf(MainPartialState.SetSelectedDate(event.date))
+                is MainEvent.OpenDetails -> {
+                    isCollectingDataFilteredByDate = true
+                    openDetails(event.date)
+                }
                 MainEvent.StartScanning -> refreshDeviceInfo(
                     effects = effects
                 )
-                MainEvent.StartCollectingData -> {
-                    isCollectingData = true
-                    collectDataFromDataBase(effects)
+                MainEvent.ResetValues -> {
+                    isCollectingDataFilteredByDate = false
+                    flowOf(
+                        MainPartialState.SetSelectedDate(
+                            selectedDate = ""
+                        )
+                    )
                 }
-                MainEvent.StopCollectingData -> stopCollectingData()
             }
         }
     )
 
-    private fun stopCollectingData(): Flow<MainPartialState> = flow {
-        isCollectingData = false
-        emit(MainPartialState.SetValues(listOf()))
-    }
+    private fun openDetails(date: String): Flow<PartialState<MainState>> =
+        repository.getDataFilteredByDate(date).map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessGetListBleData ->
+                    MainPartialState.SetValues(status.data, date)
+                else -> NoAction()
+            }
+        }.takeWhile {
+            isCollectingDataFilteredByDate
+        }
 
     private fun getLastData(): Flow<PartialState<MainState>> = repository
         .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
             when (status) {
-                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(lastBleData = status.data)
+                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(
+                    lastDeviceReading = status.data
+                )
                 else -> NoAction()
             }
         }
@@ -90,31 +102,16 @@ class MainViewModel @Inject constructor(
         effects.send(MainEffect.GoToWelcome)
     }
 
-    private fun collectDataFromDataBase(effects: EffectsCollector<MainEffect>): Flow<PartialState<MainState>> =
-        repository.getDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE)
-            .map { status ->
-                when (status) {
-                    RepositoryStatus.Error -> {
-                        effects.send(MainEffect.ShowError("Error during collecting data from DB"))
-                            .let { NoAction() }
-                    }
-                    is RepositoryStatus.SuccessGetListBleData -> {
-                        MainPartialState.SetValues(status.data)
-                    }
-                    else -> NoAction()
+    private fun collectDataCharacteristics(): Flow<PartialState<MainState>> =
+        repository.getCharacteristicsPerDay().map { status ->
+            when (status) {
+                is RepositoryStatus.SuccessBleCharacteristics -> {
+                    MainPartialState.SetDataCharacteristics(
+                        status.bleCharacteristics
+                    )
                 }
-            }.takeWhile {
-                isCollectingData
+                else -> NoAction()
             }
-
-    private fun prepareLastId(): Flow<PartialState<MainState>> =
-        repository.lastIdSent.flatMapLatest {
-            flowOf(MainPartialState.SetLastIdSend(lastIdSend = it))
-        }
-
-    private fun prepareFirstId(): Flow<PartialState<MainState>> =
-        repository.firstIdSent.flatMapLatest {
-            flowOf(MainPartialState.SetFirstIdSend(firstIdSend = it))
         }
 
     private suspend fun refreshDeviceInfo(

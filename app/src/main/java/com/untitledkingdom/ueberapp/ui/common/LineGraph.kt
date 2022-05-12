@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.madrapps.plot.line.DataPoint
 import com.madrapps.plot.line.LineGraph
 import com.madrapps.plot.line.LinePlot
-import com.untitledkingdom.ueberapp.devices.data.BleData
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.GrayOsVersion
@@ -48,15 +48,15 @@ import java.text.DecimalFormat
 
 @Composable
 internal fun LineGraphWithText(
-    data: List<BleData>,
+    data: List<DeviceReading>,
     modifier: Modifier,
     listState: LazyListState
 ) {
     val temperature = data.map {
-        DataPoint(data.indexOf(it).toFloat(), it.deviceReading.temperature)
+        DataPoint(data.indexOf(it).toFloat(), it.reading.temperature)
     }
     val humidity = data.map {
-        DataPoint(data.indexOf(it).toFloat(), it.deviceReading.humidity.toFloat())
+        DataPoint(data.indexOf(it).toFloat(), it.reading.humidity.toFloat())
     }
     val totalWidth = remember { mutableStateOf(0) }
     Column(

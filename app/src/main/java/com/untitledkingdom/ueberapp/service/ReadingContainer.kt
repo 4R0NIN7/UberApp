@@ -6,12 +6,13 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
-import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
+import com.untitledkingdom.ueberapp.utils.AppModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collect
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -21,9 +22,9 @@ typealias BackgroundProcessor = Processor<ReadingEvent, Unit, ReadingEffect>
 @ExperimentalCoroutinesApi
 @FlowPreview
 class ReadingContainer @Inject constructor(
-    private val repository: MainRepository,
+    private val repository: ReadingRepository,
     private val device: Device,
-    scope: CoroutineScope
+    @AppModules.ReadingScope private val scope: CoroutineScope,
 ) {
     val processor: BackgroundProcessor = scope.processor(
         onEvent = { event ->
@@ -35,7 +36,6 @@ class ReadingContainer @Inject constructor(
     )
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
-        repository.stop()
         effects.send(ReadingEffect.Stop)
     }
 
@@ -57,16 +57,16 @@ class ReadingContainer @Inject constructor(
         try {
             effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
+            repository.start()
             device.observationOnDataCharacteristic().collect { reading ->
                 repository.saveData(
-                    deviceReading = reading,
+                    reading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
                 )
                 effects.send(ReadingEffect.StartNotifying(reading))
             }
         } catch (e: ConnectionLostException) {
             Timber.d("Service cannot connect to device!")
-            startReading(effects)
         } catch (e: Exception) {
             Timber.d("startObservingData exception! $e")
         }

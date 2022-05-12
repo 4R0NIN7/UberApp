@@ -21,18 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.tomcz.ellipse.common.collectAsState
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.DividerGray
 import com.untitledkingdom.ueberapp.feature.main.MainProcessor
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
 import com.untitledkingdom.ueberapp.ui.common.LineGraphWithText
 import com.untitledkingdom.ueberapp.ui.common.ReadingItem
 import com.untitledkingdom.ueberapp.ui.common.Toolbar
-import com.untitledkingdom.ueberapp.ui.common.isSynchronized
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.padding12
 import com.untitledkingdom.ueberapp.ui.values.padding16
 import com.untitledkingdom.ueberapp.ui.values.padding8
-import com.untitledkingdom.ueberapp.utils.date.DateFormatter
 
 @ExperimentalMaterialApi
 @Composable
@@ -42,7 +41,7 @@ fun DetailsScreen(processor: MainProcessor) {
             title = stringResource(R.string.main_close),
             action = {
                 processor.sendEvent(
-                    MainEvent.SetSelectedDate("")
+                    MainEvent.ResetValues
                 )
             }
         )
@@ -57,21 +56,18 @@ fun DetailsScreen(processor: MainProcessor) {
                 .padding(it)
         ) {
             val listState = rememberLazyListState()
-            Chart(processor = processor, listState)
+            val readings by processor.collectAsState { state ->
+                state.values.sortedBy { data -> data.id }
+            }
+            Chart(listState, readings)
             DividerGray()
-            Readings(processor = processor, listState)
+            Readings(listState, readings)
         }
     }
 }
 
 @Composable
-fun Chart(processor: MainProcessor, listState: LazyListState) {
-    val selectedDate by processor.collectAsState { it.selectedDate }
-    val readings by processor.collectAsState {
-        it.values.filter { bleData ->
-            bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }.distinct()
-    }
+fun Chart(listState: LazyListState, readings: List<DeviceReading>) {
     Column {
         LineGraphWithText(
             data = readings,
@@ -83,17 +79,9 @@ fun Chart(processor: MainProcessor, listState: LazyListState) {
 
 @Composable
 fun Readings(
-    processor: MainProcessor,
     listState: LazyListState,
+    readings: List<DeviceReading>
 ) {
-    val selectedDate by processor.collectAsState { it.selectedDate }
-    val valuesFilteredBySelectedDate by processor.collectAsState {
-        it.values.filter { bleData ->
-            bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYY) == selectedDate
-        }.distinct()
-    }
-    val firstIdSend by processor.collectAsState { it.firstIdSend }
-    val lastIdSend by processor.collectAsState { it.lastIdSend }
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -102,14 +90,9 @@ fun Readings(
         contentPadding = PaddingValues(bottom = padding16),
         state = listState
     ) {
-        items(items = valuesFilteredBySelectedDate) { bleData ->
+        items(items = readings) { bleData ->
             ReadingItem(
                 bleData = bleData,
-                isSynchronized = isSynchronized(
-                    firstIdSend = firstIdSend,
-                    lastIdSend = lastIdSend,
-                    id = bleData.id
-                )
             )
         }
     }

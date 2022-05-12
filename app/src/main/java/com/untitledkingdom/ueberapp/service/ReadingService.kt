@@ -14,26 +14,25 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
 import com.untitledkingdom.ueberapp.utils.DaggerContainerComponent
+import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
 @FlowPreview
 @AndroidEntryPoint
-class ReadingService @Inject constructor() : Service() {
+class ReadingService : Service() {
     companion object {
         private const val CHANNEL_ID = "ReadingService"
         private const val CHANNEL_NAME = "ReadingContainer Reading"
@@ -47,15 +46,22 @@ class ReadingService @Inject constructor() : Service() {
 
     private var isFirstRun = true
     private var isSendingBroadcast = true
-    private val dispatcher = Dispatchers.IO
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     @Inject
     lateinit var readingContainer: ReadingContainer
 
+    private fun getScope(): CoroutineScope {
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(
+            applicationContext,
+            ScopeProviderEntryPoint::class.java
+        )
+        return hiltEntryPoint.scope()
+    }
+
     override fun onCreate() {
         DaggerContainerComponent.builder()
-            .scope(scope).dependencies(
+            .scope(getScope())
+            .dependencies(
                 EntryPointAccessors.fromApplication(
                     applicationContext,
                     ContainerDependencies::class.java
@@ -64,7 +70,7 @@ class ReadingService @Inject constructor() : Service() {
             .build()
             .inject(this)
         super.onCreate()
-        scope.onProcessor(
+        getScope().onProcessor(
             processor = readingContainer::processor,
             onEffect = ::trigger,
         )
@@ -107,7 +113,7 @@ class ReadingService @Inject constructor() : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun startNotifying(reading: DeviceReading) {
+    private fun startNotifying(reading: Reading) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         val channel = NotificationChannel(
@@ -158,7 +164,7 @@ class ReadingService @Inject constructor() : Service() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
+        getScope().coroutineContext.cancelChildren()
         super.onDestroy()
     }
 

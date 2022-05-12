@@ -3,6 +3,9 @@ package com.untitledkingdom.ueberapp.utils.functions
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import com.juul.kable.Advertisement
+import com.untitledkingdom.ueberapp.database.data.BleDataEntity
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.feature.welcome.data.ScannedDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -30,6 +33,13 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
 )
 
 fun Dp.toPx(density: Density) = value * density.density
+
+fun BleDataEntity.toDeviceReading() = DeviceReading(
+    id = id,
+    reading = Reading(temperature, humidity),
+    localDateTime = dateTime,
+    isSynchronized = isSynchronized
+)
 
 @ExperimentalUnsignedTypes
 fun LocalDateTime.toUByteArray(): ByteArray {

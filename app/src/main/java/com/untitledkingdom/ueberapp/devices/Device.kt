@@ -11,7 +11,7 @@ import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceDataStatus
-import com.untitledkingdom.ueberapp.devices.data.DeviceReading
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
@@ -41,7 +41,7 @@ class Device @Inject constructor(
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
     @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher,
-    private val scope: CoroutineScope
+    @AppModules.ReadingScope private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null
     private suspend fun getPeripheral(): Peripheral {
@@ -119,7 +119,7 @@ class Device @Inject constructor(
                     }
                     if (readings != null) {
                         return DeviceDataStatus.SuccessDeviceDataReading(
-                            DeviceReading(readings!!.temperature, readings!!.hummidity)
+                            Reading(readings!!.temperature, readings!!.hummidity)
                         )
                     }
                 }
@@ -184,7 +184,7 @@ class Device @Inject constructor(
         }
     }
 
-    suspend fun observationOnDataCharacteristic(): Flow<DeviceReading> =
+    suspend fun observationOnDataCharacteristic(): Flow<Reading> =
         getPeripheral().observe(
             characteristicOf(
                 service = DeviceConst.SERVICE_DATA_SERVICE,
@@ -194,7 +194,7 @@ class Device @Inject constructor(
             withContext(dispatcher) {
                 @Suppress("BlockingMethodInNonBlockingContext")
                 val reading = ReadingsOuterClass.Readings.parseFrom(data)
-                DeviceReading(reading.temperature, reading.hummidity)
+                Reading(reading.temperature, reading.hummidity)
             }
         }.catch { cause ->
             when (cause) {
@@ -244,7 +244,7 @@ class Device @Inject constructor(
                 else -> {}
             }
         } catch (e: ConnectionLostException) {
-            Timber.d("Unable to write deviceReading $e")
+            Timber.d("Unable to write reading $e")
             reconnect()
         }
     }

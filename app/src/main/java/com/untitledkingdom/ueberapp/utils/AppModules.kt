@@ -14,6 +14,7 @@ import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.api.FakeApi
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConst
+import com.untitledkingdom.ueberapp.database.TimeConverter
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.datastore.DataStorageImpl
@@ -21,6 +22,8 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.ScanServiceImpl
+import com.untitledkingdom.ueberapp.service.ReadingRepository
+import com.untitledkingdom.ueberapp.service.ReadingRepositoryImpl
 import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
@@ -58,7 +61,7 @@ object AppModules {
 
     @Provides
     @Singleton
-    fun provideRestApiClient(database: Database): ApiService {
+    fun provideRestApiClient(): ApiService {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -68,7 +71,7 @@ object AppModules {
             .baseUrl(BuildConfig.URL)
             .build()
         // return retrofit.create(ApiService::class.java)
-        return FakeApi(database)
+        return FakeApi()
     }
 
     private fun getMockRetrofitClient(): OkHttpClient {
@@ -86,12 +89,14 @@ object AppModules {
 
     @Provides
     @Singleton
-    fun provideDataBase(context: Application): Database =
+    fun provideDataBase(context: Application, timeManager: TimeManager): Database =
         Room.databaseBuilder(
             context,
             Database::class.java,
             DatabaseConst.DATABASE_NAME
-        ).fallbackToDestructiveMigration().build()
+        ).addTypeConverter(TimeConverter(timeManager = timeManager))
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     @Singleton
@@ -136,6 +141,15 @@ object AppModules {
     @MainImmediateDispatcher
     @Provides
     fun providesMainImmediateDispatcher(): CoroutineDispatcher = Dispatchers.Main.immediate
+
+    @Retention(AnnotationRetention.BINARY)
+    @Qualifier
+    annotation class ReadingScope
+
+    @ReadingScope
+    @Provides
+    @Singleton
+    fun provideScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }
 
 @Module
@@ -144,12 +158,13 @@ interface Binds {
     @Binds
     fun bindKableService(kableServiceImpl: ScanServiceImpl): ScanService
 
-    @FlowPreview
-    @ExperimentalCoroutinesApi
-    @ExperimentalUnsignedTypes
     @Binds
     @Singleton
     fun bindMainRepository(mainRepositoryImpl: MainRepositoryImpl): MainRepository
+
+    @Binds
+    @Singleton
+    fun bindReadingRepository(readingRepositoryImpl: ReadingRepositoryImpl): ReadingRepository
 
     @Binds
     @Singleton
@@ -163,7 +178,7 @@ interface Binds {
 
     @Binds
     @Singleton
-    fun provideDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
+    fun bindDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
 }
 
 @ExperimentalUnsignedTypes
@@ -172,12 +187,21 @@ interface Binds {
 @InstallIn(SingletonComponent::class)
 @EntryPoint
 interface ContainerDependencies {
-    fun getRepository(): MainRepository
+    fun getRepository(): ReadingRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
-
     @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
+}
+
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
+@InstallIn(SingletonComponent::class)
+@EntryPoint
+interface ScopeProviderEntryPoint {
+    @AppModules.ReadingScope
+    fun scope(): CoroutineScope
 }
 
 @FlowPreview
@@ -189,7 +213,7 @@ interface ContainerComponent {
 
     @Component.Builder
     interface Builder {
-        fun scope(@BindsInstance scope: CoroutineScope): Builder
+        fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
         fun dependencies(containerDependencies: ContainerDependencies): Builder
         fun build(): ContainerComponent
     }
