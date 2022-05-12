@@ -41,7 +41,7 @@ class Device @Inject constructor(
     private val dataStorage: DataStorage,
     private val timeManager: TimeManager,
     @AppModules.IoDispatcher private val dispatcher: CoroutineDispatcher,
-    private val scope: CoroutineScope
+    @AppModules.ReadingScope private val scope: CoroutineScope
 ) {
     private var device: Peripheral? = null
     private suspend fun getPeripheral(): Peripheral {

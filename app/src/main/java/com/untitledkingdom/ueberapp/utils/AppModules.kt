@@ -141,6 +141,15 @@ object AppModules {
     @MainImmediateDispatcher
     @Provides
     fun providesMainImmediateDispatcher(): CoroutineDispatcher = Dispatchers.Main.immediate
+
+    @Retention(AnnotationRetention.BINARY)
+    @Qualifier
+    annotation class ReadingScope
+
+    @ReadingScope
+    @Provides
+    @Singleton
+    fun provideScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }
 
 @Module
@@ -181,9 +190,18 @@ interface ContainerDependencies {
     fun getRepository(): ReadingRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
-
     @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
+}
+
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
+@InstallIn(SingletonComponent::class)
+@EntryPoint
+interface ScopeProviderEntryPoint {
+    @AppModules.ReadingScope
+    fun scope(): CoroutineScope
 }
 
 @FlowPreview
@@ -195,7 +213,7 @@ interface ContainerComponent {
 
     @Component.Builder
     interface Builder {
-        fun scope(@BindsInstance scope: CoroutineScope): Builder
+        fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
         fun dependencies(containerDependencies: ContainerDependencies): Builder
         fun build(): ContainerComponent
     }

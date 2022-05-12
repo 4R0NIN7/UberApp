@@ -5,8 +5,6 @@ import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -14,25 +12,28 @@ import javax.inject.Inject
 class ReadingRepositoryImpl @Inject constructor(
     private val database: Database,
     private val apiService: ApiService,
-    private val timeManager: TimeManager,
-    private val scope: CoroutineScope
+    private val timeManager: TimeManager
 ) : ReadingRepository {
     private val incrementer = AtomicInteger(1)
     private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
     private var lastIdSent: Int = 0
     private var isFirstTime = true
+
     private fun setLastId(newId: Int) {
         lastIdSent = newId
     }
 
-    private fun sendData(data: List<BleDataEntity>) = scope.launch {
+    override fun start() {
+        isFirstTime = true
+    }
+
+    private suspend fun sendData(data: List<BleDataEntity>) {
         Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         Timber.d("Sending data...")
         try {
             val response = apiService.sendDataToService(bleDatumEntities = data)
             if (response.isSuccessful) {
                 Timber.d("Data sent!")
-                setLastId(data.last().id)
                 database.getDao().saveAllData(
                     dataList = data.map {
                         BleDataEntity(
@@ -71,8 +72,7 @@ class ReadingRepositoryImpl @Inject constructor(
             isFirstTime = false
             val dataThatWasNotSynchronized = database
                 .getDao()
-                .getAllData()
-                .filter { it.serviceUUID == serviceUUID && !it.isSynchronized }
+                .getDataNotSynchronized(serviceUUID)
             sendData(dataThatWasNotSynchronized)
             setLastId(
                 database
@@ -93,10 +93,5 @@ class ReadingRepositoryImpl @Inject constructor(
                 )
             }
         }
-    }
-
-    override fun start() {
-        Timber.d("Starting repository")
-        isFirstTime = true
     }
 }

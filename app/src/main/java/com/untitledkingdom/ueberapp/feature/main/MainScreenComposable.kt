@@ -190,7 +190,7 @@ fun MainScreen(processor: MainProcessor) {
 @Composable
 fun HistoryScreen(processor: MainProcessor) {
     val dayCharacteristics by processor.collectAsState {
-        it.dataCharacteristics
+        it.dataCharacteristics.sortedByDescending { bleCharacteristic -> bleCharacteristic.day }
     }
     Column(
         verticalArrangement = Arrangement.SpaceBetween,

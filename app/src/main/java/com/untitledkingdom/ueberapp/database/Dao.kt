@@ -22,6 +22,15 @@ interface Dao {
     @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID ORDER BY ID DESC LIMIT 1")
     fun getLastBleData(serviceUUID: String): Flow<BleDataEntity>
 
+    @Query("SELECT ID from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 1 ORDER BY ID DESC LIMIT 1")
+    fun getLastSentId(serviceUUID: String): Flow<Int>
+
+    @Query("SELECT ID from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 0 ORDER BY ID DESC LIMIT 1")
+    fun getLastId(serviceUUID: String): Flow<Int>
+
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 0")
+    suspend fun getDataNotSynchronized(serviceUUID: String): List<BleDataEntity>
+
     @Insert(onConflict = REPLACE)
     suspend fun saveData(data: BleDataEntity)
 
@@ -30,6 +39,9 @@ interface Dao {
 
     @Query("DELETE from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
     suspend fun wipeData(serviceUUID: String)
+
+    @Query("Select * from ble_data WHERE  date(dateTime,'unixepoch','localtime') = :dateYYYYMMDD")
+    fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<List<BleDataEntity>>
 
     @Query(
         "SELECT avg(temperature) as averageTemperature," +
@@ -42,7 +54,4 @@ interface Dao {
             " FROM ble_data GROUP BY date(dateTime, 'unixepoch', 'localtime')"
     )
     fun getAnalyticsPerDayFromDataBase(): Flow<List<BleDataCharacteristics>>
-
-    @Query("Select * from ble_data WHERE  date(dateTime,'unixepoch','localtime') = :dateYYYYMMDD")
-    fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<List<BleDataEntity>>
 }

@@ -8,10 +8,11 @@ import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
+import com.untitledkingdom.ueberapp.utils.AppModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.collect
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -23,23 +24,18 @@ typealias BackgroundProcessor = Processor<ReadingEvent, Unit, ReadingEffect>
 class ReadingContainer @Inject constructor(
     private val repository: ReadingRepository,
     private val device: Device,
-    scope: CoroutineScope
+    @AppModules.ReadingScope private val scope: CoroutineScope,
 ) {
-    private var isActive = true
     val processor: BackgroundProcessor = scope.processor(
         onEvent = { event ->
             when (event) {
-                ReadingEvent.StartReading -> {
-                    isActive = true
-                    startReading(effects)
-                }
+                ReadingEvent.StartReading -> startReading(effects)
                 ReadingEvent.StopReading -> stopReading(effects)
             }
         }
     )
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
-        isActive = false
         effects.send(ReadingEffect.Stop)
     }
 
@@ -62,10 +58,7 @@ class ReadingContainer @Inject constructor(
             effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
             repository.start()
-            device.observationOnDataCharacteristic().takeWhile {
-                isActive
-            }.collect { reading ->
-                Timber.d("Reading $reading")
+            device.observationOnDataCharacteristic().collect { reading ->
                 repository.saveData(
                     reading = reading,
                     serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
