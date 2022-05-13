@@ -6,7 +6,6 @@ import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 class ReadingRepositoryImpl @Inject constructor(
@@ -14,17 +13,22 @@ class ReadingRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val timeManager: TimeManager
 ) : ReadingRepository {
-    private val incrementer = AtomicInteger(1)
-    private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
     private var lastIdSent: Int = 0
-    private var isFirstTime = true
-
     private fun setLastId(newId: Int) {
         lastIdSent = newId
     }
 
-    override fun start() {
-        isFirstTime = true
+    override suspend fun start(serviceUUID: String) {
+        val dataThatWasNotSynchronized = database
+            .getDao()
+            .getDataNotSynchronized(serviceUUID)
+        sendData(dataThatWasNotSynchronized)
+        setLastId(
+            database
+                .getDao()
+                .getAllData(serviceUUID)
+                .last { it.serviceUUID == serviceUUID }.id
+        )
     }
 
     private suspend fun sendData(data: List<BleDataEntity>) {
@@ -46,12 +50,12 @@ class ReadingRepositoryImpl @Inject constructor(
                         )
                     }
                 )
+                setLastId(data.last().id)
             } else {
                 throw Exception()
             }
         } catch (e: Exception) {
-            Timber.d("Unable to send data!")
-            incrementer.incrementAndGet()
+            Timber.d("Unable to send data! $e")
         }
     }
 
@@ -68,30 +72,12 @@ class ReadingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun sendDataToServer(serviceUUID: String) {
-        if (isFirstTime) {
-            isFirstTime = false
-            val dataThatWasNotSynchronized = database
-                .getDao()
-                .getDataNotSynchronized(serviceUUID)
-            sendData(dataThatWasNotSynchronized)
-            setLastId(
-                database
-                    .getDao()
-                    .getAllData()
-                    .last { it.serviceUUID == serviceUUID }.id
-            )
-        } else {
-            val data = database
-                .getDao()
-                .getAllData()
-                .filter { it.serviceUUID == serviceUUID }
-            if (lastIdSent + numberOfTries == data.last().id) {
-                sendData(
-                    data.filter {
-                        it.id in lastIdSent..data.last().id
-                    }
-                )
-            }
+        val data = database
+            .getDao()
+            .getAllData(serviceUUID)
+            .filter { it.serviceUUID == serviceUUID && !it.isSynchronized }
+        if (data.size >= 20) {
+            sendData(data)
         }
     }
 }

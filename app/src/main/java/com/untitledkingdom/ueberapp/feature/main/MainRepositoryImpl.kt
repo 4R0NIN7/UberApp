@@ -27,7 +27,7 @@ class MainRepositoryImpl @Inject constructor(
             try {
                 RepositoryStatus.SuccessBleData(data.toDeviceReading())
             } catch (e: Exception) {
-                RepositoryStatus.SuccessBleData(data = null)
+                RepositoryStatus.SuccessBleData(deviceReading = null)
             }
         }
 

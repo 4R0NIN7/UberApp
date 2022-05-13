@@ -10,14 +10,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface Dao {
-    @Query("SELECT * from ${DatabaseConst.TABLE}")
-    suspend fun getAllData(): List<BleDataEntity>
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
+    suspend fun getAllData(serviceUUID: String): List<BleDataEntity>
 
     @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID ORDER BY dateTime DESC")
     fun getAllDataFlow(serviceUUID: String): Flow<List<BleDataEntity>>
-
-    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE ID = :id")
-    suspend fun getData(id: Int): BleDataEntity
 
     @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID ORDER BY ID DESC LIMIT 1")
     fun getLastBleData(serviceUUID: String): Flow<BleDataEntity>
@@ -54,4 +51,7 @@ interface Dao {
             " FROM ble_data GROUP BY date(dateTime, 'unixepoch', 'localtime')"
     )
     fun getAnalyticsPerDayFromDataBase(): Flow<List<BleDataCharacteristics>>
+
+    @Query("SELECT count(*) as notSynchronized from ble_data WHERE serviceUUID = :serviceUUID AND isSynchronized = 0")
+    fun countNotSynchronized(serviceUUID: String): Flow<Int?>
 }
