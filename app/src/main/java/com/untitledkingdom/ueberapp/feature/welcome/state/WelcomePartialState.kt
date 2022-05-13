@@ -9,10 +9,6 @@ sealed interface WelcomePartialState : PartialState<WelcomeState> {
             oldState.copy(advertisements = listOf())
     }
 
-    object ReleaseState : WelcomePartialState {
-        override fun reduce(oldState: WelcomeState): WelcomeState = WelcomeState()
-    }
-
     data class SetIsScanning(val isScanning: Boolean) : WelcomePartialState {
         override fun reduce(oldState: WelcomeState): WelcomeState =
             oldState.copy(isScanning = isScanning)
@@ -26,5 +22,10 @@ sealed interface WelcomePartialState : PartialState<WelcomeState> {
     data class SetIsClickable(val isClickable: Boolean) : WelcomePartialState {
         override fun reduce(oldState: WelcomeState): WelcomeState =
             oldState.copy(isClickable = isClickable)
+    }
+
+    data class SetIsConnecting(val isConnecting: Boolean) : WelcomePartialState {
+        override fun reduce(oldState: WelcomeState): WelcomeState =
+            oldState.copy(isConnecting = isConnecting)
     }
 }

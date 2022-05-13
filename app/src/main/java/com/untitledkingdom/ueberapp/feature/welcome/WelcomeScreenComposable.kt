@@ -27,6 +27,7 @@ import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.ui.common.DeviceItem
+import com.untitledkingdom.ueberapp.ui.common.LoadingDialog
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.Typography
@@ -38,6 +39,7 @@ import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
 
 @Composable
 fun WelcomeScreen(processor: WelcomeProcessor) {
+    val isConnecting by processor.collectAsState { it.isConnecting }
     Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -46,8 +48,12 @@ fun WelcomeScreen(processor: WelcomeProcessor) {
             .background(color = AppBackground)
             .padding(horizontal = padding12)
     ) {
-        AppInfo(processor = processor)
-        Devices(processor = processor)
+        if (!isConnecting) {
+            AppInfo(processor = processor)
+            Devices(processor = processor)
+        } else {
+            LoadingDialog()
+        }
     }
 }
 

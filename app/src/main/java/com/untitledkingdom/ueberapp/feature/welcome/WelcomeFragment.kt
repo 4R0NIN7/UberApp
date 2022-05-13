@@ -13,14 +13,12 @@ import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
-import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEvent
 import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.flowOf
 
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
@@ -38,7 +36,6 @@ class WelcomeFragment : Fragment() {
             lifecycleState = Lifecycle.State.RESUMED,
             processor = welcomeViewModel::processor,
             onEffect = ::trigger,
-            viewEvents = ::events
         )
         return ComposeView(
             requireContext()
@@ -48,8 +45,6 @@ class WelcomeFragment : Fragment() {
             }
         }
     }
-
-    private fun events() = listOf(flowOf(WelcomeEvent.StartService))
 
     private fun trigger(effect: WelcomeEffect) {
         when (effect) {
