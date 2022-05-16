@@ -59,7 +59,8 @@ fun DetailsScreen(processor: MainProcessor) {
             val readings by processor.collectAsState { state ->
                 state.values.sortedBy { data -> data.id }
             }
-            Chart(listState, readings)
+            val selectedDate by processor.collectAsState { state -> state.selectedDate }
+            Chart(listState, readings, selectedDate)
             DividerGray()
             Readings(listState, readings)
         }
@@ -67,12 +68,17 @@ fun DetailsScreen(processor: MainProcessor) {
 }
 
 @Composable
-fun Chart(listState: LazyListState, readings: List<DeviceReading>) {
+fun Chart(
+    listState: LazyListState,
+    readings: List<DeviceReading>,
+    selectedDate: String
+) {
     Column {
         LineGraphWithText(
             data = readings,
             modifier = Modifier.fillMaxWidth(),
             listState = listState,
+            date = selectedDate
         )
     }
 }
@@ -90,9 +96,10 @@ fun Readings(
         contentPadding = PaddingValues(bottom = padding16),
         state = listState
     ) {
-        items(items = readings) { bleData ->
+        items(items = readings) { deviceReading ->
             ReadingItem(
-                bleData = bleData,
+                deviceReading = deviceReading,
+                showDateWithLocalDate = false
             )
         }
     }

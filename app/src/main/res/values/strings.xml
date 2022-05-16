@@ -10,4 +10,19 @@
     <string name="main_history">History</string>
     <string name="main_settings">Settings</string>
     <string name="main_close">Close</string>
+    <string name="main_date">Date</string>
+    <string name="main_temperature">Temperature</string>
+    <string name="main_humidity">Humidity</string>
+    <string name="main_selected_device">Selected device</string>
+    <string name="main_actual_reading">Actual data from device</string>
+    <string name="main_history_empty">History is empty!</string>
+    <string name="graph_humidity">Humidity</string>
+    <string name="graph_temperature">Temperature</string>
+    <string name="graph_chart_from_date">Chart of the date:</string>
+    <string name="reading_reading_at">Reading at</string>
+    <string name="reading_temperature">Temperature</string>
+    <string name="reading_humidity">Humidity</string>
+    <string name="reading_synchronized">Synchronized</string>
+    <string name="graph_values_empty_unknown">Unknown</string>
+    <string name="graph_reading_at">Reading on</string>
 </resources>

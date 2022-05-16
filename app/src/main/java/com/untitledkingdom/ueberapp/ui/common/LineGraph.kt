@@ -1,6 +1,7 @@
 package com.untitledkingdom.ueberapp.ui.common
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,17 +27,22 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.madrapps.plot.line.DataPoint
 import com.madrapps.plot.line.LineGraph
 import com.madrapps.plot.line.LinePlot
+import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.ui.values.AppBackground
 import com.untitledkingdom.ueberapp.ui.values.Black
 import com.untitledkingdom.ueberapp.ui.values.GrayOsVersion
 import com.untitledkingdom.ueberapp.ui.values.PurpleRed
 import com.untitledkingdom.ueberapp.ui.values.RoomName3Color
+import com.untitledkingdom.ueberapp.ui.values.Typography
 import com.untitledkingdom.ueberapp.ui.values.White
+import com.untitledkingdom.ueberapp.ui.values.fontSize24
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.signalBad
 import com.untitledkingdom.ueberapp.ui.values.signalFull
@@ -50,7 +56,8 @@ import java.text.DecimalFormat
 internal fun LineGraphWithText(
     data: List<DeviceReading>,
     modifier: Modifier,
-    listState: LazyListState
+    listState: LazyListState,
+    date: String
 ) {
     val temperature = data.map {
         DataPoint(data.indexOf(it).toFloat(), it.reading.temperature)
@@ -62,8 +69,18 @@ internal fun LineGraphWithText(
     Column(
         modifier = Modifier.onGloballyPositioned {
             totalWidth.value = it.size.width
-        }
+        },
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = stringResource(R.string.graph_chart_from_date).plus(" $date"),
+            style = Typography.body1,
+            fontWeight = FontWeight.Bold,
+            fontSize = fontSize24,
+            color = Black,
+            modifier = Modifier.padding(vertical = padding8)
+        )
         val xOffset = remember { mutableStateOf(100f) }
         val cardWidth = remember { mutableStateOf(0) }
         val visibility = remember { mutableStateOf(false) }
@@ -93,16 +110,16 @@ internal fun LineGraphWithText(
                                     DateFormatter.dateDDMMMMYYYYHHMMSS
                                 )
                             } catch (e: IndexOutOfBoundsException) {
-                                "Unknown"
+                                stringResource(R.string.graph_values_empty_unknown)
                             }
                         Text(
                             modifier = Modifier.padding(vertical = 8.dp),
-                            text = "Reading on $datePoint",
+                            text = stringResource(R.string.graph_reading_at).plus(datePoint),
                             style = MaterialTheme.typography.subtitle1,
                             color = Black
                         )
-                        ScoreRow("Humidity", value[1].y, PurpleRed)
-                        ScoreRow("Temperature", value[0].y, signalGood)
+                        ScoreRow(stringResource(R.string.graph_humidity), value[1].y, PurpleRed)
+                        ScoreRow(stringResource(R.string.graph_temperature), value[0].y, signalGood)
                     }
                 }
             }
@@ -172,7 +189,7 @@ internal fun LineGraphWithText(
 
 @Composable
 private fun ScoreRow(title: String, value: Float, color: Color) {
-    val formatted = DecimalFormat("#.#").format(value)
+    val formatted = DecimalFormat("#.##").format(value)
     Box(
         Modifier
             .fillMaxWidth()

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -158,7 +159,8 @@ internal fun RowText(
 
 @Composable
 fun ReadingItem(
-    bleData: DeviceReading
+    deviceReading: DeviceReading,
+    showDateWithLocalDate: Boolean = true
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -174,18 +176,21 @@ fun ReadingItem(
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
                 RowText(
-                    key = "Reading at",
-                    value = bleData.localDateTime.format(DateFormatter.dateDDMMMMYYYYHHMMSS),
+                    key = stringResource(R.string.reading_reading_at),
+                    value = if (showDateWithLocalDate)
+                        deviceReading.localDateTime.format(DateFormatter.dateDDMMMMYYYYHHMMSS)
+                    else
+                        deviceReading.localDateTime.format(DateFormatter.dateHHMMSS),
                     colorValue = Black
                 )
                 RowText(
-                    key = "Temperature ",
-                    value = bleData.reading.temperature.toString(),
+                    key = stringResource(R.string.reading_temperature),
+                    value = deviceReading.reading.temperature.toString(),
                     colorValue = Gray
                 )
                 RowText(
-                    key = "Humidity ",
-                    value = bleData.reading.humidity.toString(),
+                    key = stringResource(R.string.reading_humidity),
+                    value = deviceReading.reading.humidity.toString(),
                     colorValue = Gray
                 )
                 Row(
@@ -196,13 +201,13 @@ fun ReadingItem(
                         .fillMaxWidth()
                 ) {
                     Text(
-                        text = "Synchronized ",
+                        text = stringResource(R.string.reading_synchronized),
                         style = Typography.body1,
                         fontWeight = FontWeight.Bold,
                         fontSize = fontSize18,
                         color = Black
                     )
-                    if (bleData.isSynchronized) {
+                    if (deviceReading.isSynchronized) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_baseline_beenhere_24),
                             contentDescription = null,

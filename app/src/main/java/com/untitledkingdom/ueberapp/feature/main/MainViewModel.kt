@@ -49,7 +49,7 @@ class MainViewModel @Inject constructor(
         prepare = {
             merge(
                 refreshDeviceInfo(effects),
-                getLastData(),
+                getLastReading(),
                 collectDataCharacteristics()
             )
         },
@@ -77,17 +77,21 @@ class MainViewModel @Inject constructor(
     )
 
     private fun openDetails(selectedDate: String): Flow<PartialState<MainState>> =
-        repository.getDataFilteredByDate(selectedDate).map { status ->
-            when (status) {
-                is RepositoryStatus.SuccessGetListBleData ->
-                    setDeviceReadingsWithSelectedDatePartial(status.deviceReadings, selectedDate)
-                else -> NoAction()
+        repository.getDataFilteredByDate(selectedDate, DeviceConst.SERVICE_DATA_SERVICE)
+            .map { status ->
+                when (status) {
+                    is RepositoryStatus.SuccessGetListBleData ->
+                        setDeviceReadingsWithSelectedDatePartial(
+                            status.deviceReadings,
+                            selectedDate
+                        )
+                    else -> NoAction()
+                }
+            }.takeWhile {
+                isCollectingDataFilteredByDate
             }
-        }.takeWhile {
-            isCollectingDataFilteredByDate
-        }
 
-    private fun getLastData(): Flow<PartialState<MainState>> = repository
+    private fun getLastReading(): Flow<PartialState<MainState>> = repository
         .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
             when (status) {
                 is RepositoryStatus.SuccessBleData -> setLastDeviceReadingPartial(status.deviceReading)
@@ -124,9 +128,6 @@ class MainViewModel @Inject constructor(
             }
         }
 
-    private fun setDataCharacteristicsPartial(bleCharacteristics: List<BleDataCharacteristics>) =
-        MainPartialState.SetDataCharacteristics(bleCharacteristics)
-
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
     ): Flow<PartialState<MainState>> =
@@ -153,6 +154,9 @@ class MainViewModel @Inject constructor(
 
     private fun setIsScanningPartial(isScanning: Boolean): MainPartialState =
         MainPartialState.SetIsScanning(isScanning)
+
+    private fun setDataCharacteristicsPartial(bleCharacteristics: List<BleDataCharacteristics>) =
+        MainPartialState.SetDataCharacteristics(bleCharacteristics)
 
     override fun onCleared() {
         super.onCleared()
