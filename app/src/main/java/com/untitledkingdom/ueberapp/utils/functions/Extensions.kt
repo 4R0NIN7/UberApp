@@ -33,7 +33,6 @@ fun Advertisement.toScannedDevice() = ScannedDevice(
 )
 
 fun Dp.toPx(density: Density) = value * density.density
-
 fun BleDataEntity.toDeviceReading() = DeviceReading(
     id = id,
     reading = Reading(temperature, humidity),

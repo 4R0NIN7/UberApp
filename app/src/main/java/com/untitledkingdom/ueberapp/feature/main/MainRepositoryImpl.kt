@@ -15,8 +15,8 @@ class MainRepositoryImpl @Inject constructor(
         database.getDao().wipeData(serviceUUID)
     }
 
-    override fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<RepositoryStatus> =
-        database.getDao().getDataFilteredByDate(dateYYYYMMDD).map { list ->
+    override fun getDataFilteredByDate(dateYYYYMMDD: String, serviceUUID: String): Flow<RepositoryStatus> =
+        database.getDao().getDataFilteredByDate(dateYYYYMMDD, serviceUUID = serviceUUID).map { list ->
             RepositoryStatus.SuccessGetListBleData(list.map { it.toDeviceReading() })
         }.catch {
             emit(RepositoryStatus.SuccessGetListBleData(listOf()))

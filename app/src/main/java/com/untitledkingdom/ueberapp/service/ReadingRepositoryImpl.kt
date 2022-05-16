@@ -79,9 +79,7 @@ class ReadingRepositoryImpl @Inject constructor(
 
     override fun start(serviceUUID: String) {
         if (!isStarted) {
-            Timber.d("IsStarted already true")
             if (scope.isActive) {
-                Timber.d("Scope active")
                 scope.launch {
                     countData(serviceUUID)
                 }

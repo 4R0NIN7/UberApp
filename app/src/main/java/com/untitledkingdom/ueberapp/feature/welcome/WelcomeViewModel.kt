@@ -35,8 +35,8 @@ class WelcomeViewModel @Inject constructor(
     private val scanService: ScanService,
     private val dataStorage: DataStorage
 ) : ViewModel() {
-
     private val scope = viewModelScope.childScope()
+
     val processor: WelcomeProcessor = processor(
         initialState = WelcomeState(),
         prepare = {

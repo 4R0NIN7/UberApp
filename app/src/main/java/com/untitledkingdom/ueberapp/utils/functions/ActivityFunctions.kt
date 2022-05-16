@@ -12,7 +12,6 @@ import com.untitledkingdom.ueberapp.service.ReadingService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
-import java.text.DecimalFormat
 
 fun requestPermission(
     permissionType: String,
@@ -63,8 +62,6 @@ fun toastMessage(message: String, context: Context) {
     ).show()
     Timber.d(message = message)
 }
-
-val decimalFormat = DecimalFormat("#.##")
 
 @ExperimentalUnsignedTypes
 @FlowPreview

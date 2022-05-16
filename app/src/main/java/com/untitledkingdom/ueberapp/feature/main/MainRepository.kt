@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface MainRepository {
     suspend fun wipeData(serviceUUID: String)
-    fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<RepositoryStatus>
+    fun getDataFilteredByDate(dateYYYYMMDD: String, serviceUUID: String): Flow<RepositoryStatus>
     fun getLastDataFromDataBase(serviceUUID: String): Flow<RepositoryStatus>
     fun getCharacteristicsPerDay(): Flow<RepositoryStatus>
 }

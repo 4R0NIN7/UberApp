@@ -68,9 +68,8 @@ import com.untitledkingdom.ueberapp.ui.values.padding72
 import com.untitledkingdom.ueberapp.ui.values.padding8
 import com.untitledkingdom.ueberapp.ui.values.shape8
 import com.untitledkingdom.ueberapp.utils.date.DateFormatter
-import com.untitledkingdom.ueberapp.utils.functions.decimalFormat
 import com.untitledkingdom.ueberapp.utils.functions.toScannedDevice
-import timber.log.Timber
+import java.text.DecimalFormat
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @ExperimentalMaterialApi
@@ -213,7 +212,13 @@ fun HistoryScreen(processor: MainProcessor) {
                 }
             }
         } else {
-            Text("History is empty!")
+            Text(
+                text = stringResource(R.string.main_history_empty),
+                style = Typography.body1,
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize18,
+                color = Black
+            )
         }
     }
 }
@@ -224,6 +229,7 @@ fun DayDisplay(
     characteristics: BleDataCharacteristics,
     processor: MainProcessor
 ) {
+    val decimalFormat = DecimalFormat("#.##")
     val date = characteristics.day
     val dateString = date.format(DateFormatter.dateYYYYMMDD)
     val temperatureString = "Min: ${decimalFormat.format(characteristics.minimalTemperature)}\n" +
@@ -239,7 +245,6 @@ fun DayDisplay(
         Card(
             modifier = Modifier
                 .clickable {
-                    Timber.d("date in history $date")
                     processor.sendEvent(MainEvent.OpenDetails(date = dateString))
                 }
                 .fillMaxWidth(),
@@ -250,14 +255,18 @@ fun DayDisplay(
             Column(
                 verticalArrangement = Arrangement.SpaceAround,
             ) {
-                RowText(key = "Date", value = dateString, colorValue = Black)
+                RowText(
+                    key = stringResource(R.string.main_date),
+                    value = dateString,
+                    colorValue = Black
+                )
                 ReadingsRow(
-                    key = "Temperature",
+                    key = stringResource(R.string.main_temperature),
                     value = temperatureString,
                     colorValue = SplashPurple
                 )
                 ReadingsRow(
-                    key = "Humidity",
+                    key = stringResource(R.string.main_humidity),
                     value = humidityString,
                     colorValue = Blue
                 )
@@ -342,7 +351,7 @@ fun ConnectedDevice(processor: MainProcessor) = Column {
         verticalArrangement = Arrangement.spacedBy(padding24)
     ) {
         Text(
-            text = "Selected device",
+            text = stringResource(R.string.main_selected_device),
             style = Typography.h6,
             fontWeight = FontWeight.SemiBold,
             color = BlackTitle,
@@ -376,14 +385,14 @@ fun ActualReading(processor: MainProcessor) = Column {
         verticalArrangement = Arrangement.spacedBy(padding24)
     ) {
         Text(
-            text = "Actual data from device",
+            text = stringResource(R.string.main_actual_reading),
             style = Typography.h6,
             fontWeight = FontWeight.SemiBold,
             color = BlackTitle,
         )
         if (lastData != null && selectedAdvertisement != null) {
             ReadingItem(
-                bleData = lastData!!
+                deviceReading = lastData!!
             )
         } else {
             LinearProgressBar()

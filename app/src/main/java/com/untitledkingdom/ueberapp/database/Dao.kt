@@ -37,8 +37,8 @@ interface Dao {
     @Query("DELETE from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID")
     suspend fun wipeData(serviceUUID: String)
 
-    @Query("Select * from ble_data WHERE  date(dateTime,'unixepoch','localtime') = :dateYYYYMMDD")
-    fun getDataFilteredByDate(dateYYYYMMDD: String): Flow<List<BleDataEntity>>
+    @Query("Select * from ble_data WHERE date(dateTime,'unixepoch','localtime') = :dateYYYYMMDD AND serviceUUID = :serviceUUID")
+    fun getDataFilteredByDate(dateYYYYMMDD: String, serviceUUID: String): Flow<List<BleDataEntity>>
 
     @Query(
         "SELECT avg(temperature) as averageTemperature," +
