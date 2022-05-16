@@ -124,7 +124,7 @@ class MainViewModelTest : BaseCoroutineTest() {
                 )
             )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
-            coEvery { repository.getDataFilteredByDate(any()) } returns flowOf(
+            coEvery { repository.getDataFilteredByDate(any(), any()) } returns flowOf(
                 RepositoryStatus.SuccessGetListBleData(
                     listOf()
                 )
