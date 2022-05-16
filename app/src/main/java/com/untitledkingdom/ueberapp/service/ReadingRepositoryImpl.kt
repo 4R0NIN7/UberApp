@@ -4,30 +4,42 @@ import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.devices.data.Reading
+import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.childScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
+@ExperimentalUnsignedTypes
+@ExperimentalCoroutinesApi
+@FlowPreview
 class ReadingRepositoryImpl @Inject constructor(
     private val database: Database,
     private val apiService: ApiService,
-    private val timeManager: TimeManager
+    private val timeManager: TimeManager,
+    @AppModules.ReadingScope private val scope: CoroutineScope
 ) : ReadingRepository {
-    private val incrementer = AtomicInteger(1)
-    private val numberOfTries = (incrementer.get().toFloat() * 19f).toInt()
-    private var lastIdSent: Int = 0
-    private var isFirstTime = true
+    private var isStarted: Boolean = false
 
-    private fun setLastId(newId: Int) {
-        lastIdSent = newId
+    private suspend fun countData(serviceUUID: String) {
+        database.getDao().countNotSynchronized(serviceUUID).collect { count ->
+            if (count != null) {
+                if (count == 20 || count > 30) {
+                    val data = database
+                        .getDao()
+                        .getDataNotSynchronized(serviceUUID)
+                    sendData(data)
+                }
+            }
+        }
     }
 
-    override fun start() {
-        isFirstTime = true
-    }
-
-    private suspend fun sendData(data: List<BleDataEntity>) {
+    private fun sendData(data: List<BleDataEntity>) = scope.childScope().launch {
         Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         Timber.d("Sending data...")
         try {
@@ -50,8 +62,7 @@ class ReadingRepositoryImpl @Inject constructor(
                 throw Exception()
             }
         } catch (e: Exception) {
-            Timber.d("Unable to send data!")
-            incrementer.incrementAndGet()
+            Timber.d("Unable to send data! $e")
         }
     }
 
@@ -64,34 +75,21 @@ class ReadingRepositoryImpl @Inject constructor(
             serviceUUID = serviceUUID,
         )
         database.getDao().saveData(data = bleDataEntity)
-        sendDataToServer(serviceUUID)
     }
 
-    private suspend fun sendDataToServer(serviceUUID: String) {
-        if (isFirstTime) {
-            isFirstTime = false
-            val dataThatWasNotSynchronized = database
-                .getDao()
-                .getDataNotSynchronized(serviceUUID)
-            sendData(dataThatWasNotSynchronized)
-            setLastId(
-                database
-                    .getDao()
-                    .getAllData()
-                    .last { it.serviceUUID == serviceUUID }.id
-            )
-        } else {
-            val data = database
-                .getDao()
-                .getAllData()
-                .filter { it.serviceUUID == serviceUUID }
-            if (lastIdSent + numberOfTries == data.last().id) {
-                sendData(
-                    data.filter {
-                        it.id in lastIdSent..data.last().id
-                    }
-                )
+    override fun start(serviceUUID: String) {
+        if (!isStarted) {
+            Timber.d("IsStarted already true")
+            if (scope.isActive) {
+                Timber.d("Scope active")
+                scope.launch {
+                    countData(serviceUUID)
+                }
             }
         }
+    }
+
+    override fun stop() {
+        isStarted = false
     }
 }

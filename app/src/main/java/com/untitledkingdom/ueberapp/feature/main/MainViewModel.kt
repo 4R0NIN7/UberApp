@@ -9,9 +9,11 @@ import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.NoAction
 import com.tomcz.ellipse.common.processor
 import com.tomcz.ellipse.common.toNoAction
+import com.untitledkingdom.ueberapp.database.data.BleDataCharacteristics
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.datastore.DataStorageConst
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
+import com.untitledkingdom.ueberapp.devices.data.DeviceReading
 import com.untitledkingdom.ueberapp.feature.main.data.RepositoryStatus
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.feature.main.state.MainEvent
@@ -41,7 +43,6 @@ class MainViewModel @Inject constructor(
     private val dataStorage: DataStorage,
     private val scanService: ScanService,
 ) : ViewModel() {
-    private var isCollectingCharacteristics = true
     private var isCollectingDataFilteredByDate = true
     val processor: MainProcessor = processor(
         initialState = MainState(),
@@ -75,11 +76,11 @@ class MainViewModel @Inject constructor(
         }
     )
 
-    private fun openDetails(date: String): Flow<PartialState<MainState>> =
-        repository.getDataFilteredByDate(date).map { status ->
+    private fun openDetails(selectedDate: String): Flow<PartialState<MainState>> =
+        repository.getDataFilteredByDate(selectedDate).map { status ->
             when (status) {
                 is RepositoryStatus.SuccessGetListBleData ->
-                    MainPartialState.SetValues(status.data, date)
+                    setDeviceReadingsWithSelectedDatePartial(status.deviceReadings, selectedDate)
                 else -> NoAction()
             }
         }.takeWhile {
@@ -89,12 +90,23 @@ class MainViewModel @Inject constructor(
     private fun getLastData(): Flow<PartialState<MainState>> = repository
         .getLastDataFromDataBase(serviceUUID = DeviceConst.SERVICE_DATA_SERVICE).map { status ->
             when (status) {
-                is RepositoryStatus.SuccessBleData -> MainPartialState.SetLastBleData(
-                    lastDeviceReading = status.data
-                )
+                is RepositoryStatus.SuccessBleData -> setLastDeviceReadingPartial(status.deviceReading)
                 else -> NoAction()
             }
         }
+
+    private fun setDeviceReadingsWithSelectedDatePartial(
+        listDeviceReading: List<DeviceReading>,
+        selectedDate: String
+    ) = MainPartialState.SetDeviceReadings(
+        deviceReadings = listDeviceReading,
+        selectedDate = selectedDate
+    )
+
+    private fun setLastDeviceReadingPartial(lastDeviceReading: DeviceReading?) =
+        MainPartialState.SetLastDeviceReading(
+            lastDeviceReading = lastDeviceReading
+        )
 
     private suspend fun disconnect(effects: EffectsCollector<MainEffect>) {
         scanService.stopScan()
@@ -105,14 +117,15 @@ class MainViewModel @Inject constructor(
     private fun collectDataCharacteristics(): Flow<PartialState<MainState>> =
         repository.getCharacteristicsPerDay().map { status ->
             when (status) {
-                is RepositoryStatus.SuccessBleCharacteristics -> {
-                    MainPartialState.SetDataCharacteristics(
-                        status.bleCharacteristics
-                    )
-                }
+                is RepositoryStatus.SuccessBleCharacteristics -> setDataCharacteristicsPartial(
+                    status.bleCharacteristics
+                )
                 else -> NoAction()
             }
         }
+
+    private fun setDataCharacteristicsPartial(bleCharacteristics: List<BleDataCharacteristics>) =
+        MainPartialState.SetDataCharacteristics(bleCharacteristics)
 
     private suspend fun refreshDeviceInfo(
         effects: EffectsCollector<MainEffect>
@@ -127,7 +140,7 @@ class MainViewModel @Inject constructor(
                     )
                     ScanStatus.Scanning -> setIsScanningPartial(true)
                     ScanStatus.Stopped -> setIsScanningPartial(false)
-                    ScanStatus.Omit -> {
+                    else -> {
                         NoAction()
                     }
                 }

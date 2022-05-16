@@ -12,7 +12,6 @@ import com.untitledkingdom.ueberapp.utils.AppModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collect
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -36,12 +35,14 @@ class ReadingContainer @Inject constructor(
     )
 
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
+        repository.stop()
         effects.send(ReadingEffect.Stop)
     }
 
     private suspend fun startReading(effects: EffectsCollector<ReadingEffect>) {
         try {
-            startObservingData(effects = effects)
+            Timber.d("Scope in processor $scope")
+            startObservingData(effects = effects, DeviceConst.SERVICE_DATA_SERVICE)
         } catch (e: ConnectionLostException) {
             Timber.d("ConnectionLostException during handle $e")
             stopReading(effects = effects)
@@ -53,15 +54,16 @@ class ReadingContainer @Inject constructor(
 
     private suspend fun startObservingData(
         effects: EffectsCollector<ReadingEffect>,
+        serviceUUID: String
     ) {
         try {
             effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
-            repository.start()
+            repository.start(serviceUUID)
             device.observationOnDataCharacteristic().collect { reading ->
                 repository.saveData(
                     reading = reading,
-                    serviceUUID = DeviceConst.SERVICE_DATA_SERVICE,
+                    serviceUUID = serviceUUID
                 )
                 effects.send(ReadingEffect.StartNotifying(reading))
             }

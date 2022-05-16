@@ -53,15 +53,22 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
     )
 
     @Test
-    fun `start service `() = processorTest(
+    fun `connect to previously connected device`() = processorTest(
         processor = { viewModel.processor },
         given = {
-            coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
+            coEvery { kableService.scan() } returns flowOf(
+                ScanStatus.ConnectToPreviouslyConnectedDevice(
+                    advertisement
+                )
+            )
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
+            coEvery { kableService.returnPeripheral(any(), any()) } returns peripheral
+            coEvery { peripheral.connect() } returns Unit
+            coEvery { advertisement.address } returns "ADDRESS"
+            coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
         },
-        whenEvent = WelcomeEvent.StartService,
         thenEffects = {
-            assertLast(WelcomeEffect.StartService)
+            assertLast(WelcomeEffect.GoToMain)
         }
     )
 
@@ -72,7 +79,6 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
             coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
             coEvery { dataStorage.getFromStorage(any()) } returns ""
         },
-        whenEvent = WelcomeEvent.StartService,
         thenEffects = {
             assertEmpty()
         }

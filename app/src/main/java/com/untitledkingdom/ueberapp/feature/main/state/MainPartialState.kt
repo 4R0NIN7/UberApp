@@ -16,9 +16,9 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(advertisement = advertisement)
     }
 
-    data class SetValues(val values: List<DeviceReading>, val date: String) : MainPartialState {
+    data class SetDeviceReadings(val deviceReadings: List<DeviceReading>, val selectedDate: String) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
-            oldState.copy(values = values, selectedDate = date)
+            oldState.copy(values = deviceReadings, selectedDate = selectedDate)
     }
 
     data class SetSelectedDate(val selectedDate: String) : MainPartialState {
@@ -31,7 +31,7 @@ interface MainPartialState : PartialState<MainState> {
             oldState.copy(isScanning = isScanning)
     }
 
-    data class SetLastBleData(val lastDeviceReading: DeviceReading?) : MainPartialState {
+    data class SetLastDeviceReading(val lastDeviceReading: DeviceReading?) : MainPartialState {
         override fun reduce(oldState: MainState): MainState =
             oldState.copy(lastDeviceReading = lastDeviceReading)
     }

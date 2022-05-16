@@ -6,17 +6,24 @@ import com.juul.kable.Scanner
 import com.juul.kable.logs.Logging
 import com.juul.kable.logs.SystemLogEngine
 import com.juul.kable.peripheral
+import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.takeWhile
 import javax.inject.Inject
 
-class ScanServiceImpl @Inject constructor() : ScanService {
+@ExperimentalCoroutinesApi
+class ScanServiceImpl @Inject constructor(private val dataStorage: DataStorage) : ScanService {
     private val scanner = Scanner {
         filters = null
         logging {
@@ -27,6 +34,11 @@ class ScanServiceImpl @Inject constructor() : ScanService {
     }
     private var isScanning = true
 
+    private fun getLatestMacAddress(): Flow<String> = dataStorage.observeMacAddress()
+        .flatMapLatest { macAddress ->
+            flowOf(macAddress)
+        }
+
     override fun scan(): Flow<ScanStatus> =
         scanner
             .advertisements
@@ -34,11 +46,13 @@ class ScanServiceImpl @Inject constructor() : ScanService {
                 ScanStatus.Failed(
                     cause.message ?: "Error during scanning!"
                 )
+            }.filter { advertisement ->
+                !advertisement.name.isNullOrEmpty()
             }.map { advertisement ->
-                if (!advertisement.name.isNullOrEmpty()) {
-                    ScanStatus.Found(advertisement = advertisement)
+                if (advertisement.address == getLatestMacAddress().first()) {
+                    ScanStatus.ConnectToPreviouslyConnectedDevice(advertisement = advertisement)
                 } else {
-                    ScanStatus.Omit
+                    ScanStatus.Found(advertisement = advertisement)
                 }
             }.onStart {
                 isScanning = true
@@ -56,8 +70,7 @@ class ScanServiceImpl @Inject constructor() : ScanService {
                 ScanStatus.Failed(
                     cause.message ?: "Error during scanning!"
                 )
-            }
-            .map { advertisement ->
+            }.map { advertisement ->
                 if (advertisement.address == macAddress) {
                     ScanStatus.Found(advertisement = advertisement)
                 } else {

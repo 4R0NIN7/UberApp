@@ -35,6 +35,7 @@ class WelcomeViewModel @Inject constructor(
     private val scanService: ScanService,
     private val dataStorage: DataStorage
 ) : ViewModel() {
+
     private val scope = viewModelScope.childScope()
     val processor: WelcomeProcessor = processor(
         initialState = WelcomeState(),
@@ -62,22 +63,47 @@ class WelcomeViewModel @Inject constructor(
                 }
                 WelcomeEvent.RemoveScannedDevices -> flowOf(WelcomePartialState.RemoveAdvertisements)
                 is WelcomeEvent.SetIsClickable -> flowOf(setIsClickablePartial(event.isClickable))
-                WelcomeEvent.StartService -> startService(effects).toNoAction()
             }
         }
     )
-
-    private suspend fun startService(effects: EffectsCollector<WelcomeEffect>) {
-        if (dataStorage.getFromStorage(DataStorageConst.MAC_ADDRESS) != "") {
-            effects.send(WelcomeEffect.StartService)
-        }
-    }
 
     private fun connectToDeviceAndGoToMain(
         effects: EffectsCollector<WelcomeEffect>,
         advertisement: Advertisement
     ): Flow<WelcomePartialState> = flow {
         emit(setIsClickablePartial(true))
+        emit(setIsConnectingPartial(true))
+        connectToDevice(advertisement, effects)
+        emit(setIsConnectingPartial(false))
+    }
+
+    private fun startScanning(
+        effects: EffectsCollector<WelcomeEffect>,
+    ): Flow<PartialState<WelcomeState>> = scanService.scan().map { status ->
+        when (status) {
+            ScanStatus.Scanning -> {
+                setIsClickablePartial(true)
+                setIsScanningPartial(true)
+            }
+            is ScanStatus.Found -> setAdvertisements(
+                advertisement = status.advertisement
+            )
+            is ScanStatus.ConnectToPreviouslyConnectedDevice -> {
+                connectToDevice(status.advertisement, effects).let { NoAction() }
+            }
+            is ScanStatus.Failed -> effects.send(WelcomeEffect.ShowError(status.message as String))
+                .let { NoAction() }
+            ScanStatus.Stopped -> setIsScanningPartial(false)
+            ScanStatus.Omit -> {
+                NoAction()
+            }
+        }
+    }
+
+    private suspend fun connectToDevice(
+        advertisement: Advertisement,
+        effects: EffectsCollector<WelcomeEffect>
+    ) {
         try {
             val peripheral = scanService.returnPeripheral(
                 advertisement = advertisement,
@@ -92,32 +118,16 @@ class WelcomeViewModel @Inject constructor(
         }
     }
 
-    private fun startScanning(
-        effects: EffectsCollector<WelcomeEffect>,
-    ): Flow<PartialState<WelcomeState>> = scanService.scan().map { status ->
-        when (status) {
-            ScanStatus.Scanning -> {
-                setIsClickablePartial(true)
-                setIsScanningPartial(true)
-            }
-            is ScanStatus.Found -> setAdvertisements(
-                advertisement = status.advertisement
-            )
-            is ScanStatus.Failed -> effects.send(WelcomeEffect.ShowError(status.message as String))
-                .let { NoAction() }
-            ScanStatus.Stopped -> setIsScanningPartial(false)
-            ScanStatus.Omit -> {
-                NoAction()
-            }
-        }
-    }
-
     private fun setIsScanningPartial(isScanning: Boolean): WelcomePartialState {
         return WelcomePartialState.SetIsScanning(isScanning)
     }
 
     private fun setIsClickablePartial(isClickable: Boolean): WelcomePartialState {
         return WelcomePartialState.SetIsClickable(isClickable)
+    }
+
+    private fun setIsConnectingPartial(isConnecting: Boolean): WelcomePartialState {
+        return WelcomePartialState.SetIsConnecting(isConnecting)
     }
 
     private fun setAdvertisements(
