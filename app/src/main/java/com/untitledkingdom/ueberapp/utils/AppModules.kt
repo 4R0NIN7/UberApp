@@ -152,6 +152,9 @@ object AppModules {
     fun provideScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }
 
+@FlowPreview
+@ExperimentalCoroutinesApi
+@ExperimentalUnsignedTypes
 @Module
 @InstallIn(SingletonComponent::class)
 interface Binds {
