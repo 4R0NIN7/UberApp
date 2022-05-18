@@ -12,6 +12,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -22,6 +23,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
+import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -72,8 +74,33 @@ class MainActivity : AppCompatActivity() {
         gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
-        Timber.d("Starting service in activity")
-        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
+        checkBatteryOptimizations()
+    }
+
+    private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+        val powerManager =
+            context.applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val name = context.applicationContext.packageName
+        Timber.d(
+            "powerManager.isIgnoringBatteryOptimizations(name) ${
+            powerManager.isIgnoringBatteryOptimizations(
+                name
+            )
+            }"
+        )
+        return powerManager.isIgnoringBatteryOptimizations(name)
+    }
+
+    private fun checkBatteryOptimizations() {
+        if (!isIgnoringBatteryOptimizations(this)) {
+            val name = resources.getString(R.string.app_name)
+            toastMessage(
+                "Battery optimization -> All apps -> $name -> Don't optimize",
+                this
+            )
+            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            startActivity(intent)
+        }
     }
 
     private fun checkPermission() {
@@ -120,6 +147,10 @@ class MainActivity : AppCompatActivity() {
                 serviceReceiver,
                 IntentFilter(ReadingService.INTENT_MESSAGE_FROM_SERVICE)
             )
+        if (isIgnoringBatteryOptimizations(this)) {
+            Timber.d("IsIgnoringBatteryOptimizations Starting service in activity")
+            controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
+        }
         if (!bluetoothAdapter.isEnabled) {
             enableBluetooth()
         } else if (!locationManager.isLocationEnabled) {
