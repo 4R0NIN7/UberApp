@@ -39,9 +39,6 @@ class WelcomeViewModel @Inject constructor(
 
     val processor: WelcomeProcessor = processor(
         initialState = WelcomeState(),
-        prepare = {
-            startScanning(effects)
-        },
         onEvent = { event ->
             when (event) {
                 WelcomeEvent.StartScanning ->

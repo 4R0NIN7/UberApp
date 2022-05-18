@@ -20,10 +20,12 @@ import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.service.ReadingService
+import com.untitledkingdom.ueberapp.utils.functions.controlOverService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -70,6 +72,8 @@ class MainActivity : AppCompatActivity() {
         gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
+        Timber.d("Starting service in activity")
+        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
     }
 
     private fun checkPermission() {
