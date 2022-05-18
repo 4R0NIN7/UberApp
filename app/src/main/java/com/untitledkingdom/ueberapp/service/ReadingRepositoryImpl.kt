@@ -6,7 +6,6 @@ import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
-import com.untitledkingdom.ueberapp.utils.functions.childScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -14,6 +13,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.random.Random
 
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
@@ -29,7 +29,7 @@ class ReadingRepositoryImpl @Inject constructor(
     private suspend fun countData(serviceUUID: String) {
         database.getDao().countNotSynchronized(serviceUUID).collect { count ->
             if (count != null) {
-                if (count == 20 || count > 30) {
+                if (count == 20 || count > 22) {
                     val data = database
                         .getDao()
                         .getDataNotSynchronized(serviceUUID)
@@ -39,7 +39,7 @@ class ReadingRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun sendData(data: List<BleDataEntity>) = scope.childScope().launch {
+    private suspend fun sendData(data: List<BleDataEntity>) {
         Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
         Timber.d("Sending data...")
         try {
@@ -84,6 +84,19 @@ class ReadingRepositoryImpl @Inject constructor(
                     countData(serviceUUID)
                 }
             }
+        }
+    }
+
+    private suspend fun generateData(serviceUUID: String) {
+        for (i in 0..100) {
+            database.getDao().saveData(
+                BleDataEntity(
+                    temperature = Random.nextFloat(),
+                    humidity = Random.nextInt(),
+                    dateTime = timeManager.provideCurrentLocalDateTime().minusDays(10),
+                    serviceUUID = serviceUUID,
+                )
+            )
         }
     }
 
