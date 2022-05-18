@@ -25,7 +25,7 @@ interface Dao {
     @Query("SELECT ID from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 0 ORDER BY ID DESC LIMIT 1")
     fun getLastId(serviceUUID: String): Flow<Int>
 
-    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 0")
+    @Query("SELECT * from ${DatabaseConst.TABLE} WHERE serviceUUID = :serviceUUID AND isSynchronized = 0 LIMIT 20")
     suspend fun getDataNotSynchronized(serviceUUID: String): List<BleDataEntity>
 
     @Insert(onConflict = REPLACE)

@@ -46,7 +46,6 @@ class WelcomeViewModel @Inject constructor(
                         effects
                     )
                 WelcomeEvent.StopScanning -> {
-                    Timber.d("StopScanning viewModel")
                     scanService.stopScan().toNoAction()
                 }
                 is WelcomeEvent.SetScanningTo -> flowOf(

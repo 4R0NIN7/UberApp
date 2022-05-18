@@ -40,13 +40,19 @@ class MainFragment : Fragment() {
             processor = viewModel::processor,
             onEffect = ::trigger,
         )
-        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
         return ComposeView(
             requireContext()
         ).apply {
             setContent {
                 MainScreenCompose(viewModel.processor)
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!ReadingService.isRunning) {
+            controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
         }
     }
 

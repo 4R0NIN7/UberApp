@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancelChildren
+import timber.log.Timber
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
@@ -133,7 +134,11 @@ class ReadingService : Service() {
             .setContentText("Temperature is ${reading.temperature}, Humidity is ${reading.humidity}")
             .setContentIntent(getMainActivityPendingIntent())
             .build()
-        startForeground(ONGOING_NOTIFICATION_ID, notification)
+        try {
+            startForeground(ONGOING_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Timber.d("Cannot start service from background!")
+        }
     }
 
     private fun getMainActivityPendingIntent(): PendingIntent {

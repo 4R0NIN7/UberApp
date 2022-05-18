@@ -159,7 +159,7 @@ object AppModules {
 @InstallIn(SingletonComponent::class)
 interface Binds {
     @Binds
-    fun bindKableService(kableServiceImpl: ScanServiceImpl): ScanService
+    fun bindScanService(scanServiceImpl: ScanServiceImpl): ScanService
 
     @Binds
     @Singleton
@@ -193,6 +193,8 @@ interface ContainerDependencies {
     fun getRepository(): ReadingRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
+    fun getScanService(): ScanService
+
     @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
 }

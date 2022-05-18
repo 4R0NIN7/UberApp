@@ -41,7 +41,6 @@ class ReadingContainer @Inject constructor(
 
     private suspend fun startReading(effects: EffectsCollector<ReadingEffect>) {
         try {
-            Timber.d("Scope in processor $scope")
             startObservingData(effects = effects, DeviceConst.SERVICE_DATA_SERVICE)
         } catch (e: ConnectionLostException) {
             Timber.d("ConnectionLostException during handle $e")
