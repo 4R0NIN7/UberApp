@@ -27,6 +27,7 @@ import com.untitledkingdom.ueberapp.service.ReadingRepositoryImpl
 import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
+import com.untitledkingdom.ueberapp.workmanager.ReadingWorker
 import dagger.Binds
 import dagger.BindsInstance
 import dagger.Component
@@ -212,13 +213,28 @@ interface ScopeProviderEntryPoint {
 @ExperimentalCoroutinesApi
 @ExperimentalUnsignedTypes
 @Component(dependencies = [ContainerDependencies::class])
-interface ReadingComponent {
+interface ReadingServiceComponent {
     fun inject(service: ReadingService)
 
     @Component.Builder
     interface Builder {
         fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
         fun dependencies(containerDependencies: ContainerDependencies): Builder
-        fun build(): ReadingComponent
+        fun build(): ReadingServiceComponent
+    }
+}
+
+@FlowPreview
+@ExperimentalCoroutinesApi
+@ExperimentalUnsignedTypes
+@Component(dependencies = [ContainerDependencies::class])
+interface ReadingWorkerComponent {
+    fun inject(worker: ReadingWorker)
+
+    @Component.Builder
+    interface Builder {
+        fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
+        fun dependencies(containerDependencies: ContainerDependencies): Builder
+        fun build(): ReadingWorkerComponent
     }
 }

@@ -1,6 +1,5 @@
 package com.untitledkingdom.ueberapp.service
 
-import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,8 +10,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.os.SystemClock
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
@@ -20,8 +21,9 @@ import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
-import com.untitledkingdom.ueberapp.utils.DaggerReadingComponent
+import com.untitledkingdom.ueberapp.utils.DaggerReadingServiceComponent
 import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
+import com.untitledkingdom.ueberapp.workmanager.ReadingWorker
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
@@ -62,7 +64,7 @@ class ReadingService : Service() {
     }
 
     override fun onCreate() {
-        DaggerReadingComponent.builder()
+        DaggerReadingServiceComponent.builder()
             .scope(getScope())
             .dependencies(
                 EntryPointAccessors.fromApplication(
@@ -167,6 +169,7 @@ class ReadingService : Service() {
     private fun stop() {
         stopForeground(true)
         stopSelf()
+        Timber.d("stop")
     }
 
     override fun onDestroy() {
@@ -181,19 +184,13 @@ class ReadingService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Timber.d("On task removed")
-        val restartServiceIntent = Intent(applicationContext, this.javaClass)
-        restartServiceIntent.setPackage(packageName)
-        val restartServicePendingIntent = PendingIntent.getService(
-            applicationContext,
-            1,
-            restartServiceIntent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        stop()
+        val workManager = WorkManager.getInstance(applicationContext)
+        Timber.d("Start working")
+        workManager.enqueueUniqueWork(
+            ReadingWorker.WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<ReadingWorker>().build()
         )
-        val alarmService = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
-        alarmService[AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000] =
-            restartServicePendingIntent
-        Timber.d("On task removed end")
-        super.onTaskRemoved(rootIntent)
     }
 }
