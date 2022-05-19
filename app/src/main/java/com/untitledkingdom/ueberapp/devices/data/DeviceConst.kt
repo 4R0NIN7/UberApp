@@ -7,4 +7,5 @@ object DeviceConst {
     const val SERVICE_DATA_SERVICE = BuildConfig.SERVICE_DATA_SERVICE
     const val TIME_CHARACTERISTIC = BuildConfig.TIME_CHARACTERISTIC
     const val READINGS_CHARACTERISTIC = BuildConfig.READINGS_CHARACTERISTIC
+    const val RECONNECT_DELAY = 5000L
 }
