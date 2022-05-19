@@ -7,7 +7,6 @@ import androidx.work.ListenableWorker
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.ReadingRepository
-import com.untitledkingdom.ueberapp.utils.functions.toUByteArray
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -27,8 +26,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertTrue
-import java.time.LocalDateTime
-import java.util.concurrent.Executor
 
 @ObsoleteCoroutinesApi
 @ExperimentalUnsignedTypes
@@ -38,23 +35,12 @@ class ReadingWorkerTest {
     @ObsoleteCoroutinesApi
     private val mainThreadSurrogate = StandardTestDispatcher()
     private lateinit var context: Context
-    private lateinit var executor: Executor
     private val repository: ReadingRepository = mockk()
     private val device: Device = mockk()
     private val reading: Reading = mockk()
     private val foregroundInfo = mockk<ForegroundInfo>()
     private val worker = mockk<ReadingWorker>()
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
-    private val localDateTime: LocalDateTime = LocalDateTime.of(
-        1970,
-        1,
-        1,
-        1,
-        1,
-        1
-    )
-
-    private val uByteArray = localDateTime.toUByteArray()
 
     @Before
     fun setUp() {
