@@ -52,6 +52,7 @@ class DeviceTest {
     private val timeManager by lazy { mockk<TimeManager>() }
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
+
     private val device =
         spyk(
             Device(

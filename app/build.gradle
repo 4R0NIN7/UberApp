@@ -110,7 +110,9 @@ dependencies {
     // WorkManager
     implementation "androidx.work:work-runtime-ktx:$work_version"
     implementation "androidx.work:work-multiprocess:$work_version"
-    implementation "androidx.work:work-runtime-ktx:$work_runtime_version"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-gcm:$work_version"
+    implementation "androidx.work:work-multiprocess:$work_version"
 
     // Timber
     implementation "com.jakewharton.timber:timber:$timber_version"
@@ -193,6 +195,7 @@ dependencies {
     androidTestImplementation "androidx.work:work-testing:$work_version"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
     androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_test_version"
+    androidTestImplementation "androidx.work:work-testing:$work_version"
 
     // AndroidJUnitRunner and JUnit Rules
     androidTestImplementation("androidx.test:runner:$testRunner_version")
