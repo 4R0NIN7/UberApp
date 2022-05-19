@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
         checkBatteryOptimizations()
+        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
     }
 
     private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
@@ -149,7 +150,6 @@ class MainActivity : AppCompatActivity() {
             )
         if (isIgnoringBatteryOptimizations(this)) {
             Timber.d("IsIgnoringBatteryOptimizations Starting service in activity")
-            controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
         }
         if (!bluetoothAdapter.isEnabled) {
             enableBluetooth()

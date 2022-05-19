@@ -20,7 +20,7 @@ import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.service.state.ReadingEffect
 import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
-import com.untitledkingdom.ueberapp.utils.DaggerContainerComponent
+import com.untitledkingdom.ueberapp.utils.DaggerReadingComponent
 import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -62,7 +62,7 @@ class ReadingService : Service() {
     }
 
     override fun onCreate() {
-        DaggerContainerComponent.builder()
+        DaggerReadingComponent.builder()
             .scope(getScope())
             .dependencies(
                 EntryPointAccessors.fromApplication(
@@ -107,7 +107,6 @@ class ReadingService : Service() {
                 }
                 ACTION_STOP_SERVICE -> {
                     isFirstRun = true
-                    isRunning = false
                     readingContainer.processor.sendEvent(ReadingEvent.StopReading)
                 }
                 else -> {}
@@ -171,7 +170,9 @@ class ReadingService : Service() {
     }
 
     override fun onDestroy() {
+        Timber.d("OnDestroy")
         getScope().coroutineContext.cancelChildren()
+        isRunning = false
         super.onDestroy()
     }
 

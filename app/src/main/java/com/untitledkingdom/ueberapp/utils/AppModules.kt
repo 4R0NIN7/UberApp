@@ -193,7 +193,6 @@ interface ContainerDependencies {
     fun getRepository(): ReadingRepository
     fun getDataStorage(): DataStorage
     fun getTimeManager(): TimeManager
-    fun getScanService(): ScanService
 
     @AppModules.IoDispatcher
     fun getDispatcher(): CoroutineDispatcher
@@ -213,13 +212,13 @@ interface ScopeProviderEntryPoint {
 @ExperimentalCoroutinesApi
 @ExperimentalUnsignedTypes
 @Component(dependencies = [ContainerDependencies::class])
-interface ContainerComponent {
+interface ReadingComponent {
     fun inject(service: ReadingService)
 
     @Component.Builder
     interface Builder {
         fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
         fun dependencies(containerDependencies: ContainerDependencies): Builder
-        fun build(): ContainerComponent
+        fun build(): ReadingComponent
     }
 }
