@@ -392,7 +392,16 @@ fun ActualReading(processor: MainProcessor) = Column {
         )
         if (lastData != null && selectedAdvertisement != null) {
             ReadingItem(
-                deviceReading = lastData!!
+                deviceReading = lastData!!,
+                action = {
+                    processor.sendEvent(
+                        MainEvent.OpenDetails(
+                            date = lastData!!.localDateTime.format(
+                                DateFormatter.dateYYYYMMDD
+                            )
+                        )
+                    )
+                }
             )
         } else {
             LinearProgressBar()

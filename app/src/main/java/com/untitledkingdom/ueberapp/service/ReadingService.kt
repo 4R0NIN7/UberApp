@@ -122,7 +122,7 @@ class ReadingService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_MIN
+            NotificationManager.IMPORTANCE_HIGH
         )
         channel.enableLights(false)
         channel.lockscreenVisibility = Notification.VISIBILITY_SECRET

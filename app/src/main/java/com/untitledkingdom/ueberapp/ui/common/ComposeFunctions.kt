@@ -160,14 +160,15 @@ internal fun RowText(
 @Composable
 fun ReadingItem(
     deviceReading: DeviceReading,
-    showDateWithLocalDate: Boolean = true
+    showDateWithLocalDate: Boolean = true,
+    action: () -> Unit = {}
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().clickable { action() },
             shape = shape8,
             border = null,
             backgroundColor = AppBackground
