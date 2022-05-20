@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.service
+package com.untitledkingdom.ueberapp.background
 
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database

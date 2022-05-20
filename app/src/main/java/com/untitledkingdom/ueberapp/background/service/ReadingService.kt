@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.service
+package com.untitledkingdom.ueberapp.background.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -11,19 +11,17 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.background.ReadingContainer
+import com.untitledkingdom.ueberapp.background.state.ReadingEffect
+import com.untitledkingdom.ueberapp.background.state.ReadingEvent
 import com.untitledkingdom.ueberapp.devices.data.Reading
-import com.untitledkingdom.ueberapp.service.state.ReadingEffect
-import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
 import com.untitledkingdom.ueberapp.utils.DaggerReadingServiceComponent
 import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
-import com.untitledkingdom.ueberapp.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.utils.functions.startWorker
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
@@ -185,12 +183,6 @@ class ReadingService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         stop()
-        val workManager = WorkManager.getInstance(applicationContext)
-        Timber.d("Start working")
-        workManager.enqueueUniqueWork(
-            ReadingWorker.WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            OneTimeWorkRequestBuilder<ReadingWorker>().build()
-        )
+        startWorker(applicationContext)
     }
 }

@@ -7,11 +7,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import com.google.common.util.concurrent.ListenableFuture
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.service.ReadingService
+import com.untitledkingdom.ueberapp.background.service.ReadingService
+import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
+import java.util.concurrent.ExecutionException
 
 fun requestPermission(
     permissionType: String,
@@ -71,3 +78,45 @@ fun controlOverService(actionStartOrResumeService: String, context: Context) =
         it.action = actionStartOrResumeService
         context.startService(it)
     }
+
+@ExperimentalUnsignedTypes
+@FlowPreview
+@ExperimentalCoroutinesApi
+fun startWorker(context: Context) {
+    val workManager = WorkManager.getInstance(context)
+    Timber.d("Start working")
+    workManager.enqueueUniqueWork(
+        ReadingWorker.WORK_NAME,
+        ExistingWorkPolicy.KEEP,
+        OneTimeWorkRequestBuilder<ReadingWorker>().build()
+    )
+}
+
+@ExperimentalUnsignedTypes
+@FlowPreview
+@ExperimentalCoroutinesApi
+fun stopWorker(context: Context) {
+    val workManager = WorkManager.getInstance(context)
+    workManager.cancelAllWork()
+}
+
+fun isWorkScheduled(tag: String, context: Context): Boolean {
+    val instance = WorkManager.getInstance(context)
+    val statuses: ListenableFuture<List<WorkInfo>> = instance.getWorkInfosForUniqueWork(tag)
+    return try {
+        var running = false
+        val workInfoList: List<WorkInfo> = statuses.get()
+        for (workInfo in workInfoList) {
+            val state = workInfo.state
+            running = (state == WorkInfo.State.RUNNING || state == WorkInfo.State.ENQUEUED)
+        }
+        Timber.d("Is running $tag = $running")
+        running
+    } catch (e: ExecutionException) {
+        e.printStackTrace()
+        false
+    } catch (e: InterruptedException) {
+        e.printStackTrace()
+        false
+    }
+}

@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.service.state
+package com.untitledkingdom.ueberapp.background.state
 
 import com.untitledkingdom.ueberapp.devices.data.Reading
 

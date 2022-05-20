@@ -1,14 +1,14 @@
-package com.untitledkingdom.ueberapp.service
+package com.untitledkingdom.ueberapp.background
 
 import com.juul.kable.ConnectionLostException
 import com.tomcz.ellipse.EffectsCollector
 import com.tomcz.ellipse.Processor
 import com.tomcz.ellipse.common.processor
+import com.untitledkingdom.ueberapp.background.state.ReadingEffect
+import com.untitledkingdom.ueberapp.background.state.ReadingEvent
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
-import com.untitledkingdom.ueberapp.service.state.ReadingEffect
-import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.AppModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi

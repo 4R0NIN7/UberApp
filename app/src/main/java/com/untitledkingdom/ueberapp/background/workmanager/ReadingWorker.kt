@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.workmanager
+package com.untitledkingdom.ueberapp.background.workmanager
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -7,15 +7,18 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.devices.Device
-import com.untitledkingdom.ueberapp.devices.data.DeviceConst
-import com.untitledkingdom.ueberapp.service.ReadingRepository
-import com.untitledkingdom.ueberapp.service.ReadingService
+import com.untitledkingdom.ueberapp.background.ReadingContainer
+import com.untitledkingdom.ueberapp.background.service.ReadingService
+import com.untitledkingdom.ueberapp.background.state.ReadingEffect
+import com.untitledkingdom.ueberapp.background.state.ReadingEvent
+import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
 import com.untitledkingdom.ueberapp.utils.DaggerReadingWorkerComponent
 import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
@@ -26,9 +29,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.isActive
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -47,6 +52,9 @@ class ReadingWorker @AssistedInject constructor(
         const val WORK_NAME = "ReadingWorkerName"
     }
 
+    private var reading: Reading? = null
+    private var isSendingBroadcast = true
+    private var isFirstTime = true
     private fun getScope(): CoroutineScope {
         val hiltEntryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
@@ -54,6 +62,9 @@ class ReadingWorker @AssistedInject constructor(
         )
         return hiltEntryPoint.scope()
     }
+
+    @Inject
+    lateinit var readingContainer: ReadingContainer
 
     init {
         Timber.d("ReadingWorker init")
@@ -67,16 +78,40 @@ class ReadingWorker @AssistedInject constructor(
             )
             .build()
             .inject(this)
+        getScope().onProcessor(
+            processor = readingContainer::processor,
+            onEffect = ::trigger,
+        )
     }
 
-    @Inject
-    lateinit var device: Device
+    private fun trigger(effect: ReadingEffect) {
+        when (effect) {
+            is ReadingEffect.StartNotifying -> startNotifying(effect.reading)
+            ReadingEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
+            ReadingEffect.Stop -> stopWorkManager()
+        }
+    }
 
-    @Inject
-    lateinit var repository: ReadingRepository
+    private fun sendBroadcastToActivity() {
+        if (isSendingBroadcast) {
+            val intent = Intent(ReadingService.INTENT_MESSAGE_FROM_SERVICE)
+            isSendingBroadcast = false
+            LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+        }
+    }
 
-    private val serviceUUID = DeviceConst.SERVICE_DATA_SERVICE
-    override suspend fun doWork(): Result {
+    private fun stopWorkManager() {
+        Timber.d("Stopping scope isActive ${getScope().coroutineContext.isActive}")
+        getScope().coroutineContext.cancelChildren()
+        cancelNotification()
+        onStopped()
+    }
+
+    private fun startNotifying(readingFromProcessor: Reading) {
+        reading = readingFromProcessor
+    }
+
+    /*
         device.observationOnDataCharacteristic()
             .onStart {
                 repository.start(serviceUUID)
@@ -97,16 +132,42 @@ class ReadingWorker @AssistedInject constructor(
                     serviceUUID = serviceUUID
                 )
             }
+         */
+
+    override suspend fun doWork(): Result {
+        flow<Unit> {
+            while (!isStopped) {
+                if (reading != null) {
+                    setForeground(createForegroundInfo())
+                }
+            }
+        }.onStart {
+            readingContainer.processor.sendEvent(ReadingEvent.StartReading)
+        }.onCompletion {
+            readingContainer.processor.sendEvent(ReadingEvent.StopReading)
+        }.collect()
         return Result.success()
     }
 
+    private fun cancelNotification() {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
+            as NotificationManager
+        Timber.d("Canceling notification")
+        notificationManager.cancel(ONGOING_NOTIFICATION_ID)
+    }
+
     private fun createForegroundInfo(): ForegroundInfo {
+        var importance: Int = NotificationManager.IMPORTANCE_LOW
+        if (isFirstTime) {
+            importance = NotificationManager.IMPORTANCE_HIGH
+            isFirstTime = false
+        }
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH
+            importance
         )
         channel.enableLights(false)
         channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
@@ -117,7 +178,13 @@ class ReadingWorker @AssistedInject constructor(
             .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
             .setShowWhen(true)
             .setContentTitle("Reading from ÜberDevice")
-            .setContentText("Click to go to details")
+            .setContentText(
+                if (reading != null) {
+                    "Temperature is ${reading!!.temperature}, Humidity is ${reading!!.humidity}"
+                } else {
+                    "Click to go to details"
+                }
+            )
             .setContentIntent(getMainActivityPendingIntent())
             .build()
         return ForegroundInfo(ONGOING_NOTIFICATION_ID, notification)

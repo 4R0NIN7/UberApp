@@ -20,5 +20,5 @@ class App : Application(), Configuration.Provider {
     }
 
     override fun getWorkManagerConfiguration(): Configuration =
-        Configuration.Builder().setMinimumLoggingLevel(android.util.Log.DEBUG).build()
+        Configuration.Builder().setMinimumLoggingLevel(android.util.Log.ERROR).build()
 }

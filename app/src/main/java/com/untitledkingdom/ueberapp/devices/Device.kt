@@ -77,9 +77,10 @@ class Device @Inject constructor(
 
     private suspend fun reconnect() {
         try {
+            val delay = delayValue(base = 100, multiplier = 2f, retry = attempts.getAndIncrement())
             Timber.d("Attempt number ${attempts.get()}")
-            Timber.d("Delay is ${DeviceConst.RECONNECT_DELAY}")
-            delay(DeviceConst.RECONNECT_DELAY)
+            Timber.d("Delay is $delay")
+            delay(delay)
             Timber.d("Attempting to connect after delay")
             writeDateToDevice(
                 service = DeviceConst.SERVICE_TIME_SETTINGS,

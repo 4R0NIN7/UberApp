@@ -14,8 +14,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
-import com.untitledkingdom.ueberapp.service.ReadingService
-import com.untitledkingdom.ueberapp.utils.functions.controlOverService
+import com.untitledkingdom.ueberapp.utils.functions.stopWorker
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,13 +48,6 @@ class MainFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (!ReadingService.isRunning) {
-            controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
-        }
-    }
-
     private fun trigger(effect: MainEffect) {
         when (effect) {
             MainEffect.GoToWelcome -> goToWelcome()
@@ -72,7 +64,8 @@ class MainFragment : Fragment() {
 
     private fun goToWelcome() {
         toastMessage(message = "Successfully disconnected from device", requireContext())
-        controlOverService(ReadingService.ACTION_STOP_SERVICE, requireContext())
+        // controlOverService(ReadingService.ACTION_STOP_SERVICE, requireContext())
+        stopWorker(requireContext())
         findNavController().navigate(R.id.action_mainFragment_to_welcomeFragment)
     }
 }

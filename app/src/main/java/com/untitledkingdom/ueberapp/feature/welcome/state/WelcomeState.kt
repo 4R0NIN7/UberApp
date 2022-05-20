@@ -7,4 +7,5 @@ data class WelcomeState(
     val isClickable: Boolean = true,
     val isConnecting: Boolean = false,
     val advertisements: List<Advertisement> = listOf(),
+    val advertisementsRssiMap: Map<Advertisement, List<Int>> = mapOf()
 )

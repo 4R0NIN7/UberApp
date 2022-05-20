@@ -20,10 +20,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
-import androidx.work.WorkManager
-import com.untitledkingdom.ueberapp.service.ReadingService
-import com.untitledkingdom.ueberapp.utils.functions.controlOverService
+import com.untitledkingdom.ueberapp.background.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
+import com.untitledkingdom.ueberapp.utils.functions.stopWorker
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -75,8 +74,7 @@ class MainActivity : AppCompatActivity() {
         gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
-        WorkManager.getInstance(applicationContext).cancelAllWork()
-        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, this)
+        stopWorker(applicationContext)
     }
 
     private fun isIgnoringBatteryOptimizations(context: Context): Boolean {

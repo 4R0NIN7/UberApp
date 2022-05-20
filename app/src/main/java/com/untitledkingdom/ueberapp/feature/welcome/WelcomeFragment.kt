@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -12,9 +11,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
-import com.untitledkingdom.ueberapp.service.ReadingService
-import com.untitledkingdom.ueberapp.utils.functions.controlOverService
+import com.untitledkingdom.ueberapp.utils.functions.isWorkScheduled
+import com.untitledkingdom.ueberapp.utils.functions.startWorker
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,20 +53,14 @@ class WelcomeFragment : Fragment() {
                 message = effect.message,
                 context = requireContext()
             )
-            WelcomeEffect.StartService -> startService()
             else -> {}
         }
     }
 
-    private fun startService() {
-        controlOverService(ReadingService.ACTION_START_OR_RESUME_SERVICE, requireContext())
-    }
-
     private fun goToMainFragment() {
-        Toast.makeText(requireContext(), "Successfully connected to device!", Toast.LENGTH_SHORT)
-            .show()
-        if (!ReadingService.isRunning) {
-            startService()
+        toastMessage("Successfully connected to device!", requireContext())
+        if (!isWorkScheduled(ReadingWorker.WORK_NAME, requireContext())) {
+            startWorker(requireContext())
         }
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)
     }

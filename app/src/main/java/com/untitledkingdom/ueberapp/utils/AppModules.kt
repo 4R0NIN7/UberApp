@@ -12,6 +12,10 @@ import com.untitledkingdom.ueberapp.BuildConfig
 import com.untitledkingdom.ueberapp.api.ApiConst
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.api.FakeApi
+import com.untitledkingdom.ueberapp.background.ReadingRepository
+import com.untitledkingdom.ueberapp.background.ReadingRepositoryImpl
+import com.untitledkingdom.ueberapp.background.service.ReadingService
+import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConst
 import com.untitledkingdom.ueberapp.database.TimeConverter
@@ -22,12 +26,8 @@ import com.untitledkingdom.ueberapp.feature.main.MainRepository
 import com.untitledkingdom.ueberapp.feature.main.MainRepositoryImpl
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.ScanServiceImpl
-import com.untitledkingdom.ueberapp.service.ReadingRepository
-import com.untitledkingdom.ueberapp.service.ReadingRepositoryImpl
-import com.untitledkingdom.ueberapp.service.ReadingService
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
-import com.untitledkingdom.ueberapp.workmanager.ReadingWorker
 import dagger.Binds
 import dagger.BindsInstance
 import dagger.Component
@@ -66,7 +66,7 @@ object AppModules {
         val moshi: Moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
-        val retrofit = Retrofit.Builder()
+        Retrofit.Builder()
             .client(getMockRetrofitClient())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .baseUrl(BuildConfig.URL)
