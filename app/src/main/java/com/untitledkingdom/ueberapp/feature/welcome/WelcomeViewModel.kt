@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.isActive
 import timber.log.Timber
 import javax.inject.Inject
@@ -46,7 +45,6 @@ class WelcomeViewModel @Inject constructor(
         prepare = {
             merge(
                 startScanning(effects),
-                refreshAdvertisements()
             )
         },
         onEvent = { event ->
@@ -94,9 +92,7 @@ class WelcomeViewModel @Inject constructor(
         effects: EffectsCollector<WelcomeEffect>,
     ): Flow<PartialState<WelcomeState>> = scanService
         .scan()
-        .onStart {
-            setIsClickablePartial(true)
-        }.map { status ->
+        .map { status ->
             when (status) {
                 ScanStatus.Scanning -> setIsScanningPartial(true)
                 is ScanStatus.Found -> setAdvertisements(
