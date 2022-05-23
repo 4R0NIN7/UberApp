@@ -92,8 +92,11 @@ class WelcomeViewModel @Inject constructor(
 
     private fun startScanning(
         effects: EffectsCollector<WelcomeEffect>,
-    ): Flow<PartialState<WelcomeState>> =
-        scanService.scan().onStart { setIsClickablePartial(true) }.map { status ->
+    ): Flow<PartialState<WelcomeState>> = scanService
+        .scan()
+        .onStart {
+            setIsClickablePartial(true)
+        }.map { status ->
             when (status) {
                 ScanStatus.Scanning -> setIsScanningPartial(true)
                 is ScanStatus.Found -> setAdvertisements(

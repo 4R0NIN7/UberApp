@@ -25,11 +25,14 @@ class ReadingRepositoryImpl @Inject constructor(
     @AppModules.ReadingScope private val scope: CoroutineScope
 ) : ReadingRepository {
     private var isStarted: Boolean = false
-
+    private var isSendingData = false
     private suspend fun countData(serviceUUID: String) {
         database.getDao().countNotSynchronized(serviceUUID).collect { count ->
             if (count != null) {
-                if (count == 20 || count > 22) {
+                Timber.d("Is sending data $isSendingData")
+                val countCondition = count == 20 || count > 22
+                if (countCondition && !isSendingData) {
+                    isSendingData = true
                     val data = database
                         .getDao()
                         .getDataNotSynchronized(serviceUUID)
@@ -40,12 +43,14 @@ class ReadingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun sendData(data: List<BleDataEntity>) {
-        Timber.d("Size of data ${data.size}\nFirst id is ${data.first().id}\nLast id is ${data.last().id}")
-        Timber.d("Sending data...")
+        Timber.d(
+            "Size of data ${data.size}" +
+                "\nFirst id is ${data.first().id}" +
+                "\nLast id is ${data.last().id}"
+        )
         try {
             val response = apiService.sendDataToService(bleDatumEntities = data)
             if (response.isSuccessful) {
-                Timber.d("Data sent!")
                 database.getDao().saveAllData(
                     dataList = data.map {
                         BleDataEntity(
@@ -59,10 +64,12 @@ class ReadingRepositoryImpl @Inject constructor(
                     }
                 )
             } else {
-                throw Exception()
+                Timber.d("Unable to send data!")
             }
         } catch (e: Exception) {
-            Timber.d("Unable to send data! $e")
+            Timber.d("Exception is sending data! $e")
+        } finally {
+            isSendingData = false
         }
     }
 
