@@ -137,9 +137,7 @@ class ReadingWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         flow<Unit> {
             while (!isStopped) {
-                if (reading != null) {
-                    setForeground(createForegroundInfo())
-                }
+                setForeground(createForegroundInfo())
             }
         }.onStart {
             readingContainer.processor.sendEvent(ReadingEvent.StartReading)

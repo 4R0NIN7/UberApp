@@ -12,6 +12,7 @@ import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import com.untitledkingdom.ueberapp.utils.interval.FlowInterval
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -31,6 +32,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
     }
     private val advertisement = mockk<Advertisement>()
     private val peripheral = mockk<Peripheral>()
+    private val defaultDelay = 1000L
 
     @Test
     fun `initial state`() = processorTest(
@@ -38,6 +40,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
         given = {
             coEvery { kableService.scan() } returns flowOf()
             coEvery { flowInterval.start(any()) } returns flowOf()
+            every { flowInterval.defaultDelay } returns defaultDelay
         },
         thenStates = {
             assertLast(
@@ -53,6 +56,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
             coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
             coEvery { advertisement.address } returns "ADDRESS"
             coEvery { flowInterval.start(any()) } returns flowOf()
+            every { flowInterval.defaultDelay } returns defaultDelay
         },
         whenEvent = WelcomeEvent.StartScanning,
         thenStates = {
@@ -71,6 +75,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
                     advertisement
                 )
             )
+            every { flowInterval.defaultDelay } returns defaultDelay
             coEvery { flowInterval.start(any()) } returns flowOf()
             coEvery { dataStorage.getFromStorage(any()) } returns "ADDRESS"
             coEvery { kableService.returnPeripheral(any(), any()) } returns peripheral
@@ -90,6 +95,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
             coEvery { kableService.scan() } returns flowOf(ScanStatus.Found(advertisement))
             coEvery { dataStorage.getFromStorage(any()) } returns ""
             coEvery { flowInterval.start(any()) } returns flowOf()
+            every { flowInterval.defaultDelay } returns defaultDelay
         },
         thenEffects = {
             assertEmpty()
@@ -106,6 +112,7 @@ class WelcomeViewModelTest : BaseCoroutineTest() {
             coEvery { advertisement.address } returns "ADDRESS"
             coEvery { dataStorage.saveToStorage(any(), any()) } returns Unit
             coEvery { flowInterval.start(any()) } returns flowOf()
+            every { flowInterval.defaultDelay } returns defaultDelay
         },
         whenEvent = WelcomeEvent.StartConnectingToDevice(advertisement),
         thenEffects = {
