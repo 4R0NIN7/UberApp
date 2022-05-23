@@ -28,6 +28,8 @@ import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.ScanServiceImpl
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
 import com.untitledkingdom.ueberapp.utils.date.TimeManagerImpl
+import com.untitledkingdom.ueberapp.utils.interval.FlowInterval
+import com.untitledkingdom.ueberapp.utils.interval.FlowIntervalImpl
 import dagger.Binds
 import dagger.BindsInstance
 import dagger.Component
@@ -183,6 +185,10 @@ interface Binds {
     @Binds
     @Singleton
     fun bindDataStorage(dataStorageImpl: DataStorageImpl): DataStorage
+
+    @Binds
+    @Singleton
+    fun bindFlowInterval(flowIntervalImpl: FlowIntervalImpl): FlowInterval
 }
 
 @ExperimentalUnsignedTypes

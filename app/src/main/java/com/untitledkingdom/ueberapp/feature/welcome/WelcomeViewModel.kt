@@ -18,15 +18,14 @@ import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeState
 import com.untitledkingdom.ueberapp.scanner.ScanService
 import com.untitledkingdom.ueberapp.scanner.data.ScanStatus
 import com.untitledkingdom.ueberapp.utils.functions.childScope
+import com.untitledkingdom.ueberapp.utils.interval.FlowInterval
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.isActive
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -36,7 +35,8 @@ typealias WelcomeProcessor = Processor<WelcomeEvent, WelcomeState, WelcomeEffect
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
     private val scanService: ScanService,
-    private val dataStorage: DataStorage
+    private val dataStorage: DataStorage,
+    private val flowInterval: FlowInterval
 ) : ViewModel() {
     private val scope = viewModelScope.childScope()
 
@@ -45,6 +45,7 @@ class WelcomeViewModel @Inject constructor(
         prepare = {
             merge(
                 startScanning(effects),
+                refreshAdvertisements()
             )
         },
         onEvent = { event ->
@@ -71,12 +72,10 @@ class WelcomeViewModel @Inject constructor(
         }
     )
 
-    private fun refreshAdvertisements(): Flow<WelcomePartialState> = flow {
-        while (viewModelScope.isActive) {
-            delay(WelcomeConst.REFRESH_ADVERTISEMENTS)
-            emit(WelcomePartialState.RemoveAdvertisements)
+    private fun refreshAdvertisements(): Flow<PartialState<WelcomeState>> =
+        flowInterval.start().map {
+            WelcomePartialState.RemoveAdvertisements
         }
-    }
 
     private fun connectToDeviceAndGoToMain(
         effects: EffectsCollector<WelcomeEffect>,
