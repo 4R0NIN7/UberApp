@@ -1,7 +1,6 @@
 package com.untitledkingdom.ueberapp.api
 
 import com.untitledkingdom.ueberapp.database.data.BleDataEntity
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.delay
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
@@ -9,7 +8,6 @@ import timber.log.Timber
 import javax.inject.Inject
 import kotlin.random.Random
 
-@ObsoleteCoroutinesApi
 class FakeApi @Inject constructor() : ApiService {
     companion object {
         const val DELAY_API: Long = 2000
