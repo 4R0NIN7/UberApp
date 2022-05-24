@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.service
+package com.untitledkingdom.ueberapp.background.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -14,18 +14,21 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.background.ReadingContainer
+import com.untitledkingdom.ueberapp.background.state.ReadingEffect
+import com.untitledkingdom.ueberapp.background.state.ReadingEvent
 import com.untitledkingdom.ueberapp.devices.data.Reading
-import com.untitledkingdom.ueberapp.service.state.ReadingEffect
-import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.utils.ContainerDependencies
-import com.untitledkingdom.ueberapp.utils.DaggerContainerComponent
+import com.untitledkingdom.ueberapp.utils.DaggerReadingServiceComponent
 import com.untitledkingdom.ueberapp.utils.ScopeProviderEntryPoint
+import com.untitledkingdom.ueberapp.utils.functions.startWorker
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancelChildren
+import timber.log.Timber
 import javax.inject.Inject
 
 @ExperimentalUnsignedTypes
@@ -59,7 +62,7 @@ class ReadingService : Service() {
     }
 
     override fun onCreate() {
-        DaggerContainerComponent.builder()
+        DaggerReadingServiceComponent.builder()
             .scope(getScope())
             .dependencies(
                 EntryPointAccessors.fromApplication(
@@ -104,7 +107,6 @@ class ReadingService : Service() {
                 }
                 ACTION_STOP_SERVICE -> {
                     isFirstRun = true
-                    isRunning = false
                     readingContainer.processor.sendEvent(ReadingEvent.StopReading)
                 }
                 else -> {}
@@ -119,7 +121,7 @@ class ReadingService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_MIN
+            NotificationManager.IMPORTANCE_HIGH
         )
         channel.enableLights(false)
         channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
@@ -133,7 +135,11 @@ class ReadingService : Service() {
             .setContentText("Temperature is ${reading.temperature}, Humidity is ${reading.humidity}")
             .setContentIntent(getMainActivityPendingIntent())
             .build()
-        startForeground(ONGOING_NOTIFICATION_ID, notification)
+        try {
+            startForeground(ONGOING_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Timber.d("Cannot start service from background!")
+        }
     }
 
     private fun getMainActivityPendingIntent(): PendingIntent {
@@ -161,14 +167,22 @@ class ReadingService : Service() {
     private fun stop() {
         stopForeground(true)
         stopSelf()
+        Timber.d("stop")
     }
 
     override fun onDestroy() {
+        Timber.d("OnDestroy")
         getScope().coroutineContext.cancelChildren()
+        isRunning = false
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stop()
+        startWorker(applicationContext)
     }
 }

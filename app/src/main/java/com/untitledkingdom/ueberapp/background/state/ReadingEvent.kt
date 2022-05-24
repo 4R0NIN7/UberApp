@@ -1,6 +1,7 @@
-package com.untitledkingdom.ueberapp.service.state
+package com.untitledkingdom.ueberapp.background.state
 
 sealed interface ReadingEvent {
+    object StartBattery : ReadingEvent
     object StartReading : ReadingEvent
     object StopReading : ReadingEvent
 }

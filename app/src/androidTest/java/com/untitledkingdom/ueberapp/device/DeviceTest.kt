@@ -52,6 +52,7 @@ class DeviceTest {
     private val timeManager by lazy { mockk<TimeManager>() }
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
+
     private val device =
         spyk(
             Device(
@@ -64,6 +65,8 @@ class DeviceTest {
 
     private val byteList = listOf(1.toByte(), 2.toByte())
     private val reading = mockk<Reading>()
+
+    private val battery = 1.toUInt()
 
     private val localDateTime: LocalDateTime = LocalDateTime.of(
         1970,
@@ -167,7 +170,7 @@ class DeviceTest {
     }
 
     @Test
-    fun observeDataFromDevice(): Unit = runTest {
+    fun observeReadingFromDevice(): Unit = runTest {
         coEvery { device.observationOnDataCharacteristic() } returns flowOf(reading)
         val reading = device.observationOnDataCharacteristic()
         coVerify {
@@ -177,5 +180,18 @@ class DeviceTest {
         confirmVerified(device)
         assertNotEquals(differentReading, reading)
         assertEquals(this@DeviceTest.reading, reading.first())
+    }
+
+    @Test
+    fun observeBatteryFromDevice(): Unit = runTest {
+        coEvery { device.observationOnBatteryLevelCharacteristic() } returns flowOf(battery)
+        val battery = device.observationOnBatteryLevelCharacteristic()
+        coVerify {
+            device.observationOnBatteryLevelCharacteristic()
+        }
+        val differentBattery = flowOf(2.toUInt())
+        confirmVerified(device)
+        assertNotEquals(differentBattery, battery)
+        assertEquals(this@DeviceTest.battery, battery.first())
     }
 }

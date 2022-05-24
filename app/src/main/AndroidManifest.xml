@@ -21,9 +21,9 @@
 
     <application
         android:name=".App"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_uumlaut"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_uumlaut"
         android:supportsRtl="true"
         android:theme="@style/Theme.ÜberApp">
         <uses-library
@@ -77,7 +77,7 @@
         </receiver>
 
         <service
-            android:name=".service.ReadingService"
+            android:name=".background.service.ReadingService"
             android:foregroundServiceType="location|dataSync" />
     </application>
 

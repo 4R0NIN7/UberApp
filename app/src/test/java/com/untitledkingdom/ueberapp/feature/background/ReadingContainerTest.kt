@@ -1,13 +1,13 @@
 package com.untitledkingdom.ueberapp.feature.background
 
 import com.tomcz.ellipse.test.processorTest
+import com.untitledkingdom.ueberapp.background.ReadingContainer
+import com.untitledkingdom.ueberapp.background.ReadingRepository
+import com.untitledkingdom.ueberapp.background.state.ReadingEffect
+import com.untitledkingdom.ueberapp.background.state.ReadingEvent
 import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.Reading
-import com.untitledkingdom.ueberapp.service.ReadingContainer
-import com.untitledkingdom.ueberapp.service.ReadingRepository
-import com.untitledkingdom.ueberapp.service.state.ReadingEffect
-import com.untitledkingdom.ueberapp.service.state.ReadingEvent
 import com.untitledkingdom.ueberapp.util.BaseCoroutineTest
 import com.untitledkingdom.ueberapp.utils.functions.DateConverter
 import io.mockk.coEvery
@@ -37,7 +37,8 @@ class ReadingContainerTest : BaseCoroutineTest() {
         ReadingContainer(
             repository = repository,
             device = device,
-            scope = CoroutineScope(SupervisorJob() + dispatcher)
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+            dataStorage = dataStorage
         )
     }
 
@@ -53,10 +54,11 @@ class ReadingContainerTest : BaseCoroutineTest() {
         given = {
             val utilFunctions = DateConverter
             mockkObject(utilFunctions)
-            coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
+            coEvery { dataStorage.observeMacAddress() } returns flowOf("00:11:22:33:AA:BB")
             coEvery { device.observationOnDataCharacteristic() } returns flowOf(reading)
             coEvery { repository.saveData(any(), any()) } returns Unit
             coEvery { repository.start(any()) } returns Unit
+            coEvery { repository.stop() } returns Unit
         },
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
@@ -68,13 +70,49 @@ class ReadingContainerTest : BaseCoroutineTest() {
     )
 
     @Test
+    fun startObservingBattery() = processorTest(
+        context = mainThreadSurrogate,
+        processor = { backgroundContainer.processor },
+        given = {
+            val utilFunctions = DateConverter
+            mockkObject(utilFunctions)
+            coEvery { dataStorage.observeMacAddress() } returns flowOf("00:11:22:33:AA:BB")
+            coEvery { device.observationOnBatteryLevelCharacteristic() } returns flowOf(1.toUInt())
+            coEvery { repository.saveData(any(), any()) } returns Unit
+            coEvery { repository.start(any()) } returns Unit
+            coEvery { repository.stop() } returns Unit
+        },
+        whenEvent = ReadingEvent.StartBattery,
+        thenEffects = {
+            assertValues(
+                ReadingEffect.NotifyBatterLow(1),
+            )
+        }
+    )
+
+    @Test
     fun stopReading() = processorTest(
         processor = { backgroundContainer.processor },
         given = {
-            coEvery { dataStorage.getFromStorage(any()) } returns "00:11:22:33:AA:BB"
+            coEvery { dataStorage.observeMacAddress() } returns flowOf("")
             coEvery { repository.stop() } returns Unit
         },
         whenEvent = ReadingEvent.StopReading,
+        thenEffects = {
+            assertLast(
+                ReadingEffect.Stop
+            )
+        }
+    )
+
+    @Test
+    fun `stopReading when address is empty`() = processorTest(
+        processor = { backgroundContainer.processor },
+        given = {
+            coEvery { dataStorage.observeMacAddress() } returns flowOf("")
+            coEvery { repository.stop() } returns Unit
+        },
+        whenEvent = ReadingEvent.StartReading,
         thenEffects = {
             assertLast(
                 ReadingEffect.Stop
