@@ -29,7 +29,6 @@ class ReadingRepositoryImpl @Inject constructor(
     private suspend fun countData(serviceUUID: String) {
         database.getDao().countNotSynchronized(serviceUUID).collect { count ->
             if (count != null) {
-                Timber.d("Is sending data $isSendingData")
                 val countCondition = count == 20 || count > 22
                 if (countCondition && !isSendingData) {
                     isSendingData = true

@@ -10,10 +10,12 @@ import com.untitledkingdom.ueberapp.datastore.DataStorage
 import com.untitledkingdom.ueberapp.devices.Device
 import com.untitledkingdom.ueberapp.devices.data.DeviceConst
 import com.untitledkingdom.ueberapp.utils.AppModules
+import com.untitledkingdom.ueberapp.utils.functions.childScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -32,6 +34,7 @@ class ReadingContainer @Inject constructor(
         onEvent = { event ->
             when (event) {
                 ReadingEvent.StartReading -> startReading(effects)
+                ReadingEvent.StartBattery -> startObservingBattery(effects)
                 ReadingEvent.StopReading -> stopReading(effects)
             }
         }
@@ -40,6 +43,25 @@ class ReadingContainer @Inject constructor(
     private fun stopReading(effects: EffectsCollector<ReadingEffect>) {
         repository.stop()
         effects.send(ReadingEffect.Stop)
+    }
+
+    private fun startObservingBattery(effects: EffectsCollector<ReadingEffect>) =
+        scope.childScope().launch {
+            Timber.d("startObservingBattery")
+            startObservingBatteryLevel(effects)
+        }
+
+    private suspend fun startObservingBatteryLevel(effects: EffectsCollector<ReadingEffect>) {
+        try {
+            device.observationOnBatteryLevelCharacteristic().collect { batterLevelDouble ->
+                effects.send(ReadingEffect.NotifyBatterLow(batterLevelDouble.toInt()))
+            }
+        } catch (e: ConnectionLostException) {
+            Timber.d("Service cannot connect to device!")
+        } catch (e: Exception) {
+            Timber.d("startObservingData exception! $e")
+            stopReading(effects)
+        }
     }
 
     private suspend fun startReading(effects: EffectsCollector<ReadingEffect>) {

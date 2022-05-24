@@ -32,6 +32,8 @@ android {
         buildConfigField("String", "SERVICE_DATA_SERVICE", apikeyProperties['SERVICE_DATA_SERVICE'])
         buildConfigField("String", "TIME_CHARACTERISTIC", apikeyProperties['TIME_CHARACTERISTIC'])
         buildConfigField("String", "READINGS_CHARACTERISTIC", apikeyProperties['READINGS_CHARACTERISTIC'])
+        buildConfigField("String", "BATTERY_CHARACTERISTIC", apikeyProperties['BATTERY_CHARACTERISTIC'])
+        buildConfigField("String", "SERVICE_BATTERY_SERVICE", apikeyProperties['SERVICE_BATTERY_SERVICE'])
     }
     buildTypes {
         release {

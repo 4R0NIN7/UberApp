@@ -46,17 +46,22 @@ class ReadingWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     companion object {
-        private const val CHANNEL_ID = "ReadingWorker"
-        private const val CHANNEL_NAME = "ReadingWorker Reading"
-        private const val ONGOING_NOTIFICATION_ID = 321
+        private const val READING_CHANNEL_ID = "ReadingWorker"
+        private const val READING_CHANNEL_NAME = "ReadingWorker Reading"
+        private const val READING_ONGOING_NOTIFICATION_ID = 321
+        private const val BATTERY_CHANNEL_ID = "BatteryWorker"
+        private const val BATTERY_CHANNEL_NAME = "BatteryWorker"
+        private const val BATTERY_ONGOING_NOTIFICATION_ID = 123
         const val WORK_NAME = "ReadingWorkerName"
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
         const val INTENT_MESSAGE_FROM_WORKER = "INTENT_MESSAGE_FROM_SERVICE"
     }
 
     private var reading: Reading? = null
+    private var batteryLevel: Int = -1
     private var isSendingBroadcast = true
-    private var isFirstTime = true
+    private var isShowingBatteryNotification = false
+    private var isShowingNotificationAlready = false
     private fun getScope(): CoroutineScope {
         val hiltEntryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
@@ -91,7 +96,13 @@ class ReadingWorker @AssistedInject constructor(
             is ReadingEffect.StartNotifying -> startNotifying(effect.reading)
             ReadingEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
             ReadingEffect.Stop -> stopWorkManager()
+            is ReadingEffect.NotifyBatterLow -> warnBatteryLow(effect.batteryLevel)
         }
+    }
+
+    private fun warnBatteryLow(battery: Int) {
+        batteryLevel = battery
+        isShowingBatteryNotification = batteryLevel in 0..20
     }
 
     private fun sendBroadcastToActivity() {
@@ -105,7 +116,7 @@ class ReadingWorker @AssistedInject constructor(
     private fun stopWorkManager() {
         Timber.d("Stopping scope isActive ${getScope().coroutineContext.isActive}")
         getScope().coroutineContext.cancelChildren()
-        cancelNotification()
+        cancelAllNotification()
         onStopped()
     }
 
@@ -113,66 +124,75 @@ class ReadingWorker @AssistedInject constructor(
         reading = readingFromProcessor
     }
 
-    /*
-        device.observationOnDataCharacteristic()
-            .onStart {
-                repository.start(serviceUUID)
-                setForeground(createForegroundInfo())
-            }
-            .onCompletion {
-                repository.stop()
-                getScope().coroutineContext.cancelChildren()
-                stop()
-            }
-            .takeWhile {
-                Timber.d("IsWorking")
-                !isStopped
-            }
-            .collect { reading ->
-                repository.saveData(
-                    reading = reading,
-                    serviceUUID = serviceUUID
-                )
-            }
-         */
-
     override suspend fun doWork(): Result {
         flow<Unit> {
             while (!isStopped) {
-                setForeground(createForegroundInfo())
+                setForeground(createReadingNotification())
+                if (isShowingBatteryNotification && !isShowingNotificationAlready) {
+                    setForeground(createBatteryNotification())
+                    isShowingNotificationAlready = true
+                }
+                if (!isShowingBatteryNotification && isShowingNotificationAlready) {
+                    cancelBatteryNotification()
+                }
             }
         }.onStart {
-            readingContainer.processor.sendEvent(ReadingEvent.StartReading)
+            readingContainer.processor.sendEvent(
+                ReadingEvent.StartBattery,
+                ReadingEvent.StartReading
+            )
         }.onCompletion {
             readingContainer.processor.sendEvent(ReadingEvent.StopReading)
         }.collect()
         return Result.success()
     }
 
-    private fun cancelNotification() {
+    private fun cancelAllNotification() {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
-        Timber.d("Canceling notification")
-        notificationManager.cancel(ONGOING_NOTIFICATION_ID)
+        notificationManager.cancelAll()
     }
 
-    private fun createForegroundInfo(): ForegroundInfo {
-        var importance: Int = NotificationManager.IMPORTANCE_LOW
-        if (isFirstTime) {
-            importance = NotificationManager.IMPORTANCE_HIGH
-            isFirstTime = false
-        }
+    private fun cancelBatteryNotification() {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
+            as NotificationManager
+        isShowingNotificationAlready = false
+        notificationManager.cancel(BATTERY_ONGOING_NOTIFICATION_ID)
+    }
+
+    private fun createBatteryNotification(): ForegroundInfo {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            importance
+            BATTERY_CHANNEL_ID,
+            BATTERY_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        channel.enableLights(true)
+        channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        notificationManager.createNotificationChannel(channel)
+        val notification = Notification.Builder(applicationContext, BATTERY_CHANNEL_ID)
+            .setAutoCancel(true)
+            .setOngoing(true)
+            .setSmallIcon(R.drawable.ic_baseline_battery_0_bar_24)
+            .setShowWhen(true)
+            .setContentTitle("Battery low on ÜberDevice!")
+            .build()
+        return ForegroundInfo(BATTERY_ONGOING_NOTIFICATION_ID, notification)
+    }
+
+    private fun createReadingNotification(): ForegroundInfo {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
+            as NotificationManager
+        val channel = NotificationChannel(
+            READING_CHANNEL_ID,
+            READING_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_LOW
         )
         channel.enableLights(false)
         channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
         notificationManager.createNotificationChannel(channel)
-        val notification = Notification.Builder(applicationContext, CHANNEL_ID)
+        val notification = Notification.Builder(applicationContext, READING_CHANNEL_ID)
             .setAutoCancel(false)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
@@ -187,7 +207,7 @@ class ReadingWorker @AssistedInject constructor(
             )
             .setContentIntent(getMainActivityPendingIntent())
             .build()
-        return ForegroundInfo(ONGOING_NOTIFICATION_ID, notification)
+        return ForegroundInfo(READING_ONGOING_NOTIFICATION_ID, notification)
     }
 
     private fun getMainActivityPendingIntent(): PendingIntent {

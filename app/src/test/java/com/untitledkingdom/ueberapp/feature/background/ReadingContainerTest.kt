@@ -70,6 +70,27 @@ class ReadingContainerTest : BaseCoroutineTest() {
     )
 
     @Test
+    fun startObservingBattery() = processorTest(
+        context = mainThreadSurrogate,
+        processor = { backgroundContainer.processor },
+        given = {
+            val utilFunctions = DateConverter
+            mockkObject(utilFunctions)
+            coEvery { dataStorage.observeMacAddress() } returns flowOf("00:11:22:33:AA:BB")
+            coEvery { device.observationOnBatteryLevelCharacteristic() } returns flowOf(1.toUInt())
+            coEvery { repository.saveData(any(), any()) } returns Unit
+            coEvery { repository.start(any()) } returns Unit
+            coEvery { repository.stop() } returns Unit
+        },
+        whenEvent = ReadingEvent.StartBattery,
+        thenEffects = {
+            assertValues(
+                ReadingEffect.NotifyBatterLow(1),
+            )
+        }
+    )
+
+    @Test
     fun stopReading() = processorTest(
         processor = { backgroundContainer.processor },
         given = {

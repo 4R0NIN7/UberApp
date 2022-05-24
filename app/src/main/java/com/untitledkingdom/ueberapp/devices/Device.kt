@@ -206,6 +206,16 @@ class Device @Inject constructor(
             }
         }
 
+    suspend fun observationOnBatteryLevelCharacteristic(): Flow<UInt> =
+        peripheral().observe(
+            characteristic = characteristicOf(
+                service = DeviceConst.BATTERY_SERVICE,
+                characteristic = DeviceConst.BATTERY_CHARACTERISTIC
+            )
+        ).map { batteryByteArray ->
+            batteryByteArray[0].toUInt()
+        }
+
     private suspend fun validateDate(
         bytes: List<Byte>,
         service: String,
