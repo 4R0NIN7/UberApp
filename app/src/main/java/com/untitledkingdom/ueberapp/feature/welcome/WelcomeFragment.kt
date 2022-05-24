@@ -19,6 +19,7 @@ import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
 
 @ExperimentalUnsignedTypes
 @ExperimentalCoroutinesApi
@@ -59,7 +60,9 @@ class WelcomeFragment : Fragment() {
 
     private fun goToMainFragment() {
         toastMessage("Successfully connected to device!", requireContext())
-        if (!isWorkScheduled(ReadingWorker.WORK_NAME, requireContext())) {
+        val isWorkerStarted = !isWorkScheduled(ReadingWorker.WORK_NAME, requireContext())
+        Timber.d("Is Worker started? $isWorkerStarted")
+        if (isWorkerStarted) {
             startWorker(requireContext())
         }
         findNavController().navigate(R.id.action_welcomeFragment_to_mainFragment)

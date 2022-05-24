@@ -98,7 +98,7 @@ class WelcomeViewModel @Inject constructor(
                     advertisement = status.advertisement
                 )
                 is ScanStatus.ConnectToPreviouslyConnectedDevice -> {
-                    connectToDevice(status.advertisement, effects).let { NoAction() }
+                    reconnectToDevice(effects).let { NoAction() }
                 }
                 is ScanStatus.Failed -> effects.send(WelcomeEffect.ShowError(status.message as String))
                     .let { NoAction() }
@@ -108,6 +108,9 @@ class WelcomeViewModel @Inject constructor(
                 }
             }
         }
+
+    private fun reconnectToDevice(effects: EffectsCollector<WelcomeEffect>) =
+        effects.send(WelcomeEffect.GoToMain)
 
     private suspend fun connectToDevice(
         advertisement: Advertisement,

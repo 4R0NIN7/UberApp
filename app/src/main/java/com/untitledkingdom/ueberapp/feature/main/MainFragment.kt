@@ -13,12 +13,16 @@ import androidx.navigation.fragment.findNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
+import com.untitledkingdom.ueberapp.utils.functions.isWorkScheduled
+import com.untitledkingdom.ueberapp.utils.functions.startWorker
 import com.untitledkingdom.ueberapp.utils.functions.stopWorker
 import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
 
 @ExperimentalMaterialApi
 @ExperimentalUnsignedTypes
@@ -39,6 +43,11 @@ class MainFragment : Fragment() {
             processor = viewModel::processor,
             onEffect = ::trigger,
         )
+        val isWorkerStarted = !isWorkScheduled(ReadingWorker.WORK_NAME, requireContext())
+        Timber.d("Is Worker started in MainFragment? $isWorkerStarted")
+        if (isWorkerStarted) {
+            startWorker(requireContext())
+        }
         return ComposeView(
             requireContext()
         ).apply {

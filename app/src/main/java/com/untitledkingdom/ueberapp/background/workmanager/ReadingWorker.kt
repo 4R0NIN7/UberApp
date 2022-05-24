@@ -50,6 +50,8 @@ class ReadingWorker @AssistedInject constructor(
         private const val CHANNEL_NAME = "ReadingWorker Reading"
         private const val ONGOING_NOTIFICATION_ID = 321
         const val WORK_NAME = "ReadingWorkerName"
+        const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
+        const val INTENT_MESSAGE_FROM_WORKER = "INTENT_MESSAGE_FROM_SERVICE"
     }
 
     private var reading: Reading? = null

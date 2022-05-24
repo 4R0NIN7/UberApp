@@ -12,7 +12,6 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -21,13 +20,12 @@ import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import com.untitledkingdom.ueberapp.background.service.ReadingService
+import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import com.untitledkingdom.ueberapp.utils.functions.stopWorker
-import com.untitledkingdom.ueberapp.utils.functions.toastMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import timber.log.Timber
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -45,10 +43,10 @@ class MainActivity : AppCompatActivity() {
     private val navController by lazy {
         (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
     }
-    private val serviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val workerReceive: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == ReadingService.INTENT_MESSAGE_FROM_SERVICE) {
-                navigateToMainFragment(Intent(ReadingService.ACTION_SHOW_MAIN_FRAGMENT))
+            if (intent.action == ReadingWorker.ACTION_SHOW_MAIN_FRAGMENT) {
+                navigateToMainFragment(Intent(ReadingWorker.ACTION_SHOW_MAIN_FRAGMENT))
             }
         }
     }
@@ -57,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        navigateToMainFragment(intent)
         if (intent.extras != null) {
             if (intent.extras?.getBoolean(ActivityConst.ENABLE_BLUETOOTH) == true) {
                 enableBluetooth()
@@ -75,32 +72,6 @@ class MainActivity : AppCompatActivity() {
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
         stopWorker(applicationContext)
-    }
-
-    private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
-        val powerManager =
-            context.applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val name = context.applicationContext.packageName
-        Timber.d(
-            "powerManager.isIgnoringBatteryOptimizations(name) ${
-            powerManager.isIgnoringBatteryOptimizations(
-                name
-            )
-            }"
-        )
-        return powerManager.isIgnoringBatteryOptimizations(name)
-    }
-
-    private fun checkBatteryOptimizations() {
-        if (!isIgnoringBatteryOptimizations(this)) {
-            val name = resources.getString(R.string.app_name)
-            toastMessage(
-                "Battery optimization -> All apps -> $name -> Don't optimize",
-                this
-            )
-            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            startActivity(intent)
-        }
     }
 
     private fun checkPermission() {
@@ -136,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(bluetoothBroadcastReceiver)
         unregisterReceiver(locationBroadcastReceiver)
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(serviceReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(workerReceive)
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -144,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
-                serviceReceiver,
+                workerReceive,
                 IntentFilter(ReadingService.INTENT_MESSAGE_FROM_SERVICE)
             )
         if (!bluetoothAdapter.isEnabled) {
@@ -198,7 +169,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navigateToMainFragment(intent: Intent?) {
-        if (intent?.action == ReadingService.ACTION_SHOW_MAIN_FRAGMENT) {
+        if (intent?.action == ReadingWorker.ACTION_SHOW_MAIN_FRAGMENT) {
             navController.navigate(R.id.action_global_mainFragment)
         }
     }
