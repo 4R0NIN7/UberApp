@@ -3,7 +3,6 @@ package com.untitledkingdom.ueberapp.utils.functions
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -13,8 +12,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.google.common.util.concurrent.ListenableFuture
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.background.service.ReadingService
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
@@ -69,15 +67,6 @@ fun toastMessage(message: String, context: Context) {
     ).show()
     Timber.d(message = message)
 }
-
-@ExperimentalUnsignedTypes
-@FlowPreview
-@ExperimentalCoroutinesApi
-fun controlOverService(actionStartOrResumeService: String, context: Context) =
-    Intent(context, ReadingService::class.java).also {
-        it.action = actionStartOrResumeService
-        context.startService(it)
-    }
 
 @ExperimentalUnsignedTypes
 @FlowPreview

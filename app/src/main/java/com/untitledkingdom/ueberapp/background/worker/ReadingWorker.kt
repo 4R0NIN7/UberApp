@@ -1,4 +1,4 @@
-package com.untitledkingdom.ueberapp.background.workmanager
+package com.untitledkingdom.ueberapp.background.worker
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -7,15 +7,15 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.MainActivity
 import com.untitledkingdom.ueberapp.R
+import com.untitledkingdom.ueberapp.WorkerReceiveCancel
 import com.untitledkingdom.ueberapp.background.ReadingContainer
-import com.untitledkingdom.ueberapp.background.service.ReadingService
 import com.untitledkingdom.ueberapp.background.state.ReadingEffect
 import com.untitledkingdom.ueberapp.background.state.ReadingEvent
 import com.untitledkingdom.ueberapp.devices.data.Reading
@@ -54,12 +54,13 @@ class ReadingWorker @AssistedInject constructor(
         private const val BATTERY_ONGOING_NOTIFICATION_ID = 123
         const val WORK_NAME = "ReadingWorkerName"
         const val ACTION_SHOW_MAIN_FRAGMENT = "ACTION_SHOW_MAIN_FRAGMENT"
-        const val INTENT_MESSAGE_FROM_WORKER = "INTENT_MESSAGE_FROM_SERVICE"
+        const val INTENT_MESSAGE_FROM_WORKER_GO_TO_MAIN = "INTENT_MESSAGE_FROM_WORKER"
+        const val INTENT_MESSAGE_FROM_WORKER_CANCEL = "INTENT_MESSAGE_FROM_WORKER"
+        const val ACTION_CANCEL_WORK = "CANCEL WORK"
     }
 
     private var reading: Reading? = null
     private var batteryLevel: Int = -1
-    private var isSendingBroadcast = true
     private var isShowingBatteryNotification = false
     private var isShowingNotificationAlready = false
     private fun getScope(): CoroutineScope {
@@ -94,7 +95,6 @@ class ReadingWorker @AssistedInject constructor(
     private fun trigger(effect: ReadingEffect) {
         when (effect) {
             is ReadingEffect.StartNotifying -> startNotifying(effect.reading)
-            ReadingEffect.SendBroadcastToActivity -> sendBroadcastToActivity()
             ReadingEffect.Stop -> stopWorkManager()
             is ReadingEffect.NotifyBatterLow -> warnBatteryLow(effect.batteryLevel)
         }
@@ -103,14 +103,6 @@ class ReadingWorker @AssistedInject constructor(
     private fun warnBatteryLow(battery: Int) {
         batteryLevel = battery
         isShowingBatteryNotification = batteryLevel in 0..20
-    }
-
-    private fun sendBroadcastToActivity() {
-        if (isSendingBroadcast) {
-            val intent = Intent(ReadingService.INTENT_MESSAGE_FROM_SERVICE)
-            isSendingBroadcast = false
-            LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
-        }
     }
 
     private fun stopWorkManager() {
@@ -162,9 +154,9 @@ class ReadingWorker @AssistedInject constructor(
     }
 
     private fun createBatteryNotification(): ForegroundInfo {
-        val notification = Notification.Builder(applicationContext, BATTERY_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, BATTERY_CHANNEL_ID)
             .setAutoCancel(true)
-            .setOngoing(true)
+            .setOngoing(false)
             .setSmallIcon(R.drawable.ic_baseline_battery_0_bar_24)
             .setShowWhen(true)
             .setContentTitle("Battery low on ÜberDevice!")
@@ -194,7 +186,19 @@ class ReadingWorker @AssistedInject constructor(
     }
 
     private fun createReadingNotification(): ForegroundInfo {
-        val notification = Notification.Builder(applicationContext, READING_CHANNEL_ID)
+        val cancelAction =
+            NotificationCompat.Action.Builder(
+                R.drawable.ic_baseline_delete_forever_24,
+                "Cancel",
+                cancelWorkIntent()
+            ).build()
+        val goToMainAction =
+            NotificationCompat.Action.Builder(
+                R.drawable.ic_baseline_logout_24,
+                "Go to details",
+                getMainActivityPendingIntent()
+            ).build()
+        val notification = NotificationCompat.Builder(applicationContext, READING_CHANNEL_ID)
             .setAutoCancel(false)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_baseline_phone_bluetooth_speaker_24)
@@ -207,9 +211,31 @@ class ReadingWorker @AssistedInject constructor(
                     "Click to go to details"
                 }
             )
-            .setContentIntent(getMainActivityPendingIntent())
+            .addAction(cancelAction)
+            .addAction(goToMainAction)
             .build()
         return ForegroundInfo(READING_ONGOING_NOTIFICATION_ID, notification)
+    }
+
+    private fun cancelWorkIntent(): PendingIntent {
+        val intent = Intent(this.applicationContext, WorkerReceiveCancel::class.java).also {
+            it.action = ACTION_CANCEL_WORK
+        }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.getBroadcast(
+                this.applicationContext,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
+        } else {
+            PendingIntent.getBroadcast(
+                this.applicationContext,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        }
     }
 
     private fun getMainActivityPendingIntent(): PendingIntent {
@@ -218,7 +244,7 @@ class ReadingWorker @AssistedInject constructor(
                 applicationContext,
                 0,
                 Intent(applicationContext, MainActivity::class.java).also {
-                    it.action = ReadingService.ACTION_SHOW_MAIN_FRAGMENT
+                    it.action = ACTION_SHOW_MAIN_FRAGMENT
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
@@ -227,7 +253,7 @@ class ReadingWorker @AssistedInject constructor(
                 applicationContext,
                 0,
                 Intent(applicationContext, MainActivity::class.java).also {
-                    it.action = ReadingService.ACTION_SHOW_MAIN_FRAGMENT
+                    it.action = ACTION_SHOW_MAIN_FRAGMENT
                 },
                 PendingIntent.FLAG_IMMUTABLE
             )

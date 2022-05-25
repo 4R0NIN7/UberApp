@@ -17,15 +17,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
-import com.untitledkingdom.ueberapp.background.service.ReadingService
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import com.untitledkingdom.ueberapp.utils.functions.requestPermission
 import com.untitledkingdom.ueberapp.utils.functions.stopWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
 
 @ExperimentalUnsignedTypes
 @FlowPreview
@@ -43,15 +42,10 @@ class MainActivity : AppCompatActivity() {
     private val navController by lazy {
         (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
     }
-    private val workerReceive: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == ReadingWorker.ACTION_SHOW_MAIN_FRAGMENT) {
-                navigateToMainFragment(Intent(ReadingWorker.ACTION_SHOW_MAIN_FRAGMENT))
-            }
-        }
-    }
+
     private val locationBroadcastReceiver = LocationBroadcastReceiver()
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
+    private val workerReceiveCancel = WorkerReceiveCancel()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -71,7 +65,10 @@ class MainActivity : AppCompatActivity() {
         gpsFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
         registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter)
         registerReceiver(locationBroadcastReceiver, gpsFilter)
-        stopWorker(applicationContext)
+        registerReceiver(
+            workerReceiveCancel,
+            IntentFilter(ReadingWorker.INTENT_MESSAGE_FROM_WORKER_CANCEL)
+        )
     }
 
     private fun checkPermission() {
@@ -107,17 +104,11 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(bluetoothBroadcastReceiver)
         unregisterReceiver(locationBroadcastReceiver)
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(workerReceive)
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onResume() {
         super.onResume()
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(
-                workerReceive,
-                IntentFilter(ReadingService.INTENT_MESSAGE_FROM_SERVICE)
-            )
         if (!bluetoothAdapter.isEnabled) {
             enableBluetooth()
         } else if (!locationManager.isLocationEnabled) {
@@ -226,6 +217,18 @@ class LocationBroadcastReceiver : BroadcastReceiver() {
                 newIntent.putExtra(ActivityConst.ENABLE_GPS, true)
                 context.startActivity(newIntent)
             }
+        }
+    }
+}
+
+@ExperimentalUnsignedTypes
+@FlowPreview
+@ExperimentalCoroutinesApi
+class WorkerReceiveCancel : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ReadingWorker.ACTION_CANCEL_WORK) {
+            Timber.d("Cancel work in workerReceiveCancel")
+            stopWorker(context)
         }
     }
 }

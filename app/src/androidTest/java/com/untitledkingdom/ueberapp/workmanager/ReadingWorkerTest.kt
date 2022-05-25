@@ -3,7 +3,7 @@ package com.untitledkingdom.ueberapp.workmanager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.testing.TestListenableWorkerBuilder
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

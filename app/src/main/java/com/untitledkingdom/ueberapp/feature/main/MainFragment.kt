@@ -13,7 +13,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import com.untitledkingdom.ueberapp.feature.main.state.MainEffect
 import com.untitledkingdom.ueberapp.utils.functions.isWorkScheduled
 import com.untitledkingdom.ueberapp.utils.functions.startWorker
