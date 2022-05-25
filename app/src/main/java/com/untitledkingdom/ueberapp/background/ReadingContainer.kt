@@ -85,7 +85,6 @@ class ReadingContainer @Inject constructor(
         serviceUUID: String
     ) {
         try {
-            effects.send(ReadingEffect.SendBroadcastToActivity)
             Timber.d("Starting collecting data from service")
             repository.start(serviceUUID)
             device.observationOnDataCharacteristic().collect { reading ->

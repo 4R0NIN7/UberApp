@@ -68,17 +68,17 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".LocationBroadcastReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.location.PROVIDERS_CHANGED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            android:name=".WorkerReceiveCancel"
+            android:exported="false" >
         </receiver>
+        <receiver
+            android:name=".LocationBroadcastReceiver"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="android.location.PROVIDERS_CHANGED" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+    </receiver>
+</application>
 
-        <service
-            android:name=".background.service.ReadingService"
-            android:foregroundServiceType="location|dataSync" />
-    </application>
-
-</manifest>
+    </manifest>

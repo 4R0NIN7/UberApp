@@ -14,8 +14,7 @@ import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.api.FakeApi
 import com.untitledkingdom.ueberapp.background.ReadingRepository
 import com.untitledkingdom.ueberapp.background.ReadingRepositoryImpl
-import com.untitledkingdom.ueberapp.background.service.ReadingService
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.DatabaseConst
 import com.untitledkingdom.ueberapp.database.TimeConverter
@@ -213,21 +212,6 @@ interface ContainerDependencies {
 interface ScopeProviderEntryPoint {
     @AppModules.ReadingScope
     fun scope(): CoroutineScope
-}
-
-@FlowPreview
-@ExperimentalCoroutinesApi
-@ExperimentalUnsignedTypes
-@Component(dependencies = [ContainerDependencies::class])
-interface ReadingServiceComponent {
-    fun inject(service: ReadingService)
-
-    @Component.Builder
-    interface Builder {
-        fun scope(@AppModules.ReadingScope @BindsInstance scope: CoroutineScope): Builder
-        fun dependencies(containerDependencies: ContainerDependencies): Builder
-        fun build(): ReadingServiceComponent
-    }
 }
 
 @FlowPreview

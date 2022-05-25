@@ -63,7 +63,6 @@ class ReadingContainerTest : BaseCoroutineTest() {
         whenEvent = ReadingEvent.StartReading,
         thenEffects = {
             assertValues(
-                ReadingEffect.SendBroadcastToActivity,
                 ReadingEffect.StartNotifying(reading),
             )
         }

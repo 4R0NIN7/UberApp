@@ -11,7 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import com.tomcz.ellipse.common.onProcessor
 import com.untitledkingdom.ueberapp.R
-import com.untitledkingdom.ueberapp.background.workmanager.ReadingWorker
+import com.untitledkingdom.ueberapp.background.worker.ReadingWorker
 import com.untitledkingdom.ueberapp.feature.welcome.state.WelcomeEffect
 import com.untitledkingdom.ueberapp.utils.functions.isWorkScheduled
 import com.untitledkingdom.ueberapp.utils.functions.startWorker
