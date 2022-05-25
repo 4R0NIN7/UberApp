@@ -137,6 +137,7 @@ class ReadingWorker @AssistedInject constructor(
                 }
             }
         }.onStart {
+            createNotificationChannels()
             readingContainer.processor.sendEvent(
                 ReadingEvent.StartBattery,
                 ReadingEvent.StartReading
@@ -161,16 +162,6 @@ class ReadingWorker @AssistedInject constructor(
     }
 
     private fun createBatteryNotification(): ForegroundInfo {
-        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
-            as NotificationManager
-        val channel = NotificationChannel(
-            BATTERY_CHANNEL_ID,
-            BATTERY_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        channel.enableLights(true)
-        channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-        notificationManager.createNotificationChannel(channel)
         val notification = Notification.Builder(applicationContext, BATTERY_CHANNEL_ID)
             .setAutoCancel(true)
             .setOngoing(true)
@@ -181,17 +172,28 @@ class ReadingWorker @AssistedInject constructor(
         return ForegroundInfo(BATTERY_ONGOING_NOTIFICATION_ID, notification)
     }
 
-    private fun createReadingNotification(): ForegroundInfo {
+    private fun createNotificationChannels() {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
-        val channel = NotificationChannel(
+        val readingChannel = NotificationChannel(
             READING_CHANNEL_ID,
             READING_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_LOW
         )
-        channel.enableLights(false)
-        channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
-        notificationManager.createNotificationChannel(channel)
+        val batteryChannel = NotificationChannel(
+            BATTERY_CHANNEL_ID,
+            BATTERY_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        batteryChannel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        readingChannel.lockscreenVisibility = Notification.VISIBILITY_SECRET
+        readingChannel.enableLights(false)
+        batteryChannel.enableLights(true)
+        notificationManager.createNotificationChannel(readingChannel)
+        notificationManager.createNotificationChannel(batteryChannel)
+    }
+
+    private fun createReadingNotification(): ForegroundInfo {
         val notification = Notification.Builder(applicationContext, READING_CHANNEL_ID)
             .setAutoCancel(false)
             .setOngoing(true)
