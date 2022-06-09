@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.work.ExistingWorkPolicy
@@ -108,4 +110,25 @@ fun isWorkScheduled(tag: String, context: Context): Boolean {
         e.printStackTrace()
         false
     }
+}
+
+fun isOnline(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val capabilities =
+        connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+    if (capabilities != null) {
+        when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                return true
+            }
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
+                return true
+            }
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
+                return true
+            }
+        }
+    }
+    return false
 }
