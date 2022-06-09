@@ -11,14 +11,15 @@ import kotlin.random.Random
 class FakeApi @Inject constructor() : ApiService {
     companion object {
         const val DELAY_API: Long = 2000
+        const val SEED = 100
     }
 
     override suspend fun sendDataToService(bleDatumEntities: List<BleDataEntity>): Response<Unit> {
         Timber.d("Sending data")
         delay(DELAY_API)
-        val random = Random(100)
+        val random = Random(SEED)
         return if (random.nextBoolean())
             Response.success(Unit)
-        else Response.error(401, "".toResponseBody())
+        else Response.error(ApiConst.HTTP_UNAUTHORIZED, "".toResponseBody())
     }
 }

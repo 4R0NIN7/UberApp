@@ -1,11 +1,14 @@
 package com.untitledkingdom.ueberapp.background
 
+import android.content.Context
 import com.untitledkingdom.ueberapp.api.ApiService
 import com.untitledkingdom.ueberapp.database.Database
 import com.untitledkingdom.ueberapp.database.data.BleDataEntity
 import com.untitledkingdom.ueberapp.devices.data.Reading
 import com.untitledkingdom.ueberapp.utils.AppModules
 import com.untitledkingdom.ueberapp.utils.date.TimeManager
+import com.untitledkingdom.ueberapp.utils.functions.isOnline
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -22,6 +25,7 @@ class ReadingRepositoryImpl @Inject constructor(
     private val database: Database,
     private val apiService: ApiService,
     private val timeManager: TimeManager,
+    @ApplicationContext private val context: Context,
     @AppModules.ReadingScope private val scope: CoroutineScope
 ) : ReadingRepository {
     private var isStarted: Boolean = false
@@ -30,7 +34,7 @@ class ReadingRepositoryImpl @Inject constructor(
         database.getDao().countNotSynchronized(serviceUUID).collect { count ->
             if (count != null) {
                 val countCondition = count == 20 || count > 22
-                if (countCondition && !isSendingData) {
+                if (countCondition && !isSendingData && isOnline(context)) {
                     isSendingData = true
                     val data = database
                         .getDao()
@@ -42,11 +46,6 @@ class ReadingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun sendData(data: List<BleDataEntity>) {
-        Timber.d(
-            "Size of data ${data.size}" +
-                "\nFirst id is ${data.first().id}" +
-                "\nLast id is ${data.last().id}"
-        )
         try {
             val response = apiService.sendDataToService(bleDatumEntities = data)
             if (response.isSuccessful) {
@@ -62,6 +61,7 @@ class ReadingRepositoryImpl @Inject constructor(
                         )
                     }
                 )
+                Timber.d("Data sent!")
             } else {
                 Timber.d("Unable to send data!")
             }
